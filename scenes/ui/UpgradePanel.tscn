@@ -1,0 +1,82 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="1_up"]
+
+[node name="UpgradePanel" type="Panel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -180.0
+offset_right = 220.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_up")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+text = "全局升级"
+horizontal_alignment = 1
+
+[node name="OpenerSpeedRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/OpenerSpeedRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "开墙型速度"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/VBoxContainer/OpenerSpeedRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "Lv0 (2.0s)"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/VBoxContainer/OpenerSpeedRow"]
+custom_minimum_size = Vector2(170, 0)
+text = "→Lv1 (1.5s) ¥100"
+
+[node name="MarkerSpeedRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/MarkerSpeedRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "标雷型速度"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/VBoxContainer/MarkerSpeedRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "Lv0 (2.0s)"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/VBoxContainer/MarkerSpeedRow"]
+custom_minimum_size = Vector2(170, 0)
+text = "→Lv1 (1.5s) ¥100"
+
+[node name="DiscountRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/DiscountRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "购买折扣"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/VBoxContainer/DiscountRow"]
+custom_minimum_size = Vector2(110, 0)
+text = "Lv0 (-0%)"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/VBoxContainer/DiscountRow"]
+custom_minimum_size = Vector2(170, 0)
+text = "→Lv1 (-25%) ¥200"
+
+[node name="CloseButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+text = "关闭"
