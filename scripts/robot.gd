@@ -114,3 +114,19 @@ func _move_to(target_coord: Vector2i, grid) -> void:
 	var world_pos: Vector2 = grid.coord_to_world(target_coord)
 	var tween := create_tween()
 	tween.tween_property(self, "position", world_pos, 0.3)
+
+
+## 寻路并移动一步，返回 true 表示已到达目标邻接格（可作业）
+## 子类（MinerRobot）可复用此方法
+func _move_step(grid, targets: Array, locked: Dictionary, robot_positions: Dictionary) -> bool:
+	var path_result := Pathfinding.find_nearest_target(
+		grid, coord, targets, locked, robot_positions, self)
+	if path_result.is_empty():
+		return false
+	if path_result.work_pos == coord:
+		return true
+	var next: Vector2i = path_result.path[0]
+	_move_to(next, grid)
+	coord = next
+	_state = "moving"
+	return false

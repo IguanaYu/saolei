@@ -7,6 +7,7 @@ extends Control
 @onready var time_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/TimeLabel
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
+@onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
 
 
 func _ready() -> void:
@@ -53,3 +54,13 @@ func _on_lives_changed(v: int) -> void:
 
 func _on_time_changed(t: float) -> void:
 	time_label.text = "时间: 0:%02d" % int(ceil(t))
+
+
+func show_toast(text: String, duration: float = 3.0) -> void:
+	toast_label.text = text
+	toast_label.visible = true
+	toast_label.modulate.a = 1.0
+	var t := create_tween()
+	t.tween_interval(duration)
+	t.tween_property(toast_label, "modulate:a", 0.0, 0.5)
+	t.tween_callback(func(): toast_label.visible = false)

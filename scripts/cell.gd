@@ -13,6 +13,8 @@ var is_flagged: bool = false
 var is_collapsed: bool = false  # 踩雷坍塌
 var adjacent_mines: int = 0      # 0-8
 var is_base: bool = false        # 基地建筑
+var is_vein: bool = false        # 矿脉
+var vein_resources: int = 0      # 矿脉剩余资源
 
 # 信号
 signal cell_left_clicked(cell: Cell)
@@ -76,6 +78,20 @@ func become_base() -> void:
 	refresh_visual()
 
 
+func become_vein(resources: int) -> void:
+	is_vein = true
+	vein_resources = resources
+	is_opened = true  # 矿脉视为已开（机器人可走）
+	is_flagged = false  # 取消旗子状态
+	refresh_visual()
+
+
+func deplete_vein() -> void:
+	is_vein = false
+	vein_resources = 0
+	refresh_visual()
+
+
 func toggle_flag() -> bool:
 	if is_opened or is_collapsed:
 		return false
@@ -119,6 +135,10 @@ func refresh_visual() -> void:
 		bg.color = Color(0.15, 0.35, 0.75)
 		lbl.text = "B"
 		lbl.modulate = Color.WHITE
+	elif is_vein:
+		bg.color = Color(0.7, 0.55, 0.1)
+		lbl.text = "◆"
+		lbl.modulate = Color(1.0, 0.85, 0.3)
 	elif is_collapsed:
 		bg.color = Color(0.4, 0.05, 0.05)
 		lbl.text = "✸"

@@ -15,11 +15,15 @@ var game_phase: String = "placing_base"
 # 升级等级（0-2）
 var opener_speed_level: int = 0
 var marker_speed_level: int = 0
+var detector_speed_level: int = 0
+var miner_speed_level: int = 0
 var discount_level: int = 0
 
 # 已购买机器人计数（用于价格递增）
 var opener_count: int = 0
 var marker_count: int = 0
+var detector_count: int = 0
+var miner_count: int = 0
 
 # 建筑状态
 var bases: Array[Vector2i] = []
@@ -63,9 +67,11 @@ func reset_state() -> void:
 	game_phase = "placing_base"
 	opener_speed_level = 0
 	marker_speed_level = 0
+	detector_speed_level = 0
 	discount_level = 0
 	opener_count = 0
 	marker_count = 0
+	detector_count = 0
 	bases.clear()
 	base_count = 0
 	locked_targets.clear()
@@ -99,6 +105,20 @@ func register_base(coord: Vector2i) -> void:
 	base_placed.emit(coord)
 
 
+## 返回离指定坐标最近的基地，没有则返回 null
+func get_nearest_base(coord: Vector2i):
+	if bases.is_empty():
+		return null
+	var nearest = bases[0]
+	var best_dist: int = abs(coord.x - nearest.x) + abs(coord.y - nearest.y)
+	for b in bases:
+		var d: int = abs(coord.x - b.x) + abs(coord.y - b.y)
+		if d < best_dist:
+			best_dist = d
+			nearest = b
+	return nearest
+
+
 func set_game_phase(phase: String) -> void:
 	if game_phase == phase:
 		return
@@ -107,8 +127,14 @@ func set_game_phase(phase: String) -> void:
 
 
 func get_robot_price(robot_type: String) -> int:
-	var count: int = opener_count if robot_type == "opener" else marker_count
-	var base: int = 50 * (1 << count)
+	var count: int = 0
+	var base: int = 50
+	match robot_type:
+		"opener": count = opener_count; base = 50
+		"marker": count = marker_count; base = 50
+		"detector": count = detector_count; base = 80
+		"miner": count = miner_count; base = 60
+	base *= 1 << count
 	var discount: float = [1.0, 0.75, 0.5][discount_level]
 	return int(base * discount)
 
@@ -118,13 +144,19 @@ func purchase_robot(robot_type: String) -> bool:
 	if money < price:
 		return false
 	add_money(-price)
-	if robot_type == "opener":
-		opener_count += 1
-	else:
-		marker_count += 1
+	match robot_type:
+		"opener": opener_count += 1
+		"marker": marker_count += 1
+		"detector": detector_count += 1
+		"miner": miner_count += 1
 	return true
 
 
 func get_speed_interval(robot_type: String) -> float:
-	var level: int = opener_speed_level if robot_type == "opener" else marker_speed_level
+	var level: int = 0
+	match robot_type:
+		"opener": level = opener_speed_level
+		"marker": level = marker_speed_level
+		"detector": level = detector_speed_level
+		"miner": level = miner_speed_level
 	return [2.0, 1.5, 1.0][level]

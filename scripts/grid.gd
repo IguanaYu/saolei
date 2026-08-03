@@ -15,6 +15,8 @@ signal cell_opened(cell, by_actor: String)
 signal cell_flagged(cell, by_actor: String, correct: bool)
 signal mine_stepped(cell, by_actor: String)
 signal all_safe_opened()
+signal vein_created(coord: Vector2i)
+signal vein_depleted(coord: Vector2i)
 
 
 func _ready() -> void:
@@ -87,6 +89,26 @@ func place_base(coord: Vector2i) -> bool:
 
 func get_cell(coord: Vector2i) -> Cell:
 	return cells.get(coord)
+
+
+## 获取所有被标记旗子的格子坐标
+func get_all_flagged_cells() -> Array:
+	var result: Array = []
+	for coord in cells:
+		var c: Cell = cells[coord]
+		if c.is_flagged and not c.is_vein:
+			result.append(coord)
+	return result
+
+
+## 获取所有有资源的矿脉坐标
+func get_all_veins() -> Array:
+	var result: Array = []
+	for coord in cells:
+		var c: Cell = cells[coord]
+		if c.is_vein and c.vein_resources > 0:
+			result.append(coord)
+	return result
 
 
 func get_neighbors(coord: Vector2i) -> Array:

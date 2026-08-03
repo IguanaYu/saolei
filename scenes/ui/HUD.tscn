@@ -53,3 +53,10 @@ visible = false
 horizontal_alignment = 1
 text = "请放置第一个基地"
 mouse_filter = 2
+
+[node name="ToastLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+visible = false
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+mouse_filter = 2

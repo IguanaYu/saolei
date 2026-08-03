@@ -3,9 +3,12 @@ extends Control
 
 @onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyOpenerButton
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
+@onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyDetectorButton
+@onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMinerButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var hint_label: Label = $MarginContainer/VBoxContainer/HintLabel
+@onready var debug_button: Button = $MarginContainer/VBoxContainer/DebugButton
 
 
 func set_placing_hint(show: bool) -> void:
@@ -15,8 +18,11 @@ func set_placing_hint(show: bool) -> void:
 func _ready() -> void:
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
+	buy_detector_button.pressed.connect(_on_buy_detector)
+	buy_miner_button.pressed.connect(_on_buy_miner)
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
+	debug_button.pressed.connect(_on_debug_button)
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
 	GameState.base_placed.connect(func(_c): _refresh_prices())
@@ -29,6 +35,18 @@ func _on_buy_opener() -> void:
 
 func _on_buy_marker() -> void:
 	_buy("marker")
+
+
+func _on_buy_detector() -> void:
+	_buy("detector")
+
+
+func _on_buy_miner() -> void:
+	_buy("miner")
+
+
+func _on_debug_button() -> void:
+	GameState.add_money(200)
 
 
 func _buy(robot_type: String) -> void:
@@ -57,13 +75,15 @@ func _on_money_changed(_v: int) -> void:
 func _refresh_prices() -> void:
 	_refresh_one(buy_opener_button, "opener", "开墙型")
 	_refresh_one(buy_marker_button, "marker", "标雷型")
+	_refresh_one(buy_detector_button, "detector", "检测型")
+	_refresh_one(buy_miner_button, "miner", "矿工型")
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
-	var base_price := GameState.get_base_price()
+	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
 	build_base_button.disabled = GameState.money < base_price
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
-	var price := GameState.get_robot_price(robot_type)
+	var price: int = GameState.get_robot_price(robot_type)
 	btn.text = "%s ¥%d" % [display_name, price]
 	btn.disabled = GameState.money < price

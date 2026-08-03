@@ -18,10 +18,16 @@ func _ready() -> void:
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
+	robot_manager.robot_removed.connect(_on_robot_removed)
 
 
 func _on_idle_warning_changed(show: bool) -> void:
 	hud.set_idle_warning(show)
+
+
+func _on_robot_removed(_robot, reason: String) -> void:
+	if reason == "detect_failed":
+		hud.show_toast("检测失败！机器人自爆了", 3.0)
 
 
 func _process(delta: float) -> void:
@@ -73,9 +79,9 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 # ---- 放置模式（商店购买后）----
 
 func _enter_placing_mode(mode: String) -> void:
-	# mode: "opener"/"marker"/"base"/"charge_tower"/...
+	# mode: "opener"/"marker"/"detector"/"base"/"charge_tower"/...
 	# 价格检查留给实际放置时做（基地价格递增、机器人价格递增）
-	if mode in ["opener", "marker"] and GameState.money < GameState.get_robot_price(mode):
+	if mode in ["opener", "marker", "detector", "miner"] and GameState.money < GameState.get_robot_price(mode):
 		return
 	if mode == "base" and GameState.money < GameState.get_base_price():
 		return
@@ -97,10 +103,10 @@ func _try_place_at(world_pos: Vector2) -> bool:
 
 	if placing_mode == "base":
 		# 后续基地：必须在已开格上、不是基地
-		var cell := grid.get_cell(coord)
+		var cell = grid.get_cell(coord)
 		if cell == null or not cell.is_opened or cell.is_base or cell.is_collapsed:
 			return false
-		var price := GameState.get_base_price()
+		var price: int = GameState.get_base_price()
 		if GameState.money < price:
 			return false
 		_exit_placing_mode()
@@ -108,7 +114,7 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		grid.place_base(coord)
 		return true
 
-	# 机器人放置（opener / marker / 未来的 detector / miner）
+	# 机器人放置（opener / marker / detector / miner）
 	if not grid.is_walkable(coord):
 		return false
 	if robot_manager.get_robot_positions().has(coord):

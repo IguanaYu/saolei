@@ -6,7 +6,7 @@
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -150.0
+offset_top = -180.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -38,6 +38,14 @@ text = "开墙型 ¥50"
 custom_minimum_size = Vector2(160, 46)
 text = "标雷型 ¥50"
 
+[node name="BuyDetectorButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(160, 46)
+text = "检测型 ¥80"
+
+[node name="BuyMinerButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(160, 46)
+text = "矿工型 ¥60"
+
 [node name="UpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(160, 46)
 text = "升级面板"
@@ -56,3 +64,7 @@ visible = false
 horizontal_alignment = 1
 text = "点击地图放置机器人（右键 / ESC 取消）"
 mouse_filter = 2
+
+[node name="DebugButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
+text = "DEBUG: +200 钱"

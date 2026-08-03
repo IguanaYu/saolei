@@ -18,7 +18,7 @@ func _on_game_over(result: String) -> void:
 	var title_map := {"win": "胜利！", "lose": "失败", "timeout": "时间到"}
 	result_title_label.text = title_map.get(result, "结束")
 	final_score_label.text = "最终积分: %d" % GameState.score
-	var time_used := 60.0 - GameState.time_left
+	var time_used: float = 90.0 - GameState.time_left
 	stats_label.text = "用时: %.1f 秒" % max(0.0, time_used)
 
 
