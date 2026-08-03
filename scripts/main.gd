@@ -6,13 +6,13 @@ extends Node
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
 
-# 放置机器人模式（商店点击购买后置为 "opener" / "marker"）
-var placing_robot_type: String = ""
+# 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
+var placing_mode: String = ""
 
 
 func _ready() -> void:
 	GameState.reset_state()
-	GameState.game_active = true
+	# game_active 在玩家放完第一个基地后才置为 true
 	grid.all_safe_opened.connect(_on_all_safe_opened)
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
@@ -35,29 +35,21 @@ func _process(delta: float) -> void:
 	robot_manager.tick_all(delta, grid)
 
 
-# ---- 放置模式（商店购买后）----
+# ---- 初始基地放置阶段 ----
 
-func _enter_placing_mode(robot_type: String) -> void:
-	if GameState.money < GameState.get_robot_price(robot_type):
-		return
-	placing_robot_type = robot_type
-	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
-	shop.set_placing_hint(true)
-
-
-func _exit_placing_mode() -> void:
-	placing_robot_type = ""
-	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
-	shop.set_placing_hint(false)
-
-
-# 放置模式下用 _input 拦截，否则 Cell 会先收到点击
+# 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
 func _input(event: InputEvent) -> void:
-	if placing_robot_type == "":
+	if GameState.game_phase == "placing_base":
+		if event is InputEventMouseButton and event.pressed \
+				and event.button_index == MOUSE_BUTTON_LEFT:
+			_try_place_first_base_at(event.position)
+			get_viewport().set_input_as_handled()
+		return
+	if placing_mode == "":
 		return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			_try_place_robot_at(event.position)
+			_try_place_at(event.position)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_exit_placing_mode()
@@ -67,14 +59,62 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _try_place_robot_at(world_pos: Vector2) -> bool:
+func _try_place_first_base_at(world_pos: Vector2) -> bool:
 	var coord := grid.world_to_coord(world_pos)
-	if not _in_bounds(coord) or not grid.is_walkable(coord):
+	if not _in_bounds(coord):
+		return false
+	if not grid.place_first_base(coord):
+		return false
+	# 基地放完，激活游戏开始倒计时
+	GameState.game_active = true
+	return true
+
+
+# ---- 放置模式（商店购买后）----
+
+func _enter_placing_mode(mode: String) -> void:
+	# mode: "opener"/"marker"/"base"/"charge_tower"/...
+	# 价格检查留给实际放置时做（基地价格递增、机器人价格递增）
+	if mode in ["opener", "marker"] and GameState.money < GameState.get_robot_price(mode):
+		return
+	if mode == "base" and GameState.money < GameState.get_base_price():
+		return
+	placing_mode = mode
+	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
+	shop.set_placing_hint(true)
+
+
+func _exit_placing_mode() -> void:
+	placing_mode = ""
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	shop.set_placing_hint(false)
+
+
+func _try_place_at(world_pos: Vector2) -> bool:
+	var coord := grid.world_to_coord(world_pos)
+	if not _in_bounds(coord):
+		return false
+
+	if placing_mode == "base":
+		# 后续基地：必须在已开格上、不是基地
+		var cell := grid.get_cell(coord)
+		if cell == null or not cell.is_opened or cell.is_base or cell.is_collapsed:
+			return false
+		var price := GameState.get_base_price()
+		if GameState.money < price:
+			return false
+		_exit_placing_mode()
+		GameState.add_money(-price)
+		grid.place_base(coord)
+		return true
+
+	# 机器人放置（opener / marker / 未来的 detector / miner）
+	if not grid.is_walkable(coord):
 		return false
 	if robot_manager.get_robot_positions().has(coord):
 		return false  # 一格一机
 
-	var type := placing_robot_type
+	var type := placing_mode
 	_exit_placing_mode()
 
 	if not GameState.purchase_robot(type):

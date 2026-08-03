@@ -12,6 +12,7 @@ var is_opened: bool = false
 var is_flagged: bool = false
 var is_collapsed: bool = false  # 踩雷坍塌
 var adjacent_mines: int = 0      # 0-8
+var is_base: bool = false        # 基地建筑
 
 # 信号
 signal cell_left_clicked(cell: Cell)
@@ -61,10 +62,18 @@ func open(by_actor: String) -> bool:
 	# 返回 true 表示状态真的改变了
 	if is_opened or is_collapsed or is_flagged:
 		return false
+	if is_base:
+		return false  # 基地格不可被开
 	is_opened = true
 	refresh_visual()
 	_play_open_pulse()
 	return true
+
+
+func become_base() -> void:
+	is_base = true
+	is_opened = true  # 基地视为已开（机器人可走）
+	refresh_visual()
 
 
 func toggle_flag() -> bool:
@@ -106,7 +115,11 @@ func _play_collapse_flicker() -> void:
 func refresh_visual() -> void:
 	var bg: ColorRect = $Background
 	var lbl: Label = $Label
-	if is_collapsed:
+	if is_base:
+		bg.color = Color(0.15, 0.35, 0.75)
+		lbl.text = "B"
+		lbl.modulate = Color.WHITE
+	elif is_collapsed:
 		bg.color = Color(0.4, 0.05, 0.05)
 		lbl.text = "✸"
 		lbl.modulate = Color.WHITE

@@ -6,7 +6,7 @@
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -90.0
+offset_top = -150.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -41,6 +41,15 @@ text = "标雷型 ¥50"
 [node name="UpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(160, 46)
 text = "升级面板"
+
+[node name="BuildRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 16
+alignment = 1
+mouse_filter = 2
+
+[node name="BuildBaseButton" type="Button" parent="MarginContainer/VBoxContainer/BuildRow"]
+custom_minimum_size = Vector2(160, 46)
+text = "建基地 ¥80"
 
 [node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 visible = false

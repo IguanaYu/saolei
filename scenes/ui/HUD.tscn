@@ -47,3 +47,9 @@ visible = false
 horizontal_alignment = 1
 text = "机器人无可执行操作，请手动破局"
 mouse_filter = 2
+
+[node name="PhaseHintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+visible = false
+horizontal_alignment = 1
+text = "请放置第一个基地"
+mouse_filter = 2

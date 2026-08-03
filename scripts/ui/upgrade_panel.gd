@@ -21,7 +21,7 @@ const DISPLAY_NAMES := {
 func _ready() -> void:
 	hide()
 	GameState.money_changed.connect(_on_money_changed)
-	GameState.upgrade_changed.connect(_on_money_changed)
+	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_all())
 	close_button.pressed.connect(hide)
 	_bind_row(opener_speed_row, "opener_speed")
 	_bind_row(marker_speed_row, "marker_speed")

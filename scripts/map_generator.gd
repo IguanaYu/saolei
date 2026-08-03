@@ -41,6 +41,42 @@ static func generate(rows: int, cols: int, mine_count: int, safe_zone: Rect2i) -
 	return {"mines": mines, "mine_set": mine_set, "numbers": numbers}
 
 
+## 在排除区域外放雷（用于 v0.2 基地放置后生成雷）
+## exclude_coords: Array[Vector2i] - 这些格子不会放雷
+## 返回结构同 generate()
+static func generate_excluding(rows: int, cols: int, mine_count: int, exclude_coords: Array) -> Dictionary:
+	var exclude_set: Dictionary = {}
+	for c in exclude_coords:
+		exclude_set[c] = true
+	var candidates: Array[Vector2i] = []
+	for y in rows:
+		for x in cols:
+			var c := Vector2i(x, y)
+			if not exclude_set.has(c):
+				candidates.append(c)
+	candidates.shuffle()
+
+	var mine_count_clamped: int = min(mine_count, candidates.size())
+	var mines: Array = candidates.slice(0, mine_count_clamped)
+	var mine_set: Dictionary = {}
+	for m in mines:
+		mine_set[m] = true
+
+	var numbers: Dictionary = {}
+	for y in rows:
+		for x in cols:
+			var c := Vector2i(x, y)
+			if mine_set.has(c):
+				continue
+			var count: int = 0
+			for o in NEIGHBOR_OFFSETS:
+				if mine_set.has(c + o):
+					count += 1
+			numbers[c] = count
+
+	return {"mines": mines, "mine_set": mine_set, "numbers": numbers}
+
+
 ## 生成以 center 为中心的矩形安全区
 static func make_center_safe_zone(rows: int, cols: int, radius: int) -> Rect2i:
 	var center := Vector2i(rows / 2, cols / 2)

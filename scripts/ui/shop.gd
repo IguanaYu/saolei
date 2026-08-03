@@ -1,9 +1,10 @@
 extends Control
-## 底部商店：买机器人 + 打开升级面板
+## 底部商店：买机器人 + 建造 + 打开升级面板
 
 @onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyOpenerButton
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/UpgradeButton
+@onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var hint_label: Label = $MarginContainer/VBoxContainer/HintLabel
 
 
@@ -15,8 +16,10 @@ func _ready() -> void:
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
 	upgrade_button.pressed.connect(_on_upgrade)
+	build_base_button.pressed.connect(_on_build_base)
 	GameState.money_changed.connect(_on_money_changed)
-	GameState.upgrade_changed.connect(_on_money_changed)
+	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
+	GameState.base_placed.connect(func(_c): _refresh_prices())
 	_refresh_prices()
 
 
@@ -35,6 +38,13 @@ func _buy(robot_type: String) -> void:
 	main.call("_enter_placing_mode", robot_type)
 
 
+func _on_build_base() -> void:
+	if GameState.money < GameState.get_base_price():
+		return
+	var main := get_node("/root/Main")
+	main.call("_enter_placing_mode", "base")
+
+
 func _on_upgrade() -> void:
 	var panel = get_node("/root/Main/UILayer/UpgradePanel")
 	panel.show()
@@ -47,6 +57,10 @@ func _on_money_changed(_v: int) -> void:
 func _refresh_prices() -> void:
 	_refresh_one(buy_opener_button, "opener", "开墙型")
 	_refresh_one(buy_marker_button, "marker", "标雷型")
+	# 基地价格递增：第 1 个 80，第 2 个 160 ...
+	var base_price := GameState.get_base_price()
+	build_base_button.text = "建基地 ¥%d" % base_price
+	build_base_button.disabled = GameState.money < base_price
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:

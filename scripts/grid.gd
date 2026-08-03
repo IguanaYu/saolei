@@ -4,12 +4,10 @@ extends Node2D
 
 @export var rows: int = 16
 @export var cols: int = 16
-@export var mine_count: int = 40
+@export var mine_count: int = 32
 @export var cell_size: int = 28
-@export var safe_zone_radius: int = 1  # 中心 3×3
 
 var cells: Dictionary = {}  # {Vector2i: Cell}
-var safe_zone: Rect2i
 
 const CELL_SCENE := preload("res://scenes/Cell.tscn")
 
@@ -23,19 +21,14 @@ func _ready() -> void:
 	var grid_pixel: int = rows * cell_size
 	var viewport: Vector2 = get_viewport_rect().size
 	position = (viewport - Vector2(grid_pixel, grid_pixel)) / 2.0
-	generate_map()
+	init_empty_grid()
 
 
-func generate_map() -> void:
+## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成
+func init_empty_grid() -> void:
 	for c in cells.values():
 		c.queue_free()
 	cells.clear()
-
-	safe_zone = MapGenerator.make_center_safe_zone(rows, cols, safe_zone_radius)
-	var data: Dictionary = MapGenerator.generate(rows, cols, mine_count, safe_zone)
-	var mine_set: Dictionary = data.mine_set
-	var numbers: Dictionary = data.numbers
-
 	for y in rows:
 		for x in cols:
 			var coord := Vector2i(x, y)
@@ -43,17 +36,53 @@ func generate_map() -> void:
 			add_child(cell)
 			cell.coord = coord
 			cell.position = Vector2(x * cell_size + cell_size / 2.0, y * cell_size + cell_size / 2.0)
-			cell.is_mine = mine_set.has(coord)
-			cell.adjacent_mines = int(numbers.get(coord, 0))
 			cell.cell_left_clicked.connect(_on_cell_left_clicked)
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
 			cells[coord] = cell
 
-			# 预开安全区
-			if MapGenerator._in_safe_zone(coord, safe_zone):
-				cell.is_opened = true
-				cell.refresh_visual()
+
+## 玩家放置第一个基地：触发雷生成 + 预开安全区 + 标记基地
+## 任意关闭格都可放置（特例：不需要先开格）
+func place_first_base(coord: Vector2i) -> bool:
+	if not cells.has(coord):
+		return false
+	# P11 后改为 1 + SaveSystem.unlocks.get("expand_zone", 0)
+	var radius: int = 1
+	var safe_coords: Array = []
+	for dy in range(-radius, radius + 1):
+		for dx in range(-radius, radius + 1):
+			var sc := coord + Vector2i(dx, dy)
+			if cells.has(sc):
+				safe_coords.append(sc)
+	# 在安全区外生成雷
+	var data: Dictionary = MapGenerator.generate_excluding(rows, cols, mine_count, safe_coords)
+	var mine_set: Dictionary = data.mine_set
+	var numbers: Dictionary = data.numbers
+	for c in cells:
+		cells[c].is_mine = mine_set.has(c)
+		cells[c].adjacent_mines = int(numbers.get(c, 0))
+	# 预开安全区（直接设字段，不触发 cell_opened 信号，避免给奖励）
+	for sc in safe_coords:
+		cells[sc].is_opened = true
+		cells[sc].refresh_visual()
+	# 标记基地
+	cells[coord].become_base()
+	GameState.register_base(coord)
+	GameState.set_game_phase("playing")
+	return true
+
+
+## 玩家放置后续基地（必须在已开格上）
+func place_base(coord: Vector2i) -> bool:
+	if not cells.has(coord):
+		return false
+	var cell: Cell = cells[coord]
+	if not cell.is_opened or cell.is_collapsed or cell.is_base:
+		return false
+	cell.become_base()
+	GameState.register_base(coord)
+	return true
 
 
 func get_cell(coord: Vector2i) -> Cell:
