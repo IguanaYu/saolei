@@ -7,6 +7,7 @@ extends Control
 @onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMinerButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
+@onready var drone_button: Button = $MarginContainer/VBoxContainer/BuildRow/DroneButton
 @onready var hint_label: Label = $MarginContainer/VBoxContainer/HintLabel
 @onready var debug_button: Button = $MarginContainer/VBoxContainer/DebugButton
 
@@ -22,6 +23,7 @@ func _ready() -> void:
 	buy_miner_button.pressed.connect(_on_buy_miner)
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
+	drone_button.pressed.connect(_on_trigger_drone)
 	debug_button.pressed.connect(_on_debug_button)
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
@@ -63,6 +65,13 @@ func _on_build_base() -> void:
 	main.call("_enter_placing_mode", "base")
 
 
+func _on_trigger_drone() -> void:
+	if GameState.money < 100:
+		return
+	var main := get_node("/root/Main")
+	main.call("_trigger_drone")
+
+
 func _on_upgrade() -> void:
 	var panel = get_node("/root/Main/UILayer/UpgradePanel")
 	panel.show()
@@ -81,6 +90,8 @@ func _refresh_prices() -> void:
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
 	build_base_button.disabled = GameState.money < base_price
+	drone_button.text = "无人机 ¥100"
+	drone_button.disabled = GameState.money < 100
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:

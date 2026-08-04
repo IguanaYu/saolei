@@ -136,7 +136,9 @@ func _in_bounds(coord: Vector2i) -> bool:
 
 # ---- 奖励逻辑（玩家和机器人走同一条通道）----
 
-func _on_cell_opened(_cell, _by_actor: String) -> void:
+func _on_cell_opened(_cell, by_actor: String) -> void:
+	if by_actor == "drone":
+		return  # 无人机开的格子不给奖励
 	GameState.add_money(1)
 	GameState.add_score(1)
 
@@ -164,3 +166,14 @@ func _end_game(result: String) -> void:
 		return
 	GameState.game_active = false
 	GameState.game_over.emit(result)
+
+
+## 无人机技能：打开 3 个最远关闭格
+func _trigger_drone() -> void:
+	if GameState.money < 100:
+		return
+	GameState.add_money(-100)
+	var base_coord: Vector2i = GameState.bases[0] if not GameState.bases.is_empty() else Vector2i(8, 8)
+	var coords: Array = grid.get_farthest_closed_cells(3, base_coord)
+	for coord in coords:
+		grid.open_cell(coord, "drone")

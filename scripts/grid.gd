@@ -111,6 +111,24 @@ func get_all_veins() -> Array:
 	return result
 
 
+## 获取离基地最远的 n 个关闭格（无人机用）
+func get_farthest_closed_cells(n: int, base_coord: Vector2i) -> Array:
+	var candidates: Array = []
+	for coord in cells:
+		var c: Cell = cells[coord]
+		if c.is_opened or c.is_flagged or c.is_mine:
+			continue
+		if c.is_base or c.is_vein:
+			continue
+		var dist: int = abs(coord.x - base_coord.x) + abs(coord.y - base_coord.y)
+		candidates.append({"coord": coord, "dist": dist})
+	candidates.sort_custom(func(a, b): return a.dist > b.dist)
+	var result: Array = []
+	for i in range(min(n, candidates.size())):
+		result.append(candidates[i].coord)
+	return result
+
+
 func get_neighbors(coord: Vector2i) -> Array:
 	var result: Array = []
 	for o in MapGenerator.NEIGHBOR_OFFSETS:
