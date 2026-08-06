@@ -5,20 +5,26 @@ extends Node
 @onready var robot_manager: RobotManager = $RobotManager
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
+@onready var main_menu = $UILayer/MainMenu
 
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
 var placing_mode: String = ""
 
 
 func _ready() -> void:
-	GameState.reset_state()
-	# game_active 在玩家放完第一个基地后才置为 true
+	# 不立即 reset，等主菜单点"开始游戏"
 	grid.all_safe_opened.connect(_on_all_safe_opened)
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
+	main_menu.start_requested.connect(_on_start_game)
+
+
+func _on_start_game() -> void:
+	GameState.reset_state()
+	main_menu.hide()
 
 
 func _on_idle_warning_changed(show: bool) -> void:
@@ -45,6 +51,9 @@ func _process(delta: float) -> void:
 
 # 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
 func _input(event: InputEvent) -> void:
+	# 主菜单显示时不处理游戏输入，让按钮点击正常到达 UI
+	if main_menu.visible:
+		return
 	if GameState.game_phase == "placing_base":
 		if event is InputEventMouseButton and event.pressed \
 				and event.button_index == MOUSE_BUTTON_LEFT:

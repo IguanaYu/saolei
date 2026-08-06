@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/Shop.tscn" id="5_shop"]
 [ext_resource type="PackedScene" path="res://scenes/ui/UpgradePanel.tscn" id="6_up"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ResultsPanel.tscn" id="7_rp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/MainMenu.tscn" id="8_mm"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -35,3 +36,5 @@ script = ExtResource("3_rm")
 [node name="UpgradePanel" parent="UILayer" instance=ExtResource("6_up")]
 
 [node name="ResultsPanel" parent="UILayer" instance=ExtResource("7_rp")]
+
+[node name="MainMenu" parent="UILayer" instance=ExtResource("8_mm")]

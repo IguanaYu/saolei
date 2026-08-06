@@ -59,19 +59,25 @@ func lose_life() -> void:
 
 
 func reset_state() -> void:
-	money = 100
+	# 从存档读取起始加成
+	var su = SaveSystem
+	money = 100 + 50 * int(su.unlocks.get("start_money", 0))
 	score = 0
-	lives = 3
+	lives = 3 + int(su.unlocks.get("start_lives", 0))
 	time_left = 90.0
 	game_active = false
 	game_phase = "placing_base"
-	opener_speed_level = 0
-	marker_speed_level = 0
-	detector_speed_level = 0
+	# 全局速度加成（局外升级直接给所有机器人同级）
+	var gs: int = int(su.unlocks.get("global_speed", 0))
+	opener_speed_level = gs
+	marker_speed_level = gs
+	detector_speed_level = gs
+	miner_speed_level = gs
 	discount_level = 0
 	opener_count = 0
 	marker_count = 0
 	detector_count = 0
+	miner_count = 0
 	bases.clear()
 	base_count = 0
 	locked_targets.clear()

@@ -1,0 +1,149 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_mm"]
+
+[node name="MainMenu" type="Panel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_mm")
+
+[node name="BgColor" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.06, 0.04, 0.95)
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="CenterContainer" type="CenterContainer" parent="MarginContainer"]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/CenterContainer"]
+custom_minimum_size = Vector2(520, 0)
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
+text = "扫雷挖矿"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="OreLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
+text = "矿石: 0"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/CenterContainer/VBoxContainer"]
+
+[node name="SubtitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
+text = "局外升级"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="StartMoneyRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "起始金币"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Lv0 (+0金币)"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "→Lv1 50矿"
+
+[node name="StartLivesRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "起始生命"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Lv0 (+0命)"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "→Lv1 80矿"
+
+[node name="GlobalSpeedRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "全局速度"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Lv0"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "→Lv1 100矿"
+
+[node name="ExpandZoneRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "安全区扩大"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Lv0"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "→Lv1 100矿"
+
+[node name="UnlockDetectorRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "解锁检测型"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "未解锁"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "解锁 150矿"
+
+[node name="UnlockMinerRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "解锁矿工型"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "未解锁"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
+custom_minimum_size = Vector2(180, 0)
+text = "解锁 120矿"
+
+[node name="SpacerLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
+text = ""
+
+[node name="StartButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 56)
+text = "开始游戏"
+theme_override_font_sizes/font_size = 22

@@ -19,7 +19,10 @@ func _on_game_over(result: String) -> void:
 	result_title_label.text = title_map.get(result, "结束")
 	final_score_label.text = "最终积分: %d" % GameState.score
 	var time_used: float = 90.0 - GameState.time_left
-	stats_label.text = "用时: %.1f 秒" % max(0.0, time_used)
+	# 结算矿石 = 积分 / 10
+	var ore_earned: int = GameState.score / 10
+	SaveSystem.add_ore(ore_earned)
+	stats_label.text = "用时: %.1f 秒\n获得矿石: +%d" % [max(0.0, time_used), ore_earned]
 
 
 func _on_restart() -> void:

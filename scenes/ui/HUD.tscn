@@ -42,6 +42,10 @@ mouse_filter = 2
 text = "时间: 0:60"
 mouse_filter = 2
 
+[node name="OreLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+text = "矿石: 0"
+mouse_filter = 2
+
 [node name="IdleHintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 visible = false
 horizontal_alignment = 1

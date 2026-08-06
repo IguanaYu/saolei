@@ -5,6 +5,7 @@ extends Control
 @onready var score_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/ScoreLabel
 @onready var lives_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/LivesLabel
 @onready var time_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/TimeLabel
+@onready var ore_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/OreLabel
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
 @onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
@@ -16,7 +17,9 @@ func _ready() -> void:
 	GameState.lives_changed.connect(_on_lives_changed)
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.game_phase_changed.connect(_on_game_phase_changed)
+	SaveSystem.ore_changed.connect(_on_ore_changed)
 	_refresh_all()
+	_on_ore_changed(SaveSystem.ore)
 	_on_game_phase_changed(GameState.game_phase)
 
 
@@ -64,3 +67,7 @@ func show_toast(text: String, duration: float = 3.0) -> void:
 	t.tween_interval(duration)
 	t.tween_property(toast_label, "modulate:a", 0.0, 0.5)
 	t.tween_callback(func(): toast_label.visible = false)
+
+
+func _on_ore_changed(v: int) -> void:
+	ore_label.text = "矿石: %d" % v

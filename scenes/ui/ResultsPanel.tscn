@@ -35,5 +35,5 @@ mouse_filter = 2
 
 [node name="RestartButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(180, 50)
-text = "再来一局"
+text = "返回主菜单"
 mouse_filter = 0

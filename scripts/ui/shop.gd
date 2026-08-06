@@ -28,6 +28,7 @@ func _ready() -> void:
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
 	GameState.base_placed.connect(func(_c): _refresh_prices())
+	SaveSystem.unlock_changed.connect(func(_k): _refresh_prices())
 	_refresh_prices()
 
 
@@ -95,6 +96,15 @@ func _refresh_prices() -> void:
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
+	# 检测型/矿工型需要局外解锁
+	if robot_type == "detector" and not bool(SaveSystem.unlocks.get("detector", false)):
+		btn.text = "🔒 %s" % display_name
+		btn.disabled = true
+		return
+	if robot_type == "miner" and not bool(SaveSystem.unlocks.get("miner", false)):
+		btn.text = "🔒 %s" % display_name
+		btn.disabled = true
+		return
 	var price: int = GameState.get_robot_price(robot_type)
 	btn.text = "%s ¥%d" % [display_name, price]
 	btn.disabled = GameState.money < price

@@ -1,16 +1,10 @@
 extends Panel
-## 升级面板：全局升级（速度 + 折扣），买一次同类机器人都受益
+## 局内升级面板：金钱购买的速度 + 折扣（仅当局有效）
 
 const SPEED_LEVELS := [2.0, 1.5, 1.0]
 const SPEED_PRICES := [100, 200, -1]  # -1 表示已满级
 const DISCOUNT_LEVELS := [0, 25, 50]
 const DISCOUNT_PRICES := [200, 500, -1]
-
-const DISPLAY_NAMES := {
-	"opener_speed": "开墙型速度",
-	"marker_speed": "标雷型速度",
-	"discount": "购买折扣",
-}
 
 @onready var opener_speed_row = $MarginContainer/VBoxContainer/OpenerSpeedRow
 @onready var marker_speed_row = $MarginContainer/VBoxContainer/MarkerSpeedRow
@@ -85,11 +79,8 @@ func _refresh_all() -> void:
 func _refresh_row(row: HBoxContainer, upgrade_id: String) -> void:
 	var lvl: int = _get_level(upgrade_id)
 	var prices: Array = _get_prices(upgrade_id)
-	var name_label: Label = row.get_node("NameLabel")
 	var level_label: Label = row.get_node("LevelLabel")
 	var buy_button: Button = row.get_node("BuyButton")
-
-	name_label.text = DISPLAY_NAMES[upgrade_id]
 
 	if upgrade_id == "discount":
 		level_label.text = "Lv%d (-%d%%)" % [lvl, DISCOUNT_LEVELS[lvl]]

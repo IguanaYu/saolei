@@ -49,8 +49,8 @@ func init_empty_grid() -> void:
 func place_first_base(coord: Vector2i) -> bool:
 	if not cells.has(coord):
 		return false
-	# P11 后改为 1 + SaveSystem.unlocks.get("expand_zone", 0)
-	var radius: int = 1
+	# 安全区半径：基础 1 + 局外升级
+	var radius: int = 1 + int(SaveSystem.unlocks.get("expand_zone", 0))
 	var safe_coords: Array = []
 	for dy in range(-radius, radius + 1):
 		for dx in range(-radius, radius + 1):
