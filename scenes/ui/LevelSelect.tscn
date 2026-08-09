@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/level_select.gd" id="1_ls"]
+
+[node name="LevelSelect" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_ls")
+
+[node name="Bg" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.06, 0.04, 0.96)
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = -40.0
+offset_bottom = -24.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+text = "选择关卡"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer"]
+columns = 5
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 48)
+text = "返回章节"

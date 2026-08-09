@@ -91,17 +91,20 @@ func _refresh_prices() -> void:
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
 	build_base_button.disabled = GameState.money < base_price
-	drone_button.text = "无人机 ¥100"
-	drone_button.disabled = GameState.money < 100
+	var drone_unlocked: bool = bool(SaveSystem.unlocks.get("drone", false))
+	drone_button.text = "🔒 无人机" if not drone_unlocked else "无人机 ¥100"
+	drone_button.disabled = not drone_unlocked or GameState.money < 100
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
-	# 检测型/矿工型需要局外解锁
-	if robot_type == "detector" and not bool(SaveSystem.unlocks.get("detector", false)):
+	# 检测型/矿工型：需局外解锁 + 本关 allowed_modules 允许
+	if robot_type == "detector" \
+			and (not bool(SaveSystem.unlocks.get("detector", false)) or not GameState.is_module_allowed("detector")):
 		btn.text = "🔒 %s" % display_name
 		btn.disabled = true
 		return
-	if robot_type == "miner" and not bool(SaveSystem.unlocks.get("miner", false)):
+	if robot_type == "miner" \
+			and (not bool(SaveSystem.unlocks.get("miner", false)) or not GameState.is_module_allowed("miner")):
 		btn.text = "🔒 %s" % display_name
 		btn.disabled = true
 		return

@@ -13,9 +13,17 @@ var unlocks: Dictionary = {
 	"global_speed": 0,   # 全局速度加成，每级提速，max 2
 	"expand_zone": 0,    # 安全区扩大，每级 +1 半径，max 2
 	"start_robot": 0,    # 开局送机器人，每级 +1，max 2
-	"detector": false,   # 解锁检测型
-	"miner": false,      # 解锁矿工型
+	"detector": false,   # 解锁检测型（章 2 通关解锁）
+	"miner": false,      # 解锁矿工型（章 3 通关解锁）
+	"tower": false,      # 解锁充能塔（章 4 通关解锁，功能未实现）
+	"drone": false,      # 解锁无人机（章 5 通关解锁）
 }
+
+# ---- 关卡章节进度（v3）----
+var cleared_levels: Dictionary = {}        # {"ch01_s01": true}
+var level_stars: Dictionary = {}           # {"ch01_s01": 3}
+var first_clear_claimed: Dictionary = {}   # {"ch01_s01": true}
+var unlocked_chapters: Array = ["ch01"]
 
 signal ore_changed(new_ore: int)
 signal unlock_changed(key: String)
@@ -41,11 +49,24 @@ func load_game() -> void:
 	for key in unlocks:
 		if saved.has(key):
 			unlocks[key] = saved[key]
+	cleared_levels = data.get("cleared_levels", {})
+	level_stars = data.get("level_stars", {})
+	first_clear_claimed = data.get("first_clear_claimed", {})
+	var saved_chapters: Variant = data.get("unlocked_chapters", ["ch01"])
+	if typeof(saved_chapters) == TYPE_ARRAY and not saved_chapters.is_empty():
+		unlocked_chapters = saved_chapters
+	else:
+		unlocked_chapters = ["ch01"]
 	ore_changed.emit(ore)
 
 
 func save_game() -> void:
-	var data = {"version": 2, "ore": ore, "unlocks": unlocks}
+	var data = {
+		"version": 3, "ore": ore, "unlocks": unlocks,
+		"cleared_levels": cleared_levels, "level_stars": level_stars,
+		"first_clear_claimed": first_clear_claimed,
+		"unlocked_chapters": unlocked_chapters,
+	}
 	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		push_warning("无法写入存档")
@@ -92,3 +113,39 @@ func purchase_unlock(key: String, cost: int) -> bool:
 		unlock_changed.emit(key)
 		save_game()
 		return true
+
+
+# ---- 关卡章节进度（v3）----
+
+func is_level_cleared(id: String) -> bool:
+	return bool(cleared_levels.get(id, false))
+
+
+func get_level_stars(id: String) -> int:
+	return int(level_stars.get(id, 0))
+
+
+func set_level_cleared(id: String, stars: int) -> void:
+	cleared_levels[id] = true
+	level_stars[id] = max(get_level_stars(id), stars)
+	save_game()
+
+
+func is_first_clear_claimed(id: String) -> bool:
+	return first_clear_claimed.has(id)
+
+
+func claim_first_clear(id: String) -> void:
+	first_clear_claimed[id] = true
+	save_game()
+
+
+func is_chapter_unlocked(ch_id: String) -> bool:
+	return unlocked_chapters.has(ch_id)
+
+
+func unlock_chapter(ch_id: String) -> void:
+	if unlocked_chapters.has(ch_id):
+		return
+	unlocked_chapters.append(ch_id)
+	save_game()

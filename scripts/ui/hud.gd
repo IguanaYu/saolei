@@ -6,6 +6,7 @@ extends Control
 @onready var lives_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/LivesLabel
 @onready var time_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/TimeLabel
 @onready var ore_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/OreLabel
+@onready var objective_label: Label = $MarginContainer/VBoxContainer/ObjectiveLabel
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
 @onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
@@ -17,6 +18,7 @@ func _ready() -> void:
 	GameState.lives_changed.connect(_on_lives_changed)
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.game_phase_changed.connect(_on_game_phase_changed)
+	GameState.objective_progress_updated.connect(_on_objective_progress_updated)
 	SaveSystem.ore_changed.connect(_on_ore_changed)
 	_refresh_all()
 	_on_ore_changed(SaveSystem.ore)
@@ -56,7 +58,13 @@ func _on_lives_changed(v: int) -> void:
 
 
 func _on_time_changed(t: float) -> void:
-	time_label.text = "时间: 0:%02d" % int(ceil(t))
+	var secs := int(ceil(t))
+	time_label.text = "时间: %d:%02d" % [secs / 60, secs % 60]
+
+
+func _on_objective_progress_updated(text: String) -> void:
+	objective_label.text = text
+	objective_label.visible = text != ""
 
 
 func show_toast(text: String, duration: float = 3.0) -> void:

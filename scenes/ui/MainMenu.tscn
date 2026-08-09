@@ -110,40 +110,10 @@ text = "Lv0"
 custom_minimum_size = Vector2(180, 0)
 text = "→Lv1 100矿"
 
-[node name="UnlockDetectorRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "解锁检测型"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "未解锁"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockDetectorRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "解锁 150矿"
-
-[node name="UnlockMinerRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "解锁矿工型"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "未解锁"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/UnlockMinerRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "解锁 120矿"
-
 [node name="SpacerLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
 text = ""
 
 [node name="StartButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 56)
-text = "开始游戏"
+text = "开始冒险"
 theme_override_font_sizes/font_size = 22

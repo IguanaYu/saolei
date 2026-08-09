@@ -22,6 +22,7 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 
 GameState="*res://scripts/autoload/game_state.gd"
 SaveSystem="*res://scripts/autoload/save_system.gd"
+LevelSystem="*res://scripts/autoload/level_system.gd"
 
 [display]
 

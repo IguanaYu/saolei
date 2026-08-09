@@ -20,10 +20,23 @@ signal vein_depleted(coord: Vector2i)
 
 
 func _ready() -> void:
+	_center_grid()
+	init_empty_grid()
+
+
+## 按关卡参数重置网格（P13）：改尺寸 + 重排位置 + 重建空网格
+func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
+	rows = new_rows
+	cols = new_cols
+	mine_count = new_mines
+	_center_grid()
+	init_empty_grid()
+
+
+func _center_grid() -> void:
 	var grid_pixel: int = rows * cell_size
 	var viewport: Vector2 = get_viewport_rect().size
 	position = (viewport - Vector2(grid_pixel, grid_pixel)) / 2.0
-	init_empty_grid()
 
 
 ## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成
@@ -161,6 +174,9 @@ func open_cell(coord: Vector2i, by_actor: String) -> void:
 
 
 func toggle_flag(coord: Vector2i, by_actor: String) -> void:
+	# Boss 关禁标雷：只拦玩家，机器人不受影响（但禁标雷关也不在 allowed_modules）
+	if by_actor == "player" and GameState.is_action_forbidden("flag"):
+		return
 	if not cells.has(coord):
 		return
 	var cell: Cell = cells[coord]

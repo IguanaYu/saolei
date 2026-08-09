@@ -32,6 +32,10 @@ var base_count: int = 0
 # 全局锁定目标集合（Vector2i → Robot 实例）
 var locked_targets: Dictionary = {}
 
+# ---- 关卡模式（P13）----
+var current_level_id: String = ""           # "" = 自由/兼容模式
+var current_objective: ObjectiveData = null
+
 # ---- 信号总线 ----
 signal money_changed(new_value: int)
 signal score_changed(new_value: int)
@@ -41,6 +45,8 @@ signal game_over(result: String)  # "win" | "lose" | "timeout"
 signal upgrade_changed(upgrade_id: String, new_level: int)
 signal base_placed(coord: Vector2i)
 signal game_phase_changed(phase: String)
+signal tower_activated  # 预留：充能塔功能落地后 emit
+signal objective_progress_updated(text: String)
 
 
 func add_money(amount: int) -> void:
@@ -58,13 +64,23 @@ func lose_life() -> void:
 	lives_changed.emit(lives)
 
 
-func reset_state() -> void:
+## 重置本局状态。level_id 为空串时走旧自由模式（兼容旧调用）
+func reset_state(level_id: String = "") -> void:
 	# 从存档读取起始加成
 	var su = SaveSystem
-	money = 100 + 50 * int(su.unlocks.get("start_money", 0))
+	current_level_id = level_id
+	current_objective = null
+	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
+	if lvl != null:
+		current_objective = lvl.objectives[0] if not lvl.objectives.is_empty() else null
+		money = lvl.start_gold + 50 * int(su.unlocks.get("start_money", 0))
+		lives = lvl.start_lives + int(su.unlocks.get("start_lives", 0))
+		time_left = lvl.time_limit_sec
+	else:
+		money = 100 + 50 * int(su.unlocks.get("start_money", 0))
+		lives = 3 + int(su.unlocks.get("start_lives", 0))
+		time_left = 90.0
 	score = 0
-	lives = 3 + int(su.unlocks.get("start_lives", 0))
-	time_left = 90.0
 	game_active = false
 	game_phase = "placing_base"
 	# 全局速度加成（局外升级直接给所有机器人同级）
@@ -86,6 +102,30 @@ func reset_state() -> void:
 	lives_changed.emit(lives)
 	time_changed.emit(time_left)
 	game_phase_changed.emit(game_phase)
+
+
+## 当前关是否允许使用某机器人（allowed_modules 为空 = 全部允许）
+func is_module_allowed(robot_type: String) -> bool:
+	if current_level_id == "":
+		return true
+	var lvl: LevelData = LevelSystem.get_level(current_level_id)
+	if lvl == null or lvl.allowed_modules.is_empty():
+		return true
+	return lvl.allowed_modules.has(robot_type)
+
+
+## 当前关是否禁用某操作（如 "flag" 禁标雷）
+func is_action_forbidden(action: String) -> bool:
+	if current_level_id == "":
+		return false
+	var lvl: LevelData = LevelSystem.get_level(current_level_id)
+	if lvl == null:
+		return false
+	return lvl.forbidden_actions.has(action)
+
+
+func get_current_level() -> LevelData:
+	return LevelSystem.get_level(current_level_id) if current_level_id != "" else null
 
 
 # ---- 基地 ----

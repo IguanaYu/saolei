@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/UpgradePanel.tscn" id="6_up"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ResultsPanel.tscn" id="7_rp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/MainMenu.tscn" id="8_mm"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ChapterSelect.tscn" id="9_cs"]
+[ext_resource type="PackedScene" path="res://scenes/ui/LevelSelect.tscn" id="10_ls"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -38,3 +40,9 @@ script = ExtResource("3_rm")
 [node name="ResultsPanel" parent="UILayer" instance=ExtResource("7_rp")]
 
 [node name="MainMenu" parent="UILayer" instance=ExtResource("8_mm")]
+
+[node name="ChapterSelect" parent="UILayer" instance=ExtResource("9_cs")]
+visible = false
+
+[node name="LevelSelect" parent="UILayer" instance=ExtResource("10_ls")]
+visible = false

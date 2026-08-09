@@ -1,30 +1,95 @@
 extends Node
-## 主场景控制器：负责游戏主循环、玩家输入路由、模块协调
+## 主场景控制器：负责游戏主循环、玩家输入路由、模块协调、关卡流程
 
 @onready var grid: Grid = $Grid
 @onready var robot_manager: RobotManager = $RobotManager
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
 @onready var main_menu = $UILayer/MainMenu
+@onready var chapter_select = $UILayer/ChapterSelect
+@onready var level_select = $UILayer/LevelSelect
+@onready var results_panel = $UILayer/ResultsPanel
 
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
 var placing_mode: String = ""
 
+# 当前所在章节（"返回关卡选择"时用）
+var _current_chapter_id: String = "ch01"
+# FLAG_N_MINES 目标计数
+var _flag_count: int = 0
+
 
 func _ready() -> void:
-	# 不立即 reset，等主菜单点"开始游戏"
+	# 不立即 reset，等玩家选关进入
 	grid.all_safe_opened.connect(_on_all_safe_opened)
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
-	main_menu.start_requested.connect(_on_start_game)
+	main_menu.start_requested.connect(_on_start_adventure)
+	chapter_select.chapter_selected.connect(_on_chapter_selected)
+	chapter_select.back_requested.connect(_on_chapter_select_back)
+	level_select.start_requested.connect(_on_start_game)
+	level_select.back_requested.connect(_on_level_select_back)
+	results_panel.restart_requested.connect(_on_restart_requested)
+	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
+	GameState.score_changed.connect(_on_score_changed)
+	GameState.time_changed.connect(_on_time_changed)
 
 
-func _on_start_game() -> void:
-	GameState.reset_state()
+# ---- 关卡流程 ----
+
+func _on_start_adventure() -> void:
 	main_menu.hide()
+	chapter_select.show()
+	chapter_select.refresh()
+
+
+func _on_chapter_selected(ch_id: String) -> void:
+	_current_chapter_id = ch_id
+	level_select.set_chapter(ch_id)
+	chapter_select.hide()
+	level_select.show()
+
+
+func _on_chapter_select_back() -> void:
+	chapter_select.hide()
+	main_menu.show()
+
+
+func _on_level_select_back() -> void:
+	level_select.hide()
+	chapter_select.show()
+	chapter_select.refresh()
+
+
+func _on_start_game(level_id: String) -> void:
+	_start_level(level_id)
+
+
+func _on_restart_requested() -> void:
+	_start_level(GameState.current_level_id)
+
+
+func _on_back_to_level_select() -> void:
+	results_panel.hide()
+	level_select.set_chapter(_current_chapter_id)
+	level_select.show()
+
+
+func _start_level(level_id: String) -> void:
+	main_menu.hide()
+	chapter_select.hide()
+	level_select.hide()
+	results_panel.hide()
+	GameState.reset_state(level_id)
+	_flag_count = 0
+	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
+	if lvl != null:
+		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
+	robot_manager.remove_all()
+	_update_objective_progress()
 
 
 func _on_idle_warning_changed(show: bool) -> void:
@@ -42,7 +107,11 @@ func _process(delta: float) -> void:
 	GameState.time_left -= delta
 	GameState.time_changed.emit(GameState.time_left)
 	if GameState.time_left <= 0:
-		_end_game("timeout")
+		var obj := GameState.current_objective
+		if obj != null and obj.type == ObjectiveData.Type.SURVIVE_TIME:
+			_end_game("win")  # 生存目标：熬到时间到即胜利
+		else:
+			_end_game("timeout")
 		return
 	robot_manager.tick_all(delta, grid)
 
@@ -51,8 +120,8 @@ func _process(delta: float) -> void:
 
 # 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
 func _input(event: InputEvent) -> void:
-	# 主菜单显示时不处理游戏输入，让按钮点击正常到达 UI
-	if main_menu.visible:
+	# 任一菜单覆盖层显示时不处理游戏输入
+	if main_menu.visible or chapter_select.visible or level_select.visible:
 		return
 	if GameState.game_phase == "placing_base":
 		if event is InputEventMouseButton and event.pressed \
@@ -88,7 +157,7 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 # ---- 放置模式（商店购买后）----
 
 func _enter_placing_mode(mode: String) -> void:
-	# mode: "opener"/"marker"/"detector"/"base"/"charge_tower"/...
+	# mode: "opener"/"marker"/"detector"/"miner"/"base"/"charge_tower"/...
 	# 价格检查留给实际放置时做（基地价格递增、机器人价格递增）
 	if mode in ["opener", "marker", "detector", "miner"] and GameState.money < GameState.get_robot_price(mode):
 		return
@@ -156,6 +225,12 @@ func _on_cell_flagged(_cell, _by_actor: String, correct: bool) -> void:
 	if correct:
 		GameState.add_money(5)
 		GameState.add_score(5)
+		var obj := GameState.current_objective
+		if obj != null and obj.type == ObjectiveData.Type.FLAG_N_MINES:
+			_flag_count += 1
+			_update_objective_progress()
+			if _flag_count >= obj.target_value:
+				_end_game("win")
 	else:
 		GameState.add_score(-3)
 
@@ -167,7 +242,10 @@ func _on_mine_stepped(_cell, _by_actor: String) -> void:
 
 
 func _on_all_safe_opened() -> void:
-	_end_game("win")
+	# 清空全部安全格即胜利（目标为 CLEAR_ALL_SAFE 或自由模式）
+	var obj := GameState.current_objective
+	if obj == null or obj.type == ObjectiveData.Type.CLEAR_ALL_SAFE:
+		_end_game("win")
 
 
 func _end_game(result: String) -> void:
@@ -175,6 +253,39 @@ func _end_game(result: String) -> void:
 		return
 	GameState.game_active = false
 	GameState.game_over.emit(result)
+
+
+# ---- 目标进度 ----
+
+func _on_score_changed(_v: int) -> void:
+	_update_objective_progress()
+	var obj := GameState.current_objective
+	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE and GameState.score >= obj.target_value:
+		_end_game("win")
+
+
+func _on_time_changed(_v: float) -> void:
+	_update_objective_progress()
+
+
+func _update_objective_progress() -> void:
+	var obj := GameState.current_objective
+	if obj == null:
+		GameState.objective_progress_updated.emit("")
+		return
+	var current: int = 0
+	match obj.type:
+		ObjectiveData.Type.CLEAR_ALL_SAFE:
+			current = grid.count_safe_remaining()
+		ObjectiveData.Type.REACH_SCORE:
+			current = GameState.score
+		ObjectiveData.Type.FLAG_N_MINES:
+			current = _flag_count
+		ObjectiveData.Type.SURVIVE_TIME:
+			current = int(ceil(GameState.time_left))
+		ObjectiveData.Type.ACTIVATE_N_TOWER:
+			current = 0
+	GameState.objective_progress_updated.emit(obj.build_progress_text(current))
 
 
 ## 无人机技能：打开 3 个最远关闭格
