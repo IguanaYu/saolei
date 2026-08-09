@@ -15,7 +15,9 @@ static func find_certain_actions(grid) -> Array:
 		var flagged_count: int = 0
 		var unopened: Array = []
 		for n in neighbors:
-			if n.is_flagged:
+			# 矿脉 / 坍塌格 = 已确认的雷（已开但不再有旗子），等价于旗子计入雷数
+			# 否则求解器会少算雷数，误把周围安全格标成雷 → 永远无法胜利
+			if n.is_flagged or n.is_vein or n.is_collapsed:
 				flagged_count += 1
 			elif not n.is_opened and not n.is_collapsed:
 				unopened.append(n)

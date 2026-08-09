@@ -53,10 +53,39 @@ func _on_debug_button() -> void:
 
 
 func _buy(robot_type: String) -> void:
-	if GameState.money < GameState.get_robot_price(robot_type):
-		return
+	try_buy(robot_type)
+
+
+## 快捷按键入口：成功进入放置模式返回 true
+func try_buy(robot_type: String) -> bool:
+	if not can_buy(robot_type):
+		return false
 	var main := get_node("/root/Main")
 	main.call("_enter_placing_mode", robot_type)
+	return true
+
+
+func can_buy(robot_type: String) -> bool:
+	if lock_reason(robot_type) != "":
+		return false
+	if GameState.money < GameState.get_robot_price(robot_type):
+		return false
+	return true
+
+
+## 返回未解锁/禁用原因，"" 表示可购买
+func lock_reason(robot_type: String) -> String:
+	if robot_type == "detector":
+		if not bool(SaveSystem.unlocks.get("detector", false)):
+			return "检测型未解锁（通 2-5）"
+		if not GameState.is_module_allowed("detector"):
+			return "本关禁用检测型"
+	if robot_type == "miner":
+		if not bool(SaveSystem.unlocks.get("miner", false)):
+			return "矿工未解锁（通 3-5）"
+		if not GameState.is_module_allowed("miner"):
+			return "本关禁用矿工型"
+	return ""
 
 
 func _on_build_base() -> void:
@@ -97,14 +126,7 @@ func _refresh_prices() -> void:
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
-	# 检测型/矿工型：需局外解锁 + 本关 allowed_modules 允许
-	if robot_type == "detector" \
-			and (not bool(SaveSystem.unlocks.get("detector", false)) or not GameState.is_module_allowed("detector")):
-		btn.text = "🔒 %s" % display_name
-		btn.disabled = true
-		return
-	if robot_type == "miner" \
-			and (not bool(SaveSystem.unlocks.get("miner", false)) or not GameState.is_module_allowed("miner")):
+	if lock_reason(robot_type) != "":
 		btn.text = "🔒 %s" % display_name
 		btn.disabled = true
 		return

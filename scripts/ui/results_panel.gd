@@ -54,8 +54,38 @@ func _handle_level_mode(result: String) -> void:
 		SaveSystem.add_ore(ore)
 		lines.append("重刷奖励: +%d 矿" % ore)
 	LevelSystem.mark_cleared(GameState.current_level_id, stars)
+	lines.append_array(_unlock_feedback(GameState.current_level_id))
 	result_title_label.text = "首通胜利" if is_first else "重刷胜利"
 	stats_label.text = "\n".join(lines)
+
+
+## 章末通关后，追加"新章节 / 新功能解锁"提示（让玩家看得见解锁）
+func _unlock_feedback(level_id: String) -> Array:
+	var lvl := LevelSystem.get_level(level_id)
+	if lvl == null:
+		return []
+	var ch := LevelSystem.get_chapter(lvl.chapter_id)
+	if ch == null or ch.level_ids[-1] != level_id:
+		return []
+	var lines: Array = []
+	var ch_idx: int = ch.id.substr(2).to_int()
+	var next_id := "ch%02d" % (ch_idx + 1)
+	if next_id != "ch13" and LevelSystem.is_chapter_unlocked(next_id):
+		var next_ch := LevelSystem.get_chapter(next_id)
+		if next_ch != null:
+			lines.append("🎉 新章节解锁: %s" % next_ch.display_name)
+	if ch.unlock_module != "" and ch.unlock_module != "opener_marker":
+		lines.append("🎉 新功能解锁: %s" % _module_name(ch.unlock_module))
+	return lines
+
+
+func _module_name(module: String) -> String:
+	match module:
+		"detector": return "检测型机器人"
+		"miner": return "矿工机器人"
+		"tower": return "充能塔"
+		"drone": return "无人机"
+	return module
 
 
 ## 1 星保底；命 ≥ 2 +1 星；快速通关（剩余 ≥ 50%）+1 星（生存关不加）

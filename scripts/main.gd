@@ -123,6 +123,11 @@ func _input(event: InputEvent) -> void:
 	# 任一菜单覆盖层显示时不处理游戏输入
 	if main_menu.visible or chapter_select.visible or level_select.visible:
 		return
+	# 数字键 1-4 快捷放置机器人
+	if event is InputEventKey and event.pressed and not event.echo:
+		if _try_robot_shortcut(event.keycode):
+			get_viewport().set_input_as_handled()
+			return
 	if GameState.game_phase == "placing_base":
 		if event is InputEventMouseButton and event.pressed \
 				and event.button_index == MOUSE_BUTTON_LEFT:
@@ -141,6 +146,28 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_exit_placing_mode()
 		get_viewport().set_input_as_handled()
+
+
+## 数字键 1-4 快捷放置机器人；返回 true 表示按键已处理
+func _try_robot_shortcut(keycode: Key) -> bool:
+	if GameState.game_phase == "placing_base":
+		return false  # 先放第一个基地
+	var type := ""
+	match keycode:
+		KEY_1: type = "opener"
+		KEY_2: type = "marker"
+		KEY_3: type = "detector"
+		KEY_4: type = "miner"
+	if type == "":
+		return false
+	var reason: String = shop.lock_reason(type)
+	if reason != "":
+		hud.show_toast(reason, 2.0)
+		return true
+	if GameState.money < GameState.get_robot_price(type):
+		hud.show_toast("金币不足", 2.0)
+		return true
+	return shop.try_buy(type)
 
 
 func _try_place_first_base_at(world_pos: Vector2) -> bool:
