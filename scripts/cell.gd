@@ -35,14 +35,34 @@ const NUMBER_COLORS := [
 	Color(0.4, 0.4, 0.4),       # 8 灰
 ]
 
+# 已开地砖 sprite sheet（12x12 块，每块源 80x80；暖色像素矿洞风，AI 抠块拼接）
+const BRICK_SHEET := preload("res://assets/tiles/floor_bricks_sheet.png")
+const BRICK_GRID := 12
+const BRICK_TILE_PX := 80
+var _brick_atlas: AtlasTexture
+
 # 双击检测
 var _last_click_time: float = 0.0
 const DOUBLE_CLICK_THRESHOLD := 0.35
 
 
 func _ready() -> void:
+	_setup_brick()
 	refresh_visual()
 	input_event.connect(_on_input_event)
+
+
+func _setup_brick() -> void:
+	# 每个格子创建时随机锁定一块地砖，翻开后显示（避免每次刷新跳动）
+	_brick_atlas = AtlasTexture.new()
+	_brick_atlas.atlas = BRICK_SHEET
+	var col := randi() % BRICK_GRID
+	var row := randi() % BRICK_GRID
+	_brick_atlas.region = Rect2(col * BRICK_TILE_PX, row * BRICK_TILE_PX, BRICK_TILE_PX, BRICK_TILE_PX)
+	var brick: TextureRect = $Brick
+	brick.texture = _brick_atlas
+	brick.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	brick.visible = false
 
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -131,6 +151,7 @@ func _play_collapse_flicker() -> void:
 func refresh_visual() -> void:
 	var bg: ColorRect = $Background
 	var lbl: Label = $Label
+	var show_brick := false
 	if is_base:
 		bg.color = Color(0.15, 0.35, 0.75)
 		lbl.text = "B"
@@ -148,6 +169,8 @@ func refresh_visual() -> void:
 		lbl.text = "⚑"
 		lbl.modulate = Color(1.0, 0.8, 0.2)
 	elif is_opened:
+		# 已开数字格：铺一块随机地砖，数字叠在上面
+		show_brick = true
 		bg.color = Color(0.85, 0.75, 0.55)
 		if adjacent_mines == 0:
 			lbl.text = ""
@@ -157,4 +180,5 @@ func refresh_visual() -> void:
 	else:
 		bg.color = Color(0.25, 0.18, 0.12)
 		lbl.text = ""
+	$Brick.visible = show_brick
 	cell_state_changed.emit(self)

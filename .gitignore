@@ -12,3 +12,6 @@ Thumbs.db
 
 claude.md
 .gitignore
+
+# secrets
+.env
