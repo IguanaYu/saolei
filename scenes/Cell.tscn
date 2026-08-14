@@ -24,6 +24,7 @@ offset_left = -14.0
 offset_top = -14.0
 offset_right = 14.0
 offset_bottom = 14.0
+expand_mode = 1
 mouse_filter = 2
 
 [node name="Label" type="Label" parent="."]

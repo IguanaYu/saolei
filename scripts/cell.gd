@@ -59,6 +59,7 @@ func _setup_brick() -> void:
 	var col := randi() % BRICK_GRID
 	var row := randi() % BRICK_GRID
 	_brick_atlas.region = Rect2(col * BRICK_TILE_PX, row * BRICK_TILE_PX, BRICK_TILE_PX, BRICK_TILE_PX)
+	_brick_atlas.filter_clip = true  # 防止 atlas 块边缘像素渗透到相邻格
 	var brick: TextureRect = $Brick
 	brick.texture = _brick_atlas
 	brick.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
