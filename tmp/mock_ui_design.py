@@ -36,7 +36,18 @@ WOOD_BTN = (126, 92, 54)
 WOOD_BTN_HI = (158, 120, 72)
 SHADOW = (24, 18, 12)
 
-FONT = lambda s: ImageFont.truetype(pk2.FONT_PATH, s)
+FUSION = os.path.join(TMP, "fpx", "fusion-pixel-12px-proportional-zh_hans.ttf")
+
+
+def _snap(size):
+    """像素字体按 12 的倍数渲染最脆"""
+    return min([12, 24, 36, 48], key=lambda k: abs(k - size))
+
+
+def FONT(s):
+    if os.path.exists(FUSION):
+        return ImageFont.truetype(FUSION, _snap(s))
+    return ImageFont.truetype(pk2.FONT_PATH, s)
 
 
 # ---------------- 9-slice 风格面板 ----------------
@@ -318,7 +329,7 @@ def screen_menu(base):
 
 def main():
     base, _ = game_backdrop()
-    font_title = FONT(20)
+    font_title = FONT(24)
     TITLE_H, GAP = 36, 8
     screens = [
         ("① HUD 顶栏：左资源 / 右命数时间 / 中目标横幅（图标代替文字标签）", screen_hud),
@@ -336,7 +347,7 @@ def main():
         td.rectangle([GAP, y, GAP + SW - 1, y + TITLE_H - 2], fill=(46, 42, 38))
         td.text((GAP + 12, y + 6), title, font=font_title, fill=(240, 232, 216))
         y += SH + TITLE_H + GAP
-    out = os.path.join(TMP, "mock_ui_design.png")
+    out = os.path.join(TMP, "mock_ui_design_fusion.png")
     canvas.save(out)
     print("saved", out, canvas.size)
 
