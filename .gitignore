@@ -13,5 +13,9 @@ Thumbs.db
 claude.md
 .gitignore
 
+# 美术生成脚本产物/缓存的 Godot 导入噪音（游戏素材在 assets/ 下，其 .import 需跟踪）
+tmp/*.import
+tmp/__pycache__/
+
 # secrets
 .env
