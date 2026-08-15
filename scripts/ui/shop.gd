@@ -12,11 +12,29 @@ extends Control
 @onready var debug_button: Button = $MarginContainer/VBoxContainer/DebugButton
 
 
+const BUTTON_ICONS := {
+	"opener": preload("res://assets/ui/icons/icon_robot_opener.png"),
+	"marker": preload("res://assets/ui/icons/icon_robot_marker.png"),
+	"detector": preload("res://assets/ui/icons/icon_robot_detector.png"),
+	"miner": preload("res://assets/ui/icons/icon_robot_miner.png"),
+	"base": preload("res://assets/ui/icons/icon_base.png"),
+	"drone": preload("res://assets/ui/icons/icon_drone.png"),
+	"upgrade": preload("res://assets/ui/icons/icon_upgrade.png"),
+}
+
+
 func set_placing_hint(show: bool) -> void:
 	hint_label.visible = show
 
 
 func _ready() -> void:
+	buy_opener_button.icon = BUTTON_ICONS.opener
+	buy_marker_button.icon = BUTTON_ICONS.marker
+	buy_detector_button.icon = BUTTON_ICONS.detector
+	buy_miner_button.icon = BUTTON_ICONS.miner
+	upgrade_button.icon = BUTTON_ICONS.upgrade
+	build_base_button.icon = BUTTON_ICONS.base
+	drone_button.icon = BUTTON_ICONS.drone
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
 	buy_detector_button.pressed.connect(_on_buy_detector)

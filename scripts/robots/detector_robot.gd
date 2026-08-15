@@ -19,14 +19,11 @@ func _ready() -> void:
 
 
 func _update_visual() -> void:
-	var body: ColorRect = $Body
-	var lbl: Label = $IconLabel
-	body.color = Color(0.6, 0.2, 0.8)
-	lbl.text = "🔍"
-	lbl.modulate = Color.WHITE
+	super()  # 皮肤逻辑在基类（按 robot_type 取帧）
 
 
 func _process(delta: float) -> void:
+	super(delta)  # 基类行走帧动画
 	if _detector_state != DetectorState.DETECTING:
 		return
 	_detecting_timer += delta

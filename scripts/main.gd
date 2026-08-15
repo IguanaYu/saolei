@@ -88,6 +88,7 @@ func _start_level(level_id: String) -> void:
 	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
 	if lvl != null:
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
+		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具
 	robot_manager.remove_all()
 	_update_objective_progress()
 

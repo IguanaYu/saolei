@@ -22,11 +22,7 @@ func _ready() -> void:
 
 
 func _update_visual() -> void:
-	var body: ColorRect = $Body
-	var lbl: Label = $IconLabel
-	body.color = Color(0.95, 0.55, 0.05)
-	lbl.text = "⛏"
-	lbl.modulate = Color.WHITE
+	super()  # 皮肤逻辑在基类（按 robot_type 取帧）
 
 
 func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:

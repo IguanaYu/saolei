@@ -1,11 +1,19 @@
 extends Control
-## 顶部 HUD：钱、积分、命、时间 + 机器人空闲提示 + 阶段提示
+## 顶部 HUD：图标化资源条（钱/矿石/积分）+ 命数心形 + 倒计时 + 提示
 
-@onready var money_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/MoneyLabel
-@onready var score_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/ScoreLabel
-@onready var lives_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/LivesLabel
-@onready var time_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/TimeLabel
-@onready var ore_label: Label = $MarginContainer/VBoxContainer/HBoxContainer/OreLabel
+const HEART_FULL := preload("res://assets/ui/icons/icon_heart.png")
+const HEART_EMPTY := preload("res://assets/ui/icons/icon_heart_empty.png")
+const MAX_HEARTS := 3
+
+@onready var money_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/MoneyLabel
+@onready var score_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/ScoreLabel
+@onready var time_label: Label = $MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/TimeLabel
+@onready var ore_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/OreLabel
+@onready var hearts: Array = [
+	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart1,
+	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart2,
+	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart3,
+]
 @onready var objective_label: Label = $MarginContainer/VBoxContainer/ObjectiveLabel
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
@@ -46,20 +54,23 @@ func _refresh_all() -> void:
 
 
 func _on_money_changed(v: int) -> void:
-	money_label.text = "钱: %d" % v
+	money_label.text = str(v)
 
 
 func _on_score_changed(v: int) -> void:
-	score_label.text = "积分: %d" % v
+	score_label.text = str(v)
 
 
 func _on_lives_changed(v: int) -> void:
-	lives_label.text = "命: %d/3" % v
+	for i in MAX_HEARTS:
+		hearts[i].texture = HEART_FULL if i < v else HEART_EMPTY
 
 
 func _on_time_changed(t: float) -> void:
 	var secs := int(ceil(t))
-	time_label.text = "时间: %d:%02d" % [secs / 60, secs % 60]
+	time_label.text = "%d:%02d" % [secs / 60, secs % 60]
+	# 后 30 秒变红预警
+	time_label.modulate = Color(1, 0.35, 0.3) if secs <= 30 else Color.WHITE
 
 
 func _on_objective_progress_updated(text: String) -> void:
@@ -78,4 +89,4 @@ func show_toast(text: String, duration: float = 3.0) -> void:
 
 
 func _on_ore_changed(v: int) -> void:
-	ore_label.text = "矿石: %d" % v
+	ore_label.text = str(v)

@@ -13,11 +13,39 @@ var _tick_timer: float = 0.0
 var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
 
+# 皮肤帧（4 型 × 待机/移动；与商店/HUD 图标同设计语言）
+const SKINS := {
+	"opener": [preload("res://assets/robots/robot_opener_idle.png"), preload("res://assets/robots/robot_opener_move.png")],
+	"marker": [preload("res://assets/robots/robot_marker_idle.png"), preload("res://assets/robots/robot_marker_move.png")],
+	"detector": [preload("res://assets/robots/robot_detector_idle.png"), preload("res://assets/robots/robot_detector_move.png")],
+	"miner": [preload("res://assets/robots/robot_miner_idle.png"), preload("res://assets/robots/robot_miner_move.png")],
+}
+const SKIN_FRAME_INTERVAL := 0.18  # 移动时帧交替间隔
+
+var _anim_timer := 0.0
+var _anim_frame := 0
+
 signal action_performed(robot: Robot, action: String, cell_coord: Vector2i)
 
 
 func _ready() -> void:
 	_update_visual()
+
+
+func _process(delta: float) -> void:
+	# 移动中：待机/移动帧交替（履带滚动+弹跳）；静止回待机帧
+	if not SKINS.has(robot_type):
+		return
+	if _state == "moving":
+		_anim_timer += delta
+		if _anim_timer >= SKIN_FRAME_INTERVAL:
+			_anim_timer = 0.0
+			_anim_frame = 1 - _anim_frame
+			$Skin.texture = SKINS[robot_type][_anim_frame]
+	elif _anim_frame != 0:
+		_anim_frame = 0
+		_anim_timer = 0.0
+		$Skin.texture = SKINS[robot_type][0]
 
 
 func set_initial_position(start_coord: Vector2i, grid) -> void:
@@ -28,6 +56,17 @@ func set_initial_position(start_coord: Vector2i, grid) -> void:
 func _update_visual() -> void:
 	var body: ColorRect = $Body
 	var lbl: Label = $IconLabel
+	if SKINS.has(robot_type):
+		# 像素皮肤：隐藏旧色块/emoji，显示皮肤待机帧
+		body.visible = false
+		lbl.visible = false
+		var skin: Sprite2D = $Skin
+		skin.texture = SKINS[robot_type][0]
+		skin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_anim_frame = 0
+		_anim_timer = 0.0
+		return
+	# 无皮肤类型兜底：旧色块样式
 	if robot_type == "opener":
 		body.color = Color(0.20, 0.45, 0.95)
 		lbl.text = "⛏"
