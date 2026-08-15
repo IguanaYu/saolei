@@ -6,6 +6,8 @@ extends Node2D
 @export var cols: int = 16
 @export var mine_count: int = 32
 @export var cell_size: int = 28
+## 岩壁视觉风格：A1-A4 连体岩壁 / B1-B4 碎石泥土（章节可配）
+@export var wall_style: String = "A1"
 
 var cells: Dictionary = {}  # {Vector2i: Cell}
 
@@ -48,8 +50,10 @@ func init_empty_grid() -> void:
 		for x in cols:
 			var coord := Vector2i(x, y)
 			var cell: Cell = CELL_SCENE.instantiate()
-			add_child(cell)
+			# coord/wall_style 必须在 add_child 前设置：Cell._ready 里要用它们切岩壁 atlas
 			cell.coord = coord
+			cell.wall_style = wall_style
+			add_child(cell)
 			cell.position = Vector2(x * cell_size + cell_size / 2.0, y * cell_size + cell_size / 2.0)
 			cell.cell_left_clicked.connect(_on_cell_left_clicked)
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
@@ -102,6 +106,19 @@ func place_base(coord: Vector2i) -> bool:
 
 func get_cell(coord: Vector2i) -> Cell:
 	return cells.get(coord)
+
+
+## 刷新某格及其 4 邻的岩壁边缘描边（开格后调用，Cell 状态变化时自动触发）
+func refresh_edges_around(coord: Vector2i) -> void:
+	refresh_edges_at(coord)
+	for dir in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+		refresh_edges_at(coord + dir)
+
+
+func refresh_edges_at(coord: Vector2i) -> void:
+	var c: Cell = cells.get(coord)
+	if c:
+		c.refresh_wall_edges()
 
 
 ## 获取所有被标记旗子的格子坐标

@@ -35,11 +35,25 @@ const NUMBER_COLORS := [
 	Color(0.4, 0.4, 0.4),       # 8 灰
 ]
 
-# 已开地砖 sprite sheet（12x12 块，每块源 80x80；暖色像素矿洞风，AI 抠块拼接）
-const BRICK_SHEET := preload("res://assets/tiles/floor_bricks_sheet.png")
-const BRICK_GRID := 12
-const BRICK_TILE_PX := 80
-var _brick_atlas: AtlasTexture
+# ---- 视觉素材 ----
+# 岩壁（未开格）：无缝纹理 336px = 12 格周期；相邻格按坐标定位切块 → 整片连续
+# 风格 8 种：A1-A4 连体岩壁 / B1-B4 碎石泥土（Grid.wall_style 配置，章节可换）
+var wall_style: String = "A1"
+const WALL_GRID := 12
+const WALL_TILE_PX := 28
+
+# 洞底（已开格）：默认暗沙；有配套 floor_<风格> 时自动跟随（如 D 系主题套）
+const FLOOR_DEFAULT := preload("res://assets/tiles/floor_dark.png")
+const FLOOR_GRID := 12
+const FLOOR_TILE_PX := 28
+
+# 挖开边缘碎裂条（中性色，配所有岩壁风格）
+const EDGE_T := preload("res://assets/tiles/wall_edge_T.png")
+const EDGE_B := preload("res://assets/tiles/wall_edge_B.png")
+const EDGE_L := preload("res://assets/tiles/wall_edge_L.png")
+const EDGE_R := preload("res://assets/tiles/wall_edge_R.png")
+
+var _floor_atlas: AtlasTexture
 
 # 双击检测
 var _last_click_time: float = 0.0
@@ -47,23 +61,87 @@ const DOUBLE_CLICK_THRESHOLD := 0.35
 
 
 func _ready() -> void:
-	_setup_brick()
+	_setup_wall()
+	_setup_floor()
 	refresh_visual()
+	refresh_wall_edges()
+	# 本格状态变化后，刷新周围格子的岩壁边缘描边
+	cell_state_changed.connect(_on_state_changed_refresh_edges)
 	input_event.connect(_on_input_event)
 
 
-func _setup_brick() -> void:
-	# 每个格子创建时随机锁定一块地砖，翻开后显示（避免每次刷新跳动）
-	_brick_atlas = AtlasTexture.new()
-	_brick_atlas.atlas = BRICK_SHEET
-	var col := randi() % BRICK_GRID
-	var row := randi() % BRICK_GRID
-	_brick_atlas.region = Rect2(col * BRICK_TILE_PX, row * BRICK_TILE_PX, BRICK_TILE_PX, BRICK_TILE_PX)
-	_brick_atlas.filter_clip = true  # 防止 atlas 块边缘像素渗透到相邻格
-	var brick: TextureRect = $Brick
-	brick.texture = _brick_atlas
-	brick.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	brick.visible = false
+func _setup_wall() -> void:
+	# 按坐标确定性取块（非随机）：相邻格取相邻区块 → 岩壁跨格连成一体
+	var sheet: Texture2D = load("res://assets/tiles/wall_%s.png" % wall_style)
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(
+		(coord.x % WALL_GRID) * WALL_TILE_PX,
+		(coord.y % WALL_GRID) * WALL_TILE_PX,
+		WALL_TILE_PX, WALL_TILE_PX)
+	atlas.filter_clip = true
+	var wall: TextureRect = $WallTex
+	wall.texture = atlas
+	wall.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	$WallEdgeTop.texture = EDGE_T
+	$WallEdgeBottom.texture = EDGE_B
+	$WallEdgeLeft.texture = EDGE_L
+	$WallEdgeRight.texture = EDGE_R
+	for edge in [$WallEdgeTop, $WallEdgeBottom, $WallEdgeLeft, $WallEdgeRight]:
+		edge.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		edge.visible = false
+
+
+func _setup_floor() -> void:
+	# 每个格子创建时随机锁定一块洞底，翻开后显示（避免每次刷新跳动）
+	# 风格配套：优先 floor_<wall_style>（D 系主题套），否则用默认暗沙
+	# exists() 先探测：load() 对不存在路径会刷 ERROR 日志
+	var sheet: Texture2D = null
+	var path := "res://assets/tiles/floor_%s.png" % wall_style
+	if ResourceLoader.exists(path):
+		sheet = load(path)
+	if sheet == null:
+		sheet = FLOOR_DEFAULT
+	_floor_atlas = AtlasTexture.new()
+	_floor_atlas.atlas = sheet
+	var col := randi() % FLOOR_GRID
+	var row := randi() % FLOOR_GRID
+	_floor_atlas.region = Rect2(col * FLOOR_TILE_PX, row * FLOOR_TILE_PX, FLOOR_TILE_PX, FLOOR_TILE_PX)
+	_floor_atlas.filter_clip = true
+	var floor_tex: TextureRect = $FloorTex
+	floor_tex.texture = _floor_atlas
+	floor_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	floor_tex.visible = false
+
+
+func _on_state_changed_refresh_edges(_cell: Cell) -> void:
+	var g := get_parent()
+	if g is Grid:
+		g.refresh_edges_around(coord)
+
+
+## 岩壁边缘：只在与"开侧"（已开格或地图外）交界的边显示碎裂描边
+func refresh_wall_edges() -> void:
+	if is_opened:
+		$WallEdgeTop.visible = false
+		$WallEdgeBottom.visible = false
+		$WallEdgeLeft.visible = false
+		$WallEdgeRight.visible = false
+		return
+	var g := get_parent()
+	$WallEdgeTop.visible = _side_is_open_side(g, Vector2i(0, -1))
+	$WallEdgeBottom.visible = _side_is_open_side(g, Vector2i(0, 1))
+	$WallEdgeLeft.visible = _side_is_open_side(g, Vector2i(-1, 0))
+	$WallEdgeRight.visible = _side_is_open_side(g, Vector2i(1, 0))
+
+
+func _side_is_open_side(g: Node, dir: Vector2i) -> bool:
+	if g is Grid:
+		var n: Cell = g.get_cell(coord + dir)
+		if n == null:
+			return true  # 地图边界：也算洞壁外缘
+		return n.is_opened  # 坍塌/基地/矿脉都置 is_opened，天然算开侧
+	return false
 
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -152,7 +230,8 @@ func _play_collapse_flicker() -> void:
 func refresh_visual() -> void:
 	var bg: ColorRect = $Background
 	var lbl: Label = $Label
-	var show_brick := false
+	var show_wall := false
+	var show_floor := false
 	if is_base:
 		bg.color = Color(0.15, 0.35, 0.75)
 		lbl.text = "B"
@@ -166,20 +245,27 @@ func refresh_visual() -> void:
 		lbl.text = "✸"
 		lbl.modulate = Color.WHITE
 	elif is_flagged:
-		bg.color = Color(0.3, 0.3, 0.35)
+		# 旗格仍是未开岩壁：岩壁上插旗
+		show_wall = true
+		bg.color = Color(0.2, 0.17, 0.13)
 		lbl.text = "⚑"
 		lbl.modulate = Color(1.0, 0.8, 0.2)
 	elif is_opened:
-		# 已开数字格：铺一块随机地砖，数字叠在上面
-		show_brick = true
-		bg.color = Color(0.85, 0.75, 0.55)
+		# 已开格：铺暗色洞底，数字叠在上面
+		show_floor = true
+		bg.color = Color(0.2, 0.17, 0.12)
 		if adjacent_mines == 0:
 			lbl.text = ""
 		else:
 			lbl.text = str(adjacent_mines)
 			lbl.modulate = NUMBER_COLORS[adjacent_mines]
 	else:
-		bg.color = Color(0.25, 0.18, 0.12)
+		# 未开格：连体岩壁
+		show_wall = true
+		bg.color = Color(0.2, 0.17, 0.13)
 		lbl.text = ""
-	$Brick.visible = show_brick
+	$WallTex.visible = show_wall
+	$FloorTex.visible = show_floor
+	if not show_wall:
+		refresh_wall_edges()  # 开侧格不显示描边，直接清掉
 	cell_state_changed.emit(self)

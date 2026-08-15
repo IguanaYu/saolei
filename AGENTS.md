@@ -1,5 +1,6 @@
 使用以下指令运行godot项目，让用户来游玩，你去检测后端产生的bug。
-"E:\godot\Godot_v4.6.1-stable_win64.exe" --path  "f:\godot_game\扫雷_增量\saolei"
+"/e/其他/chorme_download/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe" --path "E:\godot\扫雷"
+（新增图片素材后，先跑一次 `--headless --import` 再启动，否则 load() 找不到纹理）
 
 git提交的时候，不要添加Co-Authored-By相关的内容
 

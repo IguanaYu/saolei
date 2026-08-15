@@ -19,7 +19,47 @@ offset_bottom = 14.0
 color = Color(0.25, 0.18, 0.12, 1)
 mouse_filter = 2
 
-[node name="Brick" type="TextureRect" parent="."]
+[node name="WallTex" type="TextureRect" parent="."]
+offset_left = -14.0
+offset_top = -14.0
+offset_right = 14.0
+offset_bottom = 14.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="WallEdgeTop" type="TextureRect" parent="."]
+offset_left = -14.0
+offset_top = -14.0
+offset_right = 14.0
+offset_bottom = -10.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="WallEdgeBottom" type="TextureRect" parent="."]
+offset_left = -14.0
+offset_top = 10.0
+offset_right = 14.0
+offset_bottom = 14.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="WallEdgeLeft" type="TextureRect" parent="."]
+offset_left = -14.0
+offset_top = -14.0
+offset_right = -10.0
+offset_bottom = 14.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="WallEdgeRight" type="TextureRect" parent="."]
+offset_left = 10.0
+offset_top = -14.0
+offset_right = 14.0
+offset_bottom = 14.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="FloorTex" type="TextureRect" parent="."]
 offset_left = -14.0
 offset_top = -14.0
 offset_right = 14.0
