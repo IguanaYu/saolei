@@ -1,0 +1,84 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/tutorial_guide.gd" id="1_tg"]
+
+[node name="TutorialGuide" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1_tg")
+
+[node name="DimTop" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.04, 0.03, 0.02, 0.62)
+
+[node name="DimBottom" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.04, 0.03, 0.02, 0.62)
+
+[node name="DimLeft" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.04, 0.03, 0.02, 0.62)
+
+[node name="DimRight" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.04, 0.03, 0.02, 0.62)
+
+[node name="BorderTop" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(1, 0.82, 0.4, 0.9)
+
+[node name="BorderBottom" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(1, 0.82, 0.4, 0.9)
+
+[node name="BorderLeft" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(1, 0.82, 0.4, 0.9)
+
+[node name="BorderRight" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(1, 0.82, 0.4, 0.9)
+
+[node name="TopRight" type="HBoxContainer" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 86.0
+offset_right = -16.0
+offset_bottom = 122.0
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="ChipLabel" type="Label" parent="TopRight"]
+size_flags_vertical = 1
+text = "新手引导"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="SkipButton" type="Button" parent="TopRight"]
+custom_minimum_size = Vector2(96, 36)
+text = "跳过 ›"
+theme_override_font_sizes/font_size = 14
+
+[node name="TipPanel" type="PanelContainer" parent="."]
+
+[node name="VBox" type="VBoxContainer" parent="TipPanel"]
+theme_override_constants/separation = 8
+
+[node name="StepLabel" type="Label" parent="TipPanel/VBox"]
+text = "引导 1 / 6"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="TextLabel" type="Label" parent="TipPanel/VBox"]
+custom_minimum_size = Vector2(280, 0)
+text = ""
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 16
+
+[node name="NextButton" type="Button" parent="TipPanel/VBox"]
+custom_minimum_size = Vector2(120, 38)
+size_flags_horizontal = 8
+text = "下一步 ›"
+theme_override_font_sizes/font_size = 15

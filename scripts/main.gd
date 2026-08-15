@@ -1,5 +1,6 @@
 extends Node
 ## 主场景控制器：负责游戏主循环、玩家输入路由、模块协调、关卡流程
+## 以及全套页面串联（闪屏/暂停/设置/档案/每日/签到/引导/结算）
 
 @onready var grid: Grid = $Grid
 @onready var robot_manager: RobotManager = $RobotManager
@@ -9,6 +10,14 @@ extends Node
 @onready var chapter_select = $UILayer/ChapterSelect
 @onready var level_select = $UILayer/LevelSelect
 @onready var results_panel = $UILayer/ResultsPanel
+@onready var tutorial_guide = $UILayer/TutorialGuide
+@onready var pause_panel = $UILayer/PausePanel
+@onready var settings_panel = $UILayer/SettingsPanel
+@onready var stats_panel = $UILayer/StatsPanel
+@onready var daily_panel = $UILayer/DailyPanel
+@onready var sign_in_panel = $UILayer/SignInPanel
+@onready var confirm_dialog = $UILayer/ConfirmDialog
+@onready var splash = $UILayer/SplashScreen
 
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
 var placing_mode: String = ""
@@ -17,6 +26,19 @@ var placing_mode: String = ""
 var _current_chapter_id: String = "ch01"
 # FLAG_N_MINES 目标计数
 var _flag_count: int = 0
+
+# 确认框待执行动作
+var _pending_confirm: String = ""
+
+# 岩壁风格循环（F5 调试切换）：默认 A1 + 已拍板的 E 系 4 套
+const WALL_STYLE_CYCLE := ["A1", "E1", "E2", "E3", "E4"]
+const WALL_STYLE_NAMES := {
+	"A1": "连体岩壁（默认）",
+	"E1": "沙岩层窟",
+	"E2": "冰晶裂谷",
+	"E3": "苔藓菌窟",
+	"E4": "遗迹砖窟",
+}
 
 
 func _ready() -> void:
@@ -28,14 +50,61 @@ func _ready() -> void:
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
 	main_menu.start_requested.connect(_on_start_adventure)
+	main_menu.stats_requested.connect(func(): stats_panel.open())
+	main_menu.daily_requested.connect(func(): daily_panel.open())
+	main_menu.signin_requested.connect(func(): sign_in_panel.open())
+	main_menu.settings_requested.connect(func(): settings_panel.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
 	level_select.start_requested.connect(_on_start_game)
 	level_select.back_requested.connect(_on_level_select_back)
 	results_panel.restart_requested.connect(_on_restart_requested)
 	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
+	results_panel.back_to_menu_requested.connect(_show_main_menu)
+	results_panel.share_requested.connect(
+		func(): hud.show_toast("分享功能开发中，先截个图吧！", 3.0))
 	GameState.score_changed.connect(_on_score_changed)
 	GameState.time_changed.connect(_on_time_changed)
+	GameState.base_placed.connect(func(_c): tutorial_guide.notify_event("base_placed"))
+	GameState.robot_spawned.connect(func(_t): tutorial_guide.notify_event("robot_bought"))
+	# 闪屏 → 主菜单（+ 每日首启签到弹窗）
+	splash.finished.connect(_on_splash_finished)
+	main_menu.hide()  # 闪屏期间藏住主菜单
+	# 暂停
+	hud.pause_requested.connect(_toggle_pause)
+	pause_panel.resume_requested.connect(_resume)
+	pause_panel.restart_requested.connect(_on_pause_restart)
+	pause_panel.settings_requested.connect(func(): settings_panel.open())
+	pause_panel.abandon_requested.connect(_ask_abandon)
+	# 设置
+	settings_panel.close_requested.connect(func(): settings_panel.hide())
+	settings_panel.clear_save_requested.connect(_ask_clear_save)
+	settings_panel.tutorial_rewatch_requested.connect(_on_tutorial_rewatch)
+	# 各面板返回
+	stats_panel.close_requested.connect(func(): stats_panel.hide())
+	daily_panel.close_requested.connect(func(): daily_panel.hide())
+	sign_in_panel.close_requested.connect(func(): sign_in_panel.hide())
+	# 每日挑战开打
+	daily_panel.start_requested.connect(_start_daily)
+	# 确认框
+	confirm_dialog.confirmed.connect(_on_confirm_confirmed)
+
+
+# ---- 闪屏 / 主菜单 ----
+
+func _on_splash_finished() -> void:
+	main_menu.show()
+	if not SaveSystem.can_sign_today():
+		return
+	var tw := create_tween()
+	tw.tween_interval(0.3)
+	tw.tween_callback(func(): sign_in_panel.open())
+
+
+func _show_main_menu() -> void:
+	results_panel.hide()
+	pause_panel.hide()
+	main_menu.show()
 
 
 # ---- 关卡流程 ----
@@ -69,7 +138,10 @@ func _on_start_game(level_id: String) -> void:
 
 
 func _on_restart_requested() -> void:
-	_start_level(GameState.current_level_id)
+	if GameState.daily_mode:
+		_start_daily()
+	else:
+		_start_level(GameState.current_level_id)
 
 
 func _on_back_to_level_select() -> void:
@@ -79,18 +151,164 @@ func _on_back_to_level_select() -> void:
 
 
 func _start_level(level_id: String) -> void:
+	GameState.daily_mode = false
+	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
+	_start_level_with(lvl, "")
+
+
+func _start_daily() -> void:
+	daily_panel.hide()
+	main_menu.hide()
+	GameState.daily_mode = true
+	_start_level_with(daily_panel.today_level(), daily_panel.today_wall_style())
+
+
+func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	main_menu.hide()
 	chapter_select.hide()
 	level_select.hide()
 	results_panel.hide()
-	GameState.reset_state(level_id)
+	pause_panel.hide()
+	tutorial_guide.hide()  # 中断上一局的引导
+	get_tree().paused = false
+	var id := lvl.id if lvl != null else ""
+	GameState.reset_state(id, lvl)
 	_flag_count = 0
-	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
 	if lvl != null:
+		if wall_style != "":
+			grid.wall_style = wall_style
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具
 	robot_manager.remove_all()
 	_update_objective_progress()
+	_maybe_start_tutorial()
+
+
+# ---- 新手引导 ----
+
+func _maybe_start_tutorial() -> void:
+	if GameState.daily_mode:
+		return
+	if GameState.current_level_id != "ch01_s01":
+		return
+	if bool(GameSettings.get_value("tutorial_done")):
+		return
+	var tw := create_tween()
+	tw.tween_interval(0.5)
+	tw.tween_callback(func(): tutorial_guide.begin(_build_guide_steps()))
+
+
+func _build_guide_steps() -> Array:
+	var board_size := Vector2(grid.rows * grid.cell_size, grid.cols * grid.cell_size)
+	return [
+		{"node": grid, "size": board_size,
+			"text": "欢迎来到矿场！点击任意一格，放置你的第一个基地（机器人从基地出发工作）",
+			"event": "base_placed", "tip": "right"},
+		{"node": shop.buy_opener_button,
+			"text": "购买「开墙型」机器人，它会在岩壁上凿出缺口",
+			"event": "robot_bought", "tip": "below"},
+		{"node": grid, "size": board_size,
+			"text": "机器人会自动干活。你也可以点击格子：左键挖开、右键插旗（插对雷有奖励）",
+			"event": "", "tip": "right"},
+		{"node": hud.objective_label,
+			"text": "完成顶部目标即可过关；剩余生命越多、速度越快，星越多",
+			"event": "", "tip": "below"},
+		{"node": shop.upgrade_button,
+			"text": "金币富余时可升级机器人。祝挖矿顺利！",
+			"event": "", "tip": "below"},
+	]
+
+
+# ---- 暂停 / 放弃 ----
+
+func _toggle_pause() -> void:
+	if pause_panel.visible:
+		_resume()
+	elif _in_game():
+		_open_pause()
+
+
+## 是否处于"局内可操作"状态（无任何全屏覆盖层）
+func _in_game() -> bool:
+	return not (splash.visible or main_menu.visible or chapter_select.visible
+			or level_select.visible or results_panel.visible or pause_panel.visible
+			or settings_panel.visible or stats_panel.visible or daily_panel.visible
+			or sign_in_panel.visible or confirm_dialog.visible)
+
+
+func _open_pause() -> void:
+	_exit_placing_mode()  # 暂停时取消放置，避免恢复后状态混乱
+	pause_panel.open(_pause_context())
+	get_tree().paused = true
+
+
+func _pause_context() -> String:
+	if GameState.daily_mode:
+		return "每日挑战 · %s" % SaveSystem.today_key()
+	var lvl := GameState.get_current_level()
+	if lvl == null:
+		return ""
+	var ch := LevelSystem.get_chapter(lvl.chapter_id)
+	return "%s · %s" % [ch.display_name if ch != null else "", lvl.display_name]
+
+
+func _resume() -> void:
+	get_tree().paused = false
+	pause_panel.hide()
+
+
+func _on_pause_restart() -> void:
+	_resume()
+	_on_restart_requested()
+
+
+func _ask_abandon() -> void:
+	_pending_confirm = "abandon"
+	var keep_ore: int = GameState.score / 20
+	confirm_dialog.ask("放弃本局？",
+		"本局积分与进度将清零\n已采集矿石按一半结算保留（+%d 矿）" % keep_ore,
+		"确认放弃", "继续挖掘", true)
+
+
+func _do_abandon() -> void:
+	get_tree().paused = false
+	pause_panel.hide()
+	tutorial_guide.hide()
+	var lvl := GameState.get_current_level()
+	var total: float = lvl.time_limit_sec if lvl != null else 90.0
+	SaveSystem.record_game_result("abandon", max(0.0, total - GameState.time_left),
+			GameState.score, false)
+	var keep_ore: int = GameState.score / 20
+	if keep_ore > 0:
+		SaveSystem.add_ore(keep_ore)
+	GameState.game_active = false
+	robot_manager.remove_all()
+	_show_main_menu()
+
+
+# ---- 设置 / 清档 ----
+
+func _on_tutorial_rewatch() -> void:
+	GameSettings.set_value("tutorial_done", false)
+	hud.show_toast("教程将在关卡 1-1 开始时重播", 3.0)
+
+
+func _ask_clear_save() -> void:
+	_pending_confirm = "clear_save"
+	confirm_dialog.ask("清除全部存档？",
+		"矿石、关卡进度、升级、统计与签到记录将全部清零\n（设置项保留）",
+		"确认清除", "取消", true)
+
+
+func _on_confirm_confirmed() -> void:
+	match _pending_confirm:
+		"abandon":
+			_do_abandon()
+		"clear_save":
+			SaveSystem.reset_all()
+			get_tree().paused = false
+			get_tree().reload_current_scene()
+	_pending_confirm = ""
 
 
 func _on_idle_warning_changed(show: bool) -> void:
@@ -121,12 +339,22 @@ func _process(delta: float) -> void:
 
 # 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
 func _input(event: InputEvent) -> void:
+	# ESC：设置/暂停/引导等各层优先
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.keycode == KEY_ESCAPE:
+		_handle_escape()
+		return
 	# 任一菜单覆盖层显示时不处理游戏输入
-	if main_menu.visible or chapter_select.visible or level_select.visible:
+	if not _in_game():
 		return
 	# 数字键 1-4 快捷放置机器人
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _try_robot_shortcut(event.keycode):
+			get_viewport().set_input_as_handled()
+			return
+		# F5 循环切换岩壁风格（A1 → E1-E4）：原地换肤不重置局面
+		if event.keycode == KEY_F5:
+			_cycle_wall_style()
 			get_viewport().set_input_as_handled()
 			return
 	if GameState.game_phase == "placing_base":
@@ -144,9 +372,35 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_exit_placing_mode()
 			get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+
+
+## ESC 分层：确认框/闪屏→吞掉 / 设置→关 / 暂停→恢复 / 引导→交给引导层 /
+## 其他覆盖层→面板自行处理 / 局内→取消放置或开暂停
+func _handle_escape() -> void:
+	if splash.visible or confirm_dialog.visible:
+		return
+	if settings_panel.visible:
+		settings_panel.hide()
+		return
+	if pause_panel.visible:
+		_resume()
+		return
+	if tutorial_guide.visible:
+		return  # 引导层自行处理（跳过）
+	if not _in_game():
+		return
+	if placing_mode != "":
 		_exit_placing_mode()
-		get_viewport().set_input_as_handled()
+	elif GameState.game_phase == "placing_base" or GameState.game_active:
+		_open_pause()
+
+
+## F5 循环切换岩壁风格：A1 → E1-E4 → A1
+func _cycle_wall_style() -> void:
+	var idx := WALL_STYLE_CYCLE.find(grid.wall_style)
+	var next: String = WALL_STYLE_CYCLE[(idx + 1) % WALL_STYLE_CYCLE.size()]
+	grid.set_wall_style(next)
+	hud.show_toast("岩壁风格：%s" % WALL_STYLE_NAMES.get(next, next), 2.0)
 
 
 ## 数字键 1-4 快捷放置机器人；返回 true 表示按键已处理
@@ -233,6 +487,7 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		return false
 
 	robot_manager.spawn_robot(coord, type, grid)
+	GameState.robot_spawned.emit(type)
 	return true
 
 
@@ -280,6 +535,7 @@ func _end_game(result: String) -> void:
 	if not GameState.game_active:
 		return
 	GameState.game_active = false
+	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
 	GameState.game_over.emit(result)
 
 

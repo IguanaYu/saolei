@@ -35,6 +35,8 @@ var locked_targets: Dictionary = {}
 # ---- 关卡模式（P13）----
 var current_level_id: String = ""           # "" = 自由/兼容模式
 var current_objective: ObjectiveData = null
+var current_level_override: LevelData = null  # 每日挑战等动态关卡（不走 LevelSystem）
+var daily_mode: bool = false                  # 本局是每日挑战
 
 # ---- 信号总线 ----
 signal money_changed(new_value: int)
@@ -47,6 +49,7 @@ signal base_placed(coord: Vector2i)
 signal game_phase_changed(phase: String)
 signal tower_activated  # 预留：充能塔功能落地后 emit
 signal objective_progress_updated(text: String)
+signal robot_spawned(robot_type: String)
 
 
 func add_money(amount: int) -> void:
@@ -65,12 +68,15 @@ func lose_life() -> void:
 
 
 ## 重置本局状态。level_id 为空串时走旧自由模式（兼容旧调用）
-func reset_state(level_id: String = "") -> void:
+## override 用于动态生成的关卡（每日挑战）
+func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	# 从存档读取起始加成
 	var su = SaveSystem
 	current_level_id = level_id
 	current_objective = null
-	var lvl: LevelData = LevelSystem.get_level(level_id) if level_id != "" else null
+	current_level_override = override
+	var lvl: LevelData = override if override != null \
+			else (LevelSystem.get_level(level_id) if level_id != "" else null)
 	if lvl != null:
 		current_objective = lvl.objectives[0] if not lvl.objectives.is_empty() else null
 		money = lvl.start_gold + 50 * int(su.unlocks.get("start_money", 0))
@@ -125,6 +131,8 @@ func is_action_forbidden(action: String) -> bool:
 
 
 func get_current_level() -> LevelData:
+	if current_level_override != null:
+		return current_level_override
 	return LevelSystem.get_level(current_level_id) if current_level_id != "" else null
 
 

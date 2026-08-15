@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/splash_screen.gd" id="1_ss"]
+
+[node name="SplashScreen" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_ss")
+
+[node name="Bg" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.055, 0.04, 0.028, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Center/VBox"]
+text = "扫雷挖矿"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 52
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="SubtitleLabel" type="Label" parent="Center/VBox"]
+text = "—— 指挥机器人，挖穿雷区矿洞 ——"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="Spacer" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 36)
+
+[node name="BarPanel" type="Panel" parent="Center/VBox"]
+custom_minimum_size = Vector2(380, 30)
+
+[node name="BarFill" type="ColorRect" parent="Center/VBox/BarPanel"]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 6.0
+offset_bottom = 24.0
+color = Color(1, 0.82, 0.4, 1)
+
+[node name="LoadingLabel" type="Label" parent="Center/VBox"]
+text = "正在加载矿洞… 0%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="HealthLabel" type="Label" parent="."]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -56.0
+offset_bottom = -32.0
+text = "健康游戏忠告：适度挖矿益脑 · 沉迷雷区伤身"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)
+
+[node name="VersionLabel" type="Label" parent="."]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -32.0
+offset_bottom = -12.0
+text = "v0.3 · Godot 4.6 · 单机开发版"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)

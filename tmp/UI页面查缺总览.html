@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>扫雷挖矿 · UI 页面查缺总览</title>
+<style>
+  @font-face {
+    font-family: 'Fusion';
+    src: url('fpx/fusion-pixel-12px-proportional-zh_hans.ttf');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #16100b;
+    color: #f2e6ca;
+    font-family: 'Fusion', 'Microsoft YaHei', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    padding-bottom: 80px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header {
+    background: #281f16;
+    border-bottom: 3px solid #705332;
+    padding: 28px 0 22px;
+    margin-bottom: 28px;
+  }
+  header h1 { font-size: 26px; color: #ffd166; letter-spacing: 2px; }
+  header .sub { color: #b2a080; font-size: 13px; margin-top: 6px; }
+  h2 {
+    font-size: 19px; color: #ffd166; margin: 36px 0 14px;
+    border-left: 5px solid #705332; padding-left: 12px;
+  }
+  /* 顶部结论条 */
+  .verdict {
+    background: #281f16; border: 2px solid #705332; border-radius: 6px;
+    padding: 16px 20px; margin-top: 18px;
+  }
+  .verdict b { color: #ffd166; }
+  .stats { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .stat {
+    flex: 1; min-width: 140px; background: #1c1510; border-radius: 4px;
+    padding: 10px 14px; text-align: center;
+  }
+  .stat .num { font-size: 24px; color: #ffd166; }
+  .stat .lbl { font-size: 12px; color: #b2a080; }
+  /* 现有页面表 */
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #3a2d1f; padding: 7px 12px; text-align: left; font-size: 13px; }
+  th { background: #281f16; color: #ffd166; font-weight: normal; }
+  tr:nth-child(even) td { background: #1c1510; }
+  .tag { display: inline-block; padding: 0 8px; border-radius: 3px; font-size: 12px; }
+  .tag.ok    { background: #2c4a2c; color: #9fe0a0; }
+  .tag.half  { background: #4a3a20; color: #ffd166; }
+  .tag.miss  { background: #4a2620; color: #ffb0a4; }
+  .tag.p0 { background: #8c2f24; color: #ffe6de; }
+  .tag.p1 { background: #7a5a1e; color: #ffe9b0; }
+  /* 现有屏缩略图 */
+  .oldstrip { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0; }
+  .oldstrip figure { flex: 0 0 300px; }
+  .oldstrip img { width: 300px; border: 2px solid #3a2d1f; border-radius: 4px; display: block; }
+  .oldstrip figcaption { font-size: 12px; color: #b2a080; text-align: center; margin-top: 4px; }
+  /* 新屏卡片 */
+  .card {
+    background: #281f16; border: 2px solid #705332; border-radius: 6px;
+    padding: 18px 22px; margin-bottom: 26px;
+  }
+  .card .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .card .no { font-size: 22px; color: #ffd166; }
+  .card h3 { font-size: 18px; }
+  .card .meta { font-size: 12px; color: #b2a080; margin-top: 4px; }
+  .card .why { margin: 10px 0 12px; padding: 8px 14px; background: #1c1510; border-radius: 4px; font-size: 13px; }
+  .card .why b { color: #ffb0a4; }
+  .card img { width: 100%; border: 2px solid #3a2d1f; border-radius: 4px; display: block; }
+  .card .points { margin: 12px 0 0 2px; font-size: 13px; color: #d8cba8; }
+  .card .points li { margin: 3px 0 3px 18px; }
+  /* 实施顺序 */
+  .batches { display: flex; gap: 14px; flex-wrap: wrap; }
+  .batch {
+    flex: 1; min-width: 260px; background: #281f16; border: 2px solid #705332;
+    border-radius: 6px; padding: 14px 18px;
+  }
+  .batch h3 { color: #ffd166; font-size: 15px; margin-bottom: 8px; }
+  .batch ul { list-style: none; font-size: 13px; }
+  .batch li { padding: 3px 0; border-bottom: 1px dashed #3a2d1f; }
+  .batch li:last-child { border-bottom: none; }
+  .batch .note { font-size: 12px; color: #b2a080; margin-top: 8px; }
+  footer { margin-top: 44px; text-align: center; font-size: 12px; color: #6f6450; }
+  a { color: #ffd166; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>⛏ 扫雷挖矿 · UI 页面查缺总览</h1>
+    <div class="sub">2026-08-15 · 对标微信小游戏 / 休闲手游标配页面调研 · 视觉稿 tmp/mock_ui_design2.png</div>
+    <div class="verdict">
+      结论：核心玩法闭环（主菜单 → 章节 → 关卡 → HUD/商店/升级 → 结算）<b>7 屏功能完整</b>，
+      但<b>局内没有任何出口</b>（不能暂停/退出），且<b>留存类页面一个都没有</b>。
+      本次补 9 屏视觉稿：<b>P0×5</b>（补体验闭环）+ <b>P1×4</b>（留存标配）。
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num">7</div><div class="lbl">现有页面（功能完整）</div></div>
+      <div class="stat"><div class="num">9</div><div class="lbl">缺失页面（本批视觉稿）</div></div>
+      <div class="stat"><div class="num">5</div><div class="lbl">P0 · 不补会卡住玩家</div></div>
+      <div class="stat"><div class="num">4</div><div class="lbl">P1 · 留存标配</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h2>现有页面（对照）</h2>
+<table>
+  <tr><th>页面</th><th>入口</th><th>状态</th></tr>
+  <tr><td>主菜单（兼局外升级）</td><td>启动即显示</td><td><span class="tag ok">完整</span></td></tr>
+  <tr><td>章节选择（12 章）</td><td>主菜单「开始冒险」</td><td><span class="tag ok">完整</span></td></tr>
+  <tr><td>关卡选择（每章 5 关）</td><td>章节卡片</td><td><span class="tag ok">完整</span></td></tr>
+  <tr><td>HUD / 局内商店 / 升级面板</td><td>局内常驻 / 商店按钮</td><td><span class="tag ok">完整</span></td></tr>
+  <tr><td>结算页（胜/败/超时）</td><td>局末自动弹出</td><td><span class="tag half">功能全 · 纯文字无视觉</span></td></tr>
+  <tr><td>暂停 / 设置 / 确认 / 引导 / 统计 / 每日玩法</td><td>—</td><td><span class="tag miss">全部缺失</span></td></tr>
+</table>
+<div class="oldstrip">
+  <figure><img src="ui_overview_assets/old_s5.png"><figcaption>主菜单</figcaption></figure>
+  <figure><img src="ui_overview_assets/old_s1.png"><figcaption>HUD</figcaption></figure>
+  <figure><img src="ui_overview_assets/old_s2.png"><figcaption>商店底栏</figcaption></figure>
+  <figure><img src="ui_overview_assets/old_s3.png"><figcaption>局内升级</figcaption></figure>
+  <figure><img src="ui_overview_assets/old_s4.png"><figcaption>结算（现状）</figcaption></figure>
+</div>
+
+<h2>缺失页面 · 9 屏视觉稿（点图可放大）</h2>
+
+<div class="card">
+  <div class="head"><span class="no">①</span><h3>暂停页</h3><span class="tag p0">P0</span></div>
+  <div class="meta">入口：局内按 ESC / HUD 暂停按钮</div>
+  <div class="why"><b>为什么缺它不行：</b>现在局内按 ESC 只是退出放置模式，中途想停/想走只能杀进程——局内唯一出口。</div>
+  <a href="ui_overview_assets/new_s1.png" target="_blank"><img src="ui_overview_assets/new_s1.png"></a>
+  <ul class="points">
+    <li>顶部显示「第几章·第几关」+ 本局状态条（金币/矿石/命数/时间）</li>
+    <li>继续（金边主按钮）· 重新开始 · 设置 · 放弃本局（红色危险按钮）</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">②</span><h3>放弃确认框</h3><span class="tag p0">P0</span></div>
+  <div class="meta">入口：暂停页「放弃本局」二次确认</div>
+  <div class="why"><b>为什么缺它不行：</b>红色按钮若无二次确认极易误触；「矿石保留一半」的损失提示能明显降低放弃的挫败感。</div>
+  <a href="ui_overview_assets/new_s2.png" target="_blank"><img src="ui_overview_assets/new_s2.png"></a>
+  <ul class="points">
+    <li>小对话框叠在变暗的暂停页之上，双按钮对置：继续挖掘 vs 确认放弃</li>
+    <li>文案明示损失规则：本局积分清零、已采矿石保留一半</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">③</span><h3>设置页</h3><span class="tag p0">P0</span></div>
+  <div class="meta">入口：主菜单 + 暂停页均可进</div>
+  <div class="why"><b>为什么缺它不行：</b>音效/音乐开关是休闲游戏最低要求；「重看新手教程」是微信官方明确要求的入口。</div>
+  <a href="ui_overview_assets/new_s3.png" target="_blank"><img src="ui_overview_assets/new_s3.png"></a>
+  <ul class="points">
+    <li>三段式：声音（开关+音量条）/ 画面与操作 / 游戏（重看教程、清存档）</li>
+    <li>清存档放红色危险区与普通操作隔离；音频系统未接入前开关为占位</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">④</span><h3>闪屏 / 加载页</h3><span class="tag p0">P0</span></div>
+  <div class="meta">入口：启动自动显示</div>
+  <div class="why"><b>为什么缺它不行：</b>小游戏平台标配首屏；同时是品牌记忆点（LOGO+slogan）和健康忠告的合规位。</div>
+  <a href="ui_overview_assets/new_s4.png" target="_blank"><img src="ui_overview_assets/new_s4.png"></a>
+  <ul class="points">
+    <li>LOGO + 木质进度条 + 版本号；底部健康游戏忠告（平台审核友好）</li>
+    <li>纯洞窟背景无棋盘，工作量极小，可最先做</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">⑤</span><h3>结算页 V2（视觉化升级）</h3><span class="tag p0">P0</span></div>
+  <div class="meta">入口：替换现有 ResultsPanel 的视觉</div>
+  <div class="why"><b>为什么缺它不行：</b>结算页现在是纯文字标签，是玩家情绪最高点却最丑的一屏；也是小游戏唯一的「广告位」标准位。</div>
+  <a href="ui_overview_assets/new_s5.png" target="_blank"><img src="ui_overview_assets/new_s5.png"></a>
+  <ul class="points">
+    <li>大星级 + 中星弹出光环 + 「新纪录!」角标 + 分项奖励图标化</li>
+    <li>三按钮：再来一局 / 选关 / 分享成绩；底部虚线框 = 广告位预留（腾讯规范建议位）</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">⑥</span><h3>挖矿档案（统计页）</h3><span class="tag p1">P1</span></div>
+  <div class="meta">入口：主菜单新增按钮</div>
+  <div class="why"><b>为什么值得做：</b>胜率/最佳时间/连胜是经典扫雷的标配统计，我们的存档已有星级数据，是留存三屏里成本最低的。</div>
+  <a href="ui_overview_assets/new_s6.png" target="_blank"><img src="ui_overview_assets/new_s6.png"></a>
+  <ul class="points">
+    <li>四张数据卡：总局数 / 胜率 / 最佳时间 / 最高连胜</li>
+    <li>12 章星数总览（含未解锁灰态 + 进度条）+ 总星数、完美通关数</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">⑦</span><h3>每日挑战</h3><span class="tag p1">P1</span></div>
+  <div class="meta">入口：主菜单新增按钮</div>
+  <div class="why"><b>为什么值得做：</b>扫雷类最强的日活抓手（MS Minesweeper 同款）：全球同图拼时间，每天给玩家一个回来的理由。</div>
+  <a href="ui_overview_assets/new_s7.png" target="_blank"><img src="ui_overview_assets/new_s7.png"></a>
+  <ul class="points">
+    <li>今日矿场卡（无猜盘面 = 可纯逻辑解开，口碑利器）+ 个人今日/历史最佳</li>
+    <li>本周徽章集 5 枚换矿石宝箱 + 明日刷新倒计时；失败不扣命降低参与门槛</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">⑧</span><h3>矿工签到</h3><span class="tag p1">P1</span></div>
+  <div class="meta">入口：每日首次进入弹窗 / 主菜单按钮</div>
+  <div class="why"><b>为什么值得做：</b>7 日递增 + 断签重计是休闲小游戏几乎人手一套的日活机制，第 7 天皮肤大奖接住长线收集欲。</div>
+  <a href="ui_overview_assets/new_s8.png" target="_blank"><img src="ui_overview_assets/new_s8.png"></a>
+  <ul class="points">
+    <li>7 天奖励格：已领（绿勾灰态）→ 今日（金边高亮可领）→ 未达成 → 第 7 天大奖</li>
+    <li>连签计数角标 + 断签规则、刷新时间明示</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="head"><span class="no">⑨</span><h3>新手引导</h3><span class="tag p1">P1</span></div>
+  <div class="meta">入口：第 1-2 关自动触发；设置页可重看</div>
+  <div class="why"><b>为什么值得做：</b>我们是扫雷变体（机器人+建基地），规则比经典扫雷复杂，「边玩边学」的分步引导直接决定新手留存。</div>
+  <a href="ui_overview_assets/new_s9.png" target="_blank"><img src="ui_overview_assets/new_s9.png"></a>
+  <ul class="points">
+    <li>聚光遮罩：全屏压暗只亮目标按钮，金色虚线框 + 像素手指</li>
+    <li>指引气泡带尾巴指向目标；步骤计数 2/6 + 右上角「跳过」（尊重老玩家）</li>
+  </ul>
+</div>
+
+<h2>建议实施顺序</h2>
+<div class="batches">
+  <div class="batch">
+    <h3>第一批 · 纯 UI 无新系统</h3>
+    <ul>
+      <li>① 暂停页 + ② 放弃确认</li>
+      <li>③ 设置页（开关先占位）</li>
+      <li>⑤ 结算页视觉化</li>
+    </ul>
+    <div class="note">改动只在 UILayer 加节点 + 状态屏蔽，一天量级</div>
+  </div>
+  <div class="batch">
+    <h3>第二批 · 入口与引导</h3>
+    <ul>
+      <li>④ 闪屏加载页</li>
+      <li>⑨ 新手引导（分步脚本）</li>
+      <li>主菜单加新按钮位</li>
+    </ul>
+    <div class="note">引导需要小型步骤状态机，第 1-2 关触发</div>
+  </div>
+  <div class="batch">
+    <h3>第三批 · 存档扩展</h3>
+    <ul>
+      <li>⑥ 统计页（需埋点：局数/用时）</li>
+      <li>⑦ 每日挑战（需日期+固定种子）</li>
+      <li>⑧ 签到（需连签/领取记录）</li>
+    </ul>
+    <div class="note">三屏都要往 SaveSystem 加字段，先定数据结构</div>
+  </div>
+</div>
+
+<footer>视觉稿脚本 tmp/mock_ui_design2.py · 素材 tmp/ui_overview_assets/ · 字体 Fusion Pixel 12px（免费商用）</footer>
+</div>
+</body>
+</html>

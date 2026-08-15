@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -11,6 +11,14 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/ChapterSelect.tscn" id="9_cs"]
 [ext_resource type="PackedScene" path="res://scenes/ui/LevelSelect.tscn" id="10_ls"]
 [ext_resource type="Script" path="res://scripts/cave_env.gd" id="11_cave_env"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TutorialGuide.tscn" id="12_tg"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PausePanel.tscn" id="13_pp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/SettingsPanel.tscn" id="14_sp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/StatsPanel.tscn" id="15_stat"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DailyPanel.tscn" id="16_dp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/SignInPanel.tscn" id="17_si"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ConfirmDialog.tscn" id="18_cd"]
+[ext_resource type="PackedScene" path="res://scenes/ui/SplashScreen.tscn" id="19_ss"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -40,12 +48,16 @@ script = ExtResource("2_grid")
 script = ExtResource("3_rm")
 
 [node name="UILayer" type="CanvasLayer" parent="."]
+process_mode = 3
 
 [node name="HUD" parent="UILayer" instance=ExtResource("4_hud")]
 
 [node name="Shop" parent="UILayer" instance=ExtResource("5_shop")]
 
 [node name="UpgradePanel" parent="UILayer" instance=ExtResource("6_up")]
+
+[node name="TutorialGuide" parent="UILayer" instance=ExtResource("12_tg")]
+visible = false
 
 [node name="ResultsPanel" parent="UILayer" instance=ExtResource("7_rp")]
 
@@ -56,3 +68,23 @@ visible = false
 
 [node name="LevelSelect" parent="UILayer" instance=ExtResource("10_ls")]
 visible = false
+
+[node name="PausePanel" parent="UILayer" instance=ExtResource("13_pp")]
+visible = false
+
+[node name="SettingsPanel" parent="UILayer" instance=ExtResource("14_sp")]
+visible = false
+
+[node name="StatsPanel" parent="UILayer" instance=ExtResource("15_stat")]
+visible = false
+
+[node name="DailyPanel" parent="UILayer" instance=ExtResource("16_dp")]
+visible = false
+
+[node name="SignInPanel" parent="UILayer" instance=ExtResource("17_si")]
+visible = false
+
+[node name="ConfirmDialog" parent="UILayer" instance=ExtResource("18_cd")]
+visible = false
+
+[node name="SplashScreen" parent="UILayer" instance=ExtResource("19_ss")]

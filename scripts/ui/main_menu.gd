@@ -19,6 +19,10 @@ const ORE_DISPLAY_NAMES := {
 }
 
 signal start_requested
+signal stats_requested
+signal daily_requested
+signal signin_requested
+signal settings_requested
 
 @onready var ore_label: Label = $MarginContainer/CenterContainer/VBoxContainer/OreLabel
 @onready var start_money_row = $MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow
@@ -36,6 +40,11 @@ func _ready() -> void:
 	_bind_ore_row(global_speed_row, "global_speed")
 	_bind_ore_row(expand_zone_row, "expand_zone")
 	start_button.pressed.connect(func(): start_requested.emit())
+	var menu_row: HBoxContainer = $MarginContainer/CenterContainer/VBoxContainer/MenuRow
+	menu_row.get_node("StatsButton").pressed.connect(func(): stats_requested.emit())
+	menu_row.get_node("DailyButton").pressed.connect(func(): daily_requested.emit())
+	menu_row.get_node("SignInButton").pressed.connect(func(): signin_requested.emit())
+	menu_row.get_node("SettingsButton").pressed.connect(func(): settings_requested.emit())
 	_refresh_all()
 
 
@@ -61,7 +70,7 @@ func _get_ore_cost(key: String) -> int:
 
 
 func _refresh_all() -> void:
-	ore_label.text = "矿石: %d" % SaveSystem.ore
+	ore_label.text = "总矿石: %d" % SaveSystem.ore
 	_refresh_ore_row(start_money_row, "start_money")
 	_refresh_ore_row(start_lives_row, "start_lives")
 	_refresh_ore_row(global_speed_row, "global_speed")

@@ -1,0 +1,66 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/pause_panel.gd" id="1_pp"]
+
+[node name="PausePanel" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_pp")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.03, 0.02, 0.62)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(430, 0)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="Center/Panel/VBox"]
+text = "暂 停"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="ContextLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="RunStatsLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 15
+
+[node name="HSeparator" type="HSeparator" parent="Center/Panel/VBox"]
+
+[node name="ResumeButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 52)
+text = "继续挖掘"
+theme_override_font_sizes/font_size = 19
+
+[node name="RestartButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "重新开始"
+
+[node name="SettingsButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "设置"
+
+[node name="AbandonButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "放弃本局"
+modulate = Color(1, 0.6, 0.55, 1)
+
+[node name="HintLabel" type="Label" parent="Center/Panel/VBox"]
+text = "按 ESC 继续"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.6, 0.54, 0.44, 1)

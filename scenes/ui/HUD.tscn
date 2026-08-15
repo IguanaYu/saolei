@@ -107,6 +107,11 @@ expand_mode = 1
 text = "0:00"
 mouse_filter = 2
 
+[node name="PauseButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox"]
+custom_minimum_size = Vector2(64, 36)
+text = "暂停"
+theme_override_font_sizes/font_size = 14
+
 [node name="ObjectiveLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 visible = false
 horizontal_alignment = 1

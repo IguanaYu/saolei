@@ -9,9 +9,28 @@ extends Node2D
 ## 岩壁视觉风格：A1-A4 连体岩壁 / B1-B4 碎石泥土（章节可配）
 @export var wall_style: String = "A1"
 
+var show_grid_lines := false
+
 var cells: Dictionary = {}  # {Vector2i: Cell}
 
 const CELL_SCENE := preload("res://scenes/Cell.tscn")
+
+## 网格线覆盖层：作为最后一个子节点画在所有格子之上
+class GridLines extends Node2D:
+	var grid_size := Vector2i(16, 16)  # (rows, cols)
+	var cell_px := 28
+
+	func _draw() -> void:
+		var w := grid_size.y * cell_px  # 宽 = cols
+		var h := grid_size.x * cell_px  # 高 = rows
+		var col := Color(0, 0, 0, 0.35)
+		for x in grid_size.y + 1:
+			draw_line(Vector2(x * cell_px, 0), Vector2(x * cell_px, h), col, 1.0)
+		for y in grid_size.x + 1:
+			draw_line(Vector2(0, y * cell_px), Vector2(w, y * cell_px), col, 1.0)
+
+
+var _lines: GridLines = null
 
 signal cell_opened(cell, by_actor: String)
 signal cell_flagged(cell, by_actor: String, correct: bool)
@@ -22,8 +41,18 @@ signal vein_depleted(coord: Vector2i)
 
 
 func _ready() -> void:
+	_lines = GridLines.new()
+	_lines.visible = bool(GameSettings.get_value("show_grid"))
+	add_child(_lines)
+	GameSettings.setting_changed.connect(_on_setting_changed)
 	_center_grid()
 	init_empty_grid()
+
+
+func _on_setting_changed(key: String, value: Variant) -> void:
+	if key == "show_grid":
+		show_grid_lines = bool(value)
+		_lines.visible = show_grid_lines
 
 
 ## 按关卡参数重置网格（P13）：改尺寸 + 重排位置 + 重建空网格
@@ -36,9 +65,11 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 
 
 func _center_grid() -> void:
-	var grid_pixel: int = rows * cell_size
+	# 非正方形棋盘（每日挑战等）：宽=cols、高=rows 分别居中
+	var w := cols * cell_size
+	var h := rows * cell_size
 	var viewport: Vector2 = get_viewport_rect().size
-	position = (viewport - Vector2(grid_pixel, grid_pixel)) / 2.0
+	position = (viewport - Vector2(w, h)) / 2.0
 
 
 ## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成
@@ -59,6 +90,19 @@ func init_empty_grid() -> void:
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
 			cells[coord] = cell
+	# 网格线覆盖层挪到最后，保证画在格子之上
+	if _lines != null:
+		_lines.grid_size = Vector2i(rows, cols)
+		_lines.cell_px = cell_size
+		move_child(_lines, get_child_count() - 1)
+		_lines.queue_redraw()
+
+
+## 原地切换岩壁风格（不重置局面）：调试键 F5 / 章节主题用
+func set_wall_style(style: String) -> void:
+	wall_style = style
+	for c in cells.values():
+		c.apply_wall_style(style)
 
 
 ## 玩家放置第一个基地：触发雷生成 + 预开安全区 + 标记基地

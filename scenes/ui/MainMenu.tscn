@@ -36,10 +36,17 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
 text = "扫雷挖矿"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 44
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="TaglineLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
+text = "—— 指挥机器人，挖穿雷区矿洞 ——"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
 [node name="OreLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = "矿石: 0"
+text = "总矿石: 0"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 22
 
@@ -117,3 +124,23 @@ text = ""
 custom_minimum_size = Vector2(0, 56)
 text = "开始冒险"
 theme_override_font_sizes/font_size = 22
+
+[node name="MenuRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="StatsButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
+custom_minimum_size = Vector2(118, 42)
+text = "挖矿档案"
+
+[node name="DailyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
+custom_minimum_size = Vector2(118, 42)
+text = "每日挑战"
+
+[node name="SignInButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
+custom_minimum_size = Vector2(118, 42)
+text = "矿工签到"
+
+[node name="SettingsButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
+custom_minimum_size = Vector2(118, 42)
+text = "设置"

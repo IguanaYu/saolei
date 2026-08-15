@@ -1,65 +1,216 @@
 extends Control
-## 结算面板：游戏结束时显示；区分首通 / 重刷奖励
+## 结算面板 V2：暗化背景 + 大星级弹出动画 + 新纪录角标 + 分项奖励图标化
+## 兼容三种模式：关卡(首通/重刷) / 每日挑战 / 旧自由模式
 
 signal restart_requested
 signal back_to_level_select_requested
+signal back_to_menu_requested
+signal share_requested
 
-@onready var result_title_label: Label = $VBoxContainer/ResultTitleLabel
-@onready var final_score_label: Label = $VBoxContainer/FinalScoreLabel
-@onready var stats_label: Label = $VBoxContainer/StatsLabel
-@onready var restart_button: Button = $VBoxContainer/RestartButton
-@onready var back_button: Button = $VBoxContainer/BackButton
+const ICON_COIN := preload("res://assets/ui/icons/icon_coin.png")
+const ICON_ORE := preload("res://assets/ui/icons/icon_ore.png")
+const ICON_CLOCK := preload("res://assets/ui/icons/icon_clock.png")
+const ICON_HEART := preload("res://assets/ui/icons/icon_heart.png")
+const ICON_STAR := preload("res://assets/ui/icons/icon_star.png")
+
+const STAR_GRAY := Color(0.38, 0.35, 0.3)
+const DAILY_ORE := 30
+
+@onready var title_label: Label = $Center/Panel/VBox/TitleLabel
+@onready var record_badge: PanelContainer = $Center/Panel/VBox/RecordBadge
+@onready var stars_row: HBoxContainer = $Center/Panel/VBox/StarsRow
+@onready var star_hint_label: Label = $Center/Panel/VBox/StarHintLabel
+@onready var rewards_box: VBoxContainer = $Center/Panel/VBox/RewardsBox
+@onready var final_score_label: Label = $Center/Panel/VBox/ScoreRow/FinalScoreLabel
+@onready var restart_button: Button = $Center/Panel/VBox/ButtonsRow/RestartButton
+@onready var back_button: Button = $Center/Panel/VBox/ButtonsRow/BackButton
+@onready var share_button: Button = $Center/Panel/VBox/ButtonsRow/ShareButton
 
 
 func _ready() -> void:
 	hide()
 	GameState.game_over.connect(_on_game_over)
 	restart_button.pressed.connect(func(): restart_requested.emit())
-	back_button.pressed.connect(func(): back_to_level_select_requested.emit())
+	back_button.pressed.connect(_on_back)
+	share_button.pressed.connect(func(): share_requested.emit())
+
+
+func _on_back() -> void:
+	if GameState.daily_mode or GameState.current_level_id == "":
+		back_to_menu_requested.emit()
+	else:
+		back_to_level_select_requested.emit()
 
 
 func _on_game_over(result: String) -> void:
 	show()
-	final_score_label.text = "最终积分: %d" % GameState.score
-	if GameState.current_level_id == "":
+	record_badge.visible = false
+	# 每日挑战计入总局数/连胜，但不挤占关卡最佳时间/最高积分
+	var is_record := _record_stats(result, not GameState.daily_mode)
+	if GameState.daily_mode:
+		_handle_daily(result)
+	elif GameState.current_level_id == "":
 		_handle_free_mode(result)
 	else:
-		_handle_level_mode(result)
+		_handle_level_mode(result, is_record)
 
 
-## 旧自由模式（无关卡）：积分/10 换矿石
+func _time_used() -> float:
+	var lvl := GameState.get_current_level()
+	var total: float = lvl.time_limit_sec if lvl != null else 90.0
+	return max(0.0, total - GameState.time_left)
+
+
+## 统计埋点；返回本局是否刷新最高积分
+func _record_stats(result: String, track_best := true) -> bool:
+	var is_record: bool = track_best and result == "win" \
+			and GameState.score > int(SaveSystem.stats.best_score)
+	SaveSystem.record_game_result(result, _time_used(), GameState.score, track_best)
+	return is_record
+
+
+# ---------------- 模式分支 ----------------
+
 func _handle_free_mode(result: String) -> void:
-	var title_map := {"win": "胜利！", "lose": "失败", "timeout": "时间到"}
-	result_title_label.text = title_map.get(result, "结束")
-	var time_used: float = 90.0 - GameState.time_left
+	title_label.text = {"win": "胜利！", "lose": "失败", "timeout": "时间到"}.get(result, "结束")
+	back_button.text = "返回主菜单"
+	_clear_rewards()
 	var ore_earned: int = GameState.score / 10
 	SaveSystem.add_ore(ore_earned)
-	stats_label.text = "用时: %.1f 秒\n获得矿石: +%d" % [max(0.0, time_used), ore_earned]
+	_add_row(ICON_CLOCK, "本局用时", SaveSystem.format_duration(_time_used()))
+	_add_row(ICON_ORE, "矿石结算", "+%d" % ore_earned)
+	stars_row.visible = false
+	star_hint_label.visible = false
+	final_score_label.text = str(GameState.score)
 
 
-func _handle_level_mode(result: String) -> void:
+func _handle_level_mode(result: String, is_record: bool) -> void:
+	back_button.text = "返回选关"
+	record_badge.visible = is_record
+	_clear_rewards()
+	_add_row(ICON_CLOCK, "本局用时", SaveSystem.format_duration(_time_used()))
 	if result != "win":
-		result_title_label.text = "失败"
-		stats_label.text = "再接再厉"
+		title_label.text = "失败" if result == "lose" else "时间到"
+		stars_row.visible = false
+		star_hint_label.visible = false
+		_add_row(ICON_HEART, "剩余生命", "%d" % GameState.lives)
+		final_score_label.text = str(GameState.score)
 		return
 	var stars := _calculate_stars()
 	var is_first: bool = not SaveSystem.is_first_clear_claimed(GameState.current_level_id)
-	var lines := ["星数: %d/3" % stars]
 	if is_first:
 		var r := LevelSystem.claim_first_clear(GameState.current_level_id)
-		lines.append("首通奖励: +%d 矿" % (r.ore if r != null else 0))
+		_add_row(ICON_ORE, "首通奖励", "+%d 矿" % (r.ore if r != null else 0))
 	else:
 		var lvl := LevelSystem.get_level(GameState.current_level_id)
 		var ore: int = lvl.repeat_reward.ore if lvl != null else 0
 		SaveSystem.add_ore(ore)
-		lines.append("重刷奖励: +%d 矿" % ore)
+		_add_row(ICON_ORE, "重刷奖励", "+%d 矿" % ore)
 	LevelSystem.mark_cleared(GameState.current_level_id, stars)
-	lines.append_array(_unlock_feedback(GameState.current_level_id))
-	result_title_label.text = "首通胜利" if is_first else "重刷胜利"
-	stats_label.text = "\n".join(lines)
+	for line in _unlock_feedback(GameState.current_level_id):
+		_add_row(ICON_STAR, line, "")
+	title_label.text = "首通胜利！" if is_first else "矿场完成！"
+	_animate_stars(stars)
+	star_hint_label.visible = true
+	star_hint_label.text = _star_hint(stars)
+	final_score_label.text = str(GameState.score)
 
 
-## 章末通关后，追加"新章节 / 新功能解锁"提示（让玩家看得见解锁）
+func _handle_daily(result: String) -> void:
+	title_label.text = "挑战完成！" if result == "win" else ("挑战失败" if result == "lose" else "时间到")
+	back_button.text = "返回主菜单"
+	_clear_rewards()
+	_add_row(ICON_CLOCK, "本局用时", SaveSystem.format_duration(_time_used()))
+	stars_row.visible = false
+	star_hint_label.visible = false
+	if result == "win":
+		var info: Dictionary = SaveSystem.complete_daily(_time_used())
+		SaveSystem.add_ore(DAILY_ORE)
+		_add_row(ICON_ORE, "挑战奖励", "+%d 矿" % DAILY_ORE)
+		if bool(info.new_best):
+			_add_row(ICON_STAR, "今日新纪录！", "")
+		if bool(info.badge_added):
+			_add_row(ICON_STAR, "本周徽章 +1（%d/5）" % SaveSystem.get_daily_badges().size(), "")
+		if int(info.chest_ore) > 0:
+			SaveSystem.add_ore(int(info.chest_ore))
+			_add_row(ICON_ORE, "本周宝箱", "+%d 矿" % int(info.chest_ore))
+	final_score_label.text = str(GameState.score)
+
+
+# ---------------- 视觉 ----------------
+
+func _clear_rewards() -> void:
+	for c in rewards_box.get_children():
+		c.queue_free()
+
+
+func _add_row(icon: Texture2D, left_text: String, right_text: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var icon_rect := TextureRect.new()
+	icon_rect.texture = icon
+	icon_rect.custom_minimum_size = Vector2(20, 20)
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	var left := Label.new()
+	left.text = left_text
+	left.add_theme_font_size_override("font_size", 15)
+	left.add_theme_color_override("font_color", Color(0.85, 0.78, 0.64))
+	if right_text == "":
+		var fill := Control.new()
+		fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(icon_rect)
+		row.add_child(left)
+		row.add_child(fill)
+		left.add_theme_color_override("font_color", Color(1, 0.82, 0.4))
+		rewards_box.add_child(row)
+		return
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var right := Label.new()
+	right.text = right_text
+	right.add_theme_font_size_override("font_size", 15)
+	row.add_child(icon_rect)
+	row.add_child(left)
+	row.add_child(spacer)
+	row.add_child(right)
+	rewards_box.add_child(row)
+
+
+func _animate_stars(count: int) -> void:
+	stars_row.visible = true
+	var star_nodes: Array = [stars_row.get_node("Star1"), stars_row.get_node("Star2"), stars_row.get_node("Star3")]
+	for i in 3:
+		var tr: TextureRect = star_nodes[i]
+		tr.pivot_offset = tr.size / 2.0
+		tr.modulate = Color.WHITE if i < count else STAR_GRAY
+		tr.scale = Vector2.ONE
+	for i in count:
+		var tr: TextureRect = star_nodes[i]
+		tr.scale = Vector2.ZERO
+		var tw := create_tween()
+		tw.tween_interval(0.18 * i)
+		tw.tween_property(tr, "scale", Vector2.ONE, 0.28) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _star_hint(stars: int) -> String:
+	var parts := ["★ 完成目标"]
+	if GameState.lives >= 2:
+		parts.append("★ 剩余 %d 命" % GameState.lives)
+	else:
+		parts.append("☆ 剩余命不足")
+	var obj := GameState.current_objective
+	if obj == null or obj.type != ObjectiveData.Type.SURVIVE_TIME:
+		var lvl := GameState.get_current_level()
+		if lvl != null and GameState.time_left >= lvl.time_limit_sec * 0.5:
+			parts.append("★ 速度加成")
+		else:
+			parts.append("☆ 速度不足")
+	return " · ".join(parts)
+
+
+## 章末通关后，追加"新章节 / 新功能解锁"提示
 func _unlock_feedback(level_id: String) -> Array:
 	var lvl := LevelSystem.get_level(level_id)
 	if lvl == null:

@@ -1,0 +1,132 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/daily_challenge.gd" id="1_dc"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/icon_star.png" id="2_star"]
+
+[node name="DailyPanel" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_dc")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.03, 0.02, 0.66)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(600, 0)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Center/Panel/VBox"]
+text = "每 日 挑 战"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="DateLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="MapCard" type="PanelContainer" parent="Center/Panel/VBox"]
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/VBox/MapCard"]
+offset_right = 568.0
+offset_bottom = 100.0
+theme_override_constants/separation = 4
+
+[node name="MapNameLabel" type="Label" parent="Center/Panel/VBox/MapCard/VBox"]
+text = "今日矿场"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="MapDescLabel" type="Label" parent="Center/Panel/VBox/MapCard/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 15
+
+[node name="MapNoteLabel" type="Label" parent="Center/Panel/VBox/MapCard/VBox"]
+text = "盘面由日期生成 · 全球玩家同一张图"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="RecordsRow" type="HBoxContainer" parent="Center/Panel/VBox"]
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="TodayCard" type="PanelContainer" parent="Center/Panel/VBox/RecordsRow"]
+custom_minimum_size = Vector2(200, 70)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/VBox/RecordsRow/TodayCard"]
+
+[node name="NameLabel" type="Label" parent="Center/Panel/VBox/RecordsRow/TodayCard/VBox"]
+text = "今日最佳"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="ValueLabel" type="Label" parent="Center/Panel/VBox/RecordsRow/TodayCard/VBox"]
+text = "—"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="AllCard" type="PanelContainer" parent="Center/Panel/VBox/RecordsRow"]
+custom_minimum_size = Vector2(200, 70)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/VBox/RecordsRow/AllCard"]
+
+[node name="NameLabel" type="Label" parent="Center/Panel/VBox/RecordsRow/AllCard/VBox"]
+text = "历史最佳"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="ValueLabel" type="Label" parent="Center/Panel/VBox/RecordsRow/AllCard/VBox"]
+text = "—"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="BadgeHeader" type="Label" parent="Center/Panel/VBox"]
+text = "◆ 本周徽章（周一刷新）"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="BadgesRow" type="HBoxContainer" parent="Center/Panel/VBox"]
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="ChestLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="CountdownLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+
+[node name="StartButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 52)
+text = "开始今日挑战"
+theme_override_font_sizes/font_size = 19
+
+[node name="RuleLabel" type="Label" parent="Center/Panel/VBox"]
+text = "挑战独立于章节进度 · 失败不扣命 · 每天一次计徽章"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.6, 0.54, 0.44, 1)
+
+[node name="CloseButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+text = "返 回"

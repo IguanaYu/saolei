@@ -1,9 +1,11 @@
 extends Control
-## 顶部 HUD：图标化资源条（钱/矿石/积分）+ 命数心形 + 倒计时 + 提示
+## 顶部 HUD：图标化资源条（钱/矿石/积分）+ 命数心形 + 倒计时 + 暂停按钮 + 提示
 
 const HEART_FULL := preload("res://assets/ui/icons/icon_heart.png")
 const HEART_EMPTY := preload("res://assets/ui/icons/icon_heart_empty.png")
 const MAX_HEARTS := 3
+
+signal pause_requested
 
 @onready var money_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/MoneyLabel
 @onready var score_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/ScoreLabel
@@ -28,6 +30,8 @@ func _ready() -> void:
 	GameState.game_phase_changed.connect(_on_game_phase_changed)
 	GameState.objective_progress_updated.connect(_on_objective_progress_updated)
 	SaveSystem.ore_changed.connect(_on_ore_changed)
+	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/PauseButton.pressed.connect(
+		func(): pause_requested.emit())
 	_refresh_all()
 	_on_ore_changed(SaveSystem.ore)
 	_on_game_phase_changed(GameState.game_phase)
