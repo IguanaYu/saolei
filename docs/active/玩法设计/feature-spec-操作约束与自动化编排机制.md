@@ -4,7 +4,7 @@
 **设计张力锚定:** 手动掌控 × 自动效率
 **版本:** v0.1(草案)
 **日期:** 2026-08-22
-**上游工件:** [design-brief.md](design-brief.md) · [teardowns/teardown-开心消消乐.md](teardowns/teardown-开心消消乐.md)(T-消) · [teardowns/teardown-沙威玛传奇.md](teardowns/teardown-沙威玛传奇.md)(T-沙) · [玩法解构方法论-v1.md](玩法解构方法论-v1.md)
+**上游工件:** [design-brief-玩法解构.md](design-brief-玩法解构.md) · [teardowns/teardown-开心消消乐.md](teardowns/teardown-开心消消乐.md)(T-消) · [teardowns/teardown-沙威玛传奇.md](teardowns/teardown-沙威玛传奇.md)(T-沙) · [玩法解构方法论-v1.md](玩法解构方法论-v1.md)
 **方法论:** 机制 = 对原子操作(开格/标雷/和弦/指挥机器人)和核心资源(信息/注意力)的定价;每个约束配一条自动化救赎路径。
 
 ---

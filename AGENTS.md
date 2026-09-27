@@ -18,4 +18,4 @@ git提交的时候，不要添加Co-Authored-By相关的内容
 - 像素级视觉问题（贴图拉伸/溢出/重叠）用 Python(numpy/PIL) 逐像素测量；测量前先输出中间结果（bbox、剖面、采样值）确认定位的对象正确，再下结论
 - 测量算法不要预设结构（如"网格必须等距"），预设会把异常平均化掩盖；用独立峰检测 + 用户标注锚点交叉验证
 - TextureRect 使用 AtlasTexture 时必须显式设置 expand_mode=1（默认 EXPAND_KEEP_SIZE 会把控件撑到纹理尺寸并向右下溢出）
-- 详细复盘：docs/active/调试复盘-贴图溢出与视觉模型陷阱.md
+- 详细复盘：docs/active/美术生产/调试复盘-贴图溢出与视觉模型陷阱.md
