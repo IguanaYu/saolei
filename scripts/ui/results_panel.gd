@@ -47,6 +47,9 @@ func _on_game_over(result: String) -> void:
 	record_badge.visible = false
 	# 每日挑战计入总局数/连胜，但不挤占关卡最佳时间/最高积分
 	var is_record := _record_stats(result, not GameState.daily_mode)
+	var lvl := GameState.get_current_level()
+	if lvl != null and lvl.is_playtest:
+		_record_playtest(result)
 	if GameState.daily_mode:
 		_handle_daily(result)
 	elif GameState.current_level_id == "":
@@ -56,9 +59,28 @@ func _on_game_over(result: String) -> void:
 
 
 func _time_used() -> float:
+	if not GameState.has_time_limit():
+		return GameState.elapsed
 	var lvl := GameState.get_current_level()
 	var total: float = lvl.time_limit_sec if lvl != null else 90.0
 	return max(0.0, total - GameState.time_left)
+
+
+## 盲测埋点：每局一条记录进存档（外部试玩收档解析用）
+func _record_playtest(result: String) -> void:
+	SaveSystem.record_playtest({
+		"level": GameState.current_level_id,
+		"result": result,
+		"elapsed": snappedf(GameState.elapsed, 0.1),
+		"score": GameState.score,
+		"money_left": GameState.money,
+		"open_score": GameState.result_stats["open_score"],
+		"flag_score": GameState.result_stats["flag_score"],
+		"wrong_flags": GameState.result_stats["wrong_flags"],
+		"player_ops": GameState.result_stats["player_ops"],
+		"robot_ops": GameState.result_stats["robot_ops"],
+		"player_actions": GameState.result_stats["player_actions"],
+	})
 
 
 ## 统计埋点；返回本局是否刷新最高积分
@@ -96,13 +118,13 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		_add_row(ICON_HEART, "剩余生命", "%d" % GameState.lives)
 		final_score_label.text = str(GameState.score)
 		return
-	var stars := _calculate_stars()
+	var lvl := GameState.get_current_level()
+	var stars := 0 if (lvl != null and lvl.no_stars) else _calculate_stars()
 	var is_first: bool = not SaveSystem.is_first_clear_claimed(GameState.current_level_id)
 	if is_first:
 		var r := LevelSystem.claim_first_clear(GameState.current_level_id)
 		_add_row(ICON_ORE, "首通奖励", "+%d 矿" % (r.ore if r != null else 0))
 	else:
-		var lvl := LevelSystem.get_level(GameState.current_level_id)
 		var ore: int = lvl.repeat_reward.ore if lvl != null else 0
 		SaveSystem.add_ore(ore)
 		_add_row(ICON_ORE, "重刷奖励", "+%d 矿" % ore)
@@ -110,10 +132,26 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	for line in _unlock_feedback(GameState.current_level_id):
 		_add_row(ICON_STAR, line, "")
 	title_label.text = "首通胜利！" if is_first else "矿场完成！"
-	_animate_stars(stars)
-	star_hint_label.visible = true
-	star_hint_label.text = _star_hint(stars)
+	if lvl != null and lvl.no_stars:
+		# 试玩版教学关：无星级，改为开格分/标旗分/人机操作占比三行
+		stars_row.visible = false
+		star_hint_label.visible = false
+		_add_playtest_rows()
+	else:
+		_animate_stars(stars)
+		star_hint_label.visible = true
+		star_hint_label.text = _star_hint(stars)
 	final_score_label.text = str(GameState.score)
+
+
+func _add_playtest_rows() -> void:
+	var s: Dictionary = GameState.result_stats
+	_add_row(ICON_COIN, "开格分", str(s["open_score"]))
+	_add_row(ICON_COIN, "标旗分", str(s["flag_score"]))
+	var total_ops: int = int(s["player_ops"]) + int(s["robot_ops"])
+	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
+	_add_row(ICON_STAR, "你的操作",
+		"%d 次 · 机器人 %d 次（你占 %d%%）" % [s["player_ops"], s["robot_ops"], pct])
 
 
 func _handle_daily(result: String) -> void:

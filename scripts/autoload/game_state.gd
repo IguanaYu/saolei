@@ -8,6 +8,9 @@ var score: int = 0
 var lives: int = 3
 var time_left: float = 90.0
 var game_active: bool = false
+var elapsed: float = 0.0            # 本局实际用时（无时限关的用时口径）
+var time_limit_cfg: float = 90.0    # 关卡配置原始值（<=0 = 无时限）
+var lives_cfg: int = 3              # 关卡配置原始值（<=0 = 无命限制）
 
 # 游戏阶段：placing_base=等玩家放第一个基地 / playing=正常游戏
 var game_phase: String = "placing_base"
@@ -38,6 +41,24 @@ var current_objective: ObjectiveData = null
 var current_level_override: LevelData = null  # 每日挑战等动态关卡（不走 LevelSystem）
 var daily_mode: bool = false                  # 本局是每日挑战
 
+# ---- 玩家操作 CD（教学关：玩家点击=一次性机器人，次数有限）----
+var cd_phase: String = "off"        # off / free(免费阶段) / cooldown(次数耗尽)
+var cd_free_clicks_left: int = 0    # 免费动作余量
+var cd_flag_limit: int = 0          # 免费阶段正确旗上限（0 = 不按旗计）
+var cd_correct_flags: int = 0       # 免费阶段已插正确旗数
+var cd_sec: float = 0.0             # 耗尽后单次 CD 时长
+var cd_after_purchase: float = -1.0 # >=0：首台机器人购买后 CD 改为此值
+var cd_duration: float = 0.0        # 当前生效的单次 CD（首购后变短）
+var cd_remaining: float = 0.0       # 距下次可用
+var cd_purchase_boosted: bool = false
+var player_actions_used: int = 0    # 本局玩家有效动作总数（埋点口径，动作级）
+
+# ---- 结算统计（开格分/标旗分/人机操作占比，reset_state 清零）----
+var result_stats := {
+	"open_score": 0, "flag_score": 0, "wrong_flags": 0,
+	"player_ops": 0, "robot_ops": 0, "player_actions": 0,
+}
+
 # ---- 信号总线 ----
 signal money_changed(new_value: int)
 signal score_changed(new_value: int)
@@ -50,6 +71,19 @@ signal game_phase_changed(phase: String)
 signal tower_activated  # 预留：充能塔功能落地后 emit
 signal objective_progress_updated(text: String)
 signal robot_spawned(robot_type: String)
+signal cd_exhausted()                          # 免费阶段 → 耗尽瞬间
+signal cd_blocked()                            # CD 中点击被拦（UI 反馈）
+signal cd_tick(remaining: float, duration: float)
+signal cd_duration_changed(new_duration: float)  # 首购后 CD 变短
+signal player_action_performed                 # 每次有效玩家动作（剧本推进用）
+
+
+func has_time_limit() -> bool:
+	return time_limit_cfg > 0.0
+
+
+func has_life_limit() -> bool:
+	return lives_cfg > 0
 
 
 func add_money(amount: int) -> void:
@@ -67,6 +101,54 @@ func lose_life() -> void:
 	lives_changed.emit(lives)
 
 
+# ---- 玩家操作 CD ----
+
+## CD 中点击是否被拦（免费阶段/off 永远放行）
+func is_player_blocked() -> bool:
+	return cd_phase == "cooldown" and cd_remaining > 0.0
+
+
+## 有效玩家动作执行后计数（开格/翻旗/和弦/踩雷各 1 次，洪水整片算 1）
+func consume_player_action() -> void:
+	player_actions_used += 1
+	result_stats["player_actions"] = player_actions_used
+	player_action_performed.emit()
+	if cd_phase == "free":
+		cd_free_clicks_left -= 1
+		if cd_free_clicks_left <= 0:
+			_enter_cooldown()
+	elif cd_phase == "cooldown":
+		# 恢复好的次数被本次动作用掉，重新计时
+		cd_remaining = cd_duration
+		cd_tick.emit(cd_remaining, cd_duration)
+
+
+## 免费阶段的正确旗计数（第 N 面正确旗触发耗尽，与点击数先到为准）
+func notify_player_correct_flag() -> void:
+	if cd_phase == "free" and cd_flag_limit > 0:
+		cd_correct_flags += 1
+		if cd_correct_flags >= cd_flag_limit:
+			_enter_cooldown()
+
+
+func _enter_cooldown() -> void:
+	cd_phase = "cooldown"
+	# 免费阶段就已首购过 → 耗尽后直接用短 CD（boost 不能被 30s 覆盖）
+	if cd_purchase_boosted and cd_after_purchase >= 0.0:
+		cd_duration = cd_after_purchase
+	else:
+		cd_duration = cd_sec
+	cd_remaining = cd_duration
+	cd_exhausted.emit()
+
+
+## 每帧推进 CD（main._process 调用；暂停时由 get_tree().paused 天然停摆）
+func tick_cd(delta: float) -> void:
+	if cd_phase == "cooldown" and cd_remaining > 0.0:
+		cd_remaining = maxf(0.0, cd_remaining - delta)
+		cd_tick.emit(cd_remaining, cd_duration)
+
+
 ## 重置本局状态。level_id 为空串时走旧自由模式（兼容旧调用）
 ## override 用于动态生成的关卡（每日挑战）
 func reset_state(level_id: String = "", override: LevelData = null) -> void:
@@ -80,15 +162,36 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	if lvl != null:
 		current_objective = lvl.objectives[0] if not lvl.objectives.is_empty() else null
 		money = lvl.start_gold + 50 * int(su.unlocks.get("start_money", 0))
-		lives = lvl.start_lives + int(su.unlocks.get("start_lives", 0))
+		# 无命限制关（start_lives<=0）不吃局外加命，保持"无失败状态"承诺
+		lives = 0 if lvl.start_lives <= 0 else lvl.start_lives + int(su.unlocks.get("start_lives", 0))
 		time_left = lvl.time_limit_sec
+		time_limit_cfg = lvl.time_limit_sec
+		lives_cfg = lvl.start_lives
 	else:
 		money = 100 + 50 * int(su.unlocks.get("start_money", 0))
 		lives = 3 + int(su.unlocks.get("start_lives", 0))
 		time_left = 90.0
+		time_limit_cfg = 90.0
+		lives_cfg = 3
 	score = 0
+	elapsed = 0.0
 	game_active = false
 	game_phase = "placing_base"
+	# 玩家操作 CD 初始化（cooldown_sec>0 才启用；免费阶段无 CD 概念）
+	cd_phase = "free" if lvl != null and lvl.cooldown_sec > 0.0 else "off"
+	cd_free_clicks_left = lvl.free_clicks if lvl != null else 0
+	cd_flag_limit = lvl.free_correct_flags if lvl != null else 0
+	cd_correct_flags = 0
+	cd_sec = lvl.cooldown_sec if lvl != null else 0.0
+	cd_after_purchase = lvl.cooldown_after_purchase if lvl != null else -1.0
+	cd_duration = 0.0
+	cd_remaining = 0.0
+	cd_purchase_boosted = false
+	player_actions_used = 0
+	result_stats = {
+		"open_score": 0, "flag_score": 0, "wrong_flags": 0,
+		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
+	}
 	# 全局速度加成（局外升级直接给所有机器人同级）
 	var gs: int = int(su.unlocks.get("global_speed", 0))
 	opener_speed_level = gs
@@ -193,6 +296,15 @@ func get_robot_price(robot_type: String) -> int:
 	return int(base * discount)
 
 
+func get_robot_purchased_count(robot_type: String) -> int:
+	match robot_type:
+		"opener": return opener_count
+		"marker": return marker_count
+		"detector": return detector_count
+		"miner": return miner_count
+	return 0
+
+
 func purchase_robot(robot_type: String) -> bool:
 	var price: int = get_robot_price(robot_type)
 	if money < price:
@@ -203,6 +315,12 @@ func purchase_robot(robot_type: String) -> bool:
 		"marker": marker_count += 1
 		"detector": detector_count += 1
 		"miner": miner_count += 1
+	# 首购恢复 CD（教学关：30s → 3s，立刻恢复一次次数）
+	if cd_phase != "off" and cd_after_purchase >= 0.0 and not cd_purchase_boosted:
+		cd_purchase_boosted = true
+		cd_duration = cd_after_purchase
+		cd_remaining = 0.0
+		cd_duration_changed.emit(cd_duration)
 	return true
 
 

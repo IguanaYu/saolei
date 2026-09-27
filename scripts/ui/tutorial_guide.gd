@@ -9,6 +9,10 @@ const GOLD := Color(1.0, 0.82, 0.4)
 
 var steps: Array = []
 var _step_idx := 0
+# 竞态修复：提前到达的事件缓存（原实现只匹配当前步骤，早到事件被静默丢弃→卡死）
+var _pending_events: Dictionary = {}
+# 步骤代数：防旧步骤的 await/timer 回调污染新步骤
+var _step_gen := 0
 
 @onready var dim_top: ColorRect = $DimTop
 @onready var dim_bottom: ColorRect = $DimBottom
@@ -37,21 +41,26 @@ func begin(step_defs: Array) -> void:
 		return
 	steps = step_defs
 	_step_idx = 0
+	_step_gen += 1
+	_pending_events.clear()
 	show()
 	_apply_step()
 
 
 ## 外部事件推进（base_placed / robot_spawned 等，经 main 转发）
 func notify_event(event: String) -> void:
-	if not visible or _step_idx >= steps.size():
+	if _step_idx >= steps.size():
 		return
 	var step: Dictionary = steps[_step_idx]
 	if step.get("event", "") == event:
 		_advance()
+	else:
+		_pending_events[event] = true  # 早到事件缓存，推进到等待它的步骤时补领
 
 
 func _advance() -> void:
 	_step_idx += 1
+	_step_gen += 1
 	_apply_step()
 
 
@@ -59,13 +68,30 @@ func _apply_step() -> void:
 	if _step_idx >= steps.size():
 		_finish()
 		return
+	var gen := _step_gen
 	var step: Dictionary = steps[_step_idx]
 	var r := _spot_rect(step).grow(8.0)
 	_lay_spotlight(r)
 	step_label.text = "引导 %d / %d" % [_step_idx + 1, steps.size()]
 	text_label.text = step.text
 	next_button.visible = step.get("event", "") == ""
-	_lay_tip(r, step.get("tip", "left"))
+	_lay_tip(r, step.get("tip", "left"), gen)
+	_start_step_timeout(step, gen)
+	# 本步骤等待的事件若早已到达，立即推进
+	var ev: String = step.get("event", "")
+	if ev != "" and _pending_events.has(ev):
+		_pending_events.erase(ev)
+		_advance.call_deferred()
+
+
+## 超时升级提示步骤：timeout_sec 秒后把气泡文案换成 timeout_text（只换字，不推进）
+func _start_step_timeout(step: Dictionary, gen: int) -> void:
+	if not step.has("timeout_sec"):
+		return
+	var t := get_tree().create_timer(step.timeout_sec)
+	t.timeout.connect(func() -> void:
+		if visible and gen == _step_gen and _step_idx < steps.size():
+			text_label.text = step.get("timeout_text", step.text))
 
 
 func _spot_rect(step: Dictionary) -> Rect2:
@@ -99,9 +125,9 @@ func _lay_spotlight(r: Rect2) -> void:
 	border_right.size = Vector2(t, r.size.y + t * 2)
 
 
-func _lay_tip(r: Rect2, side: String) -> void:
+func _lay_tip(r: Rect2, side: String, gen: int = -1) -> void:
 	await get_tree().process_frame  # 等文本排版完成再取尺寸
-	if not visible or _step_idx >= steps.size():
+	if not visible or _step_idx >= steps.size() or gen != _step_gen:
 		return
 	var tip_size := tip_panel.get_combined_minimum_size()
 	var vp := get_viewport_rect().size
@@ -124,6 +150,8 @@ func _lay_tip(r: Rect2, side: String) -> void:
 
 
 func _finish() -> void:
+	_step_gen += 1
+	_pending_events.clear()
 	GameSettings.set_value("tutorial_done", true)
 	hide()
 	finished.emit()

@@ -103,6 +103,11 @@ func lock_reason(robot_type: String) -> String:
 			return "矿工未解锁（通 3-5）"
 		if not GameState.is_module_allowed("miner"):
 			return "本关禁用矿工型"
+	# 关卡限购（教学关：opener/marker 各 1 台）
+	var lvl: LevelData = GameState.get_current_level()
+	if lvl != null and lvl.shop_limits.has(robot_type):
+		if GameState.get_robot_purchased_count(robot_type) >= int(lvl.shop_limits[robot_type]):
+			return "已购满"
 	return ""
 
 
@@ -130,6 +135,7 @@ func _on_money_changed(_v: int) -> void:
 
 
 func _refresh_prices() -> void:
+	_apply_level_shop_config()
 	_refresh_one(buy_opener_button, "opener", "开墙型")
 	_refresh_one(buy_marker_button, "marker", "标雷型")
 	_refresh_one(buy_detector_button, "detector", "检测型")
@@ -151,3 +157,13 @@ func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void
 	var price: int = GameState.get_robot_price(robot_type)
 	btn.text = "%s ¥%d" % [display_name, price]
 	btn.disabled = GameState.money < price
+
+
+## 关卡级商店配置：隐藏本关不出现的按钮（教学关只留 opener/marker，钱不可能花错）
+func _apply_level_shop_config() -> void:
+	var lvl: LevelData = GameState.get_current_level()
+	var hidden: Array = lvl.shop_hidden if lvl != null else []
+	build_base_button.visible = not hidden.has("base")
+	drone_button.visible = not hidden.has("drone")
+	upgrade_button.visible = not hidden.has("upgrade")
+	debug_button.visible = not hidden.has("debug")

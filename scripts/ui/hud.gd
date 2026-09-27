@@ -21,6 +21,8 @@ signal pause_requested
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
 @onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
 
+var _last_money: int = -1
+
 
 func _ready() -> void:
 	GameState.money_changed.connect(_on_money_changed)
@@ -59,6 +61,15 @@ func _refresh_all() -> void:
 
 func _on_money_changed(v: int) -> void:
 	money_label.text = str(v)
+	# 挣钱脉冲（教学关"标旗在挣钱"的可见性：数字放大+金色闪一下）
+	if _last_money >= 0 and v > _last_money:
+		money_label.modulate = Color(1.0, 0.85, 0.3)
+		money_label.pivot_offset = money_label.size / 2.0
+		var t := create_tween()
+		t.tween_property(money_label, "scale", Vector2(1.35, 1.35), 0.08)
+		t.parallel().tween_property(money_label, "modulate", Color.WHITE, 0.35)
+		t.tween_property(money_label, "scale", Vector2.ONE, 0.15)
+	_last_money = v
 
 
 func _on_score_changed(v: int) -> void:
@@ -66,11 +77,17 @@ func _on_score_changed(v: int) -> void:
 
 
 func _on_lives_changed(v: int) -> void:
+	var show_hearts: bool = GameState.has_life_limit()
 	for i in MAX_HEARTS:
+		hearts[i].visible = show_hearts
 		hearts[i].texture = HEART_FULL if i < v else HEART_EMPTY
 
 
 func _on_time_changed(t: float) -> void:
+	if not GameState.has_time_limit():
+		time_label.visible = false
+		return
+	time_label.visible = true
 	var secs := int(ceil(t))
 	time_label.text = "%d:%02d" % [secs / 60, secs % 60]
 	# 后 30 秒变红预警

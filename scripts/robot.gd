@@ -77,15 +77,15 @@ func _update_visual() -> void:
 		lbl.modulate = Color(0.15, 0.10, 0.05)
 
 
-func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
 	tick_interval = GameState.get_speed_interval(robot_type)
 	_tick_timer += delta
 	if _tick_timer >= tick_interval:
 		_tick_timer = 0.0
-		do_tick(grid, locked, robot_positions)
+		do_tick(grid, locked)
 
 
-func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func do_tick(grid, locked: Dictionary) -> void:
 	# 1. 清理失效目标
 	if _current_target != null:
 		var c = grid.get_cell(_current_target)
@@ -102,7 +102,7 @@ func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
 		if targets.is_empty():
 			_state = "idle"
 			return
-		var found := Pathfinding.find_nearest_target(grid, coord, targets, locked, robot_positions, self)
+		var found := Pathfinding.find_nearest_target(grid, coord, targets, locked, self)
 		if found.is_empty():
 			_state = "idle"
 			return
@@ -111,7 +111,7 @@ func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
 
 	# 3. 寻路到当前目标（自己锁的自己能用）
 	var path_result := Pathfinding.find_nearest_target(
-		grid, coord, [_current_target], locked, robot_positions, self)
+		grid, coord, [_current_target], locked, self)
 	if path_result.is_empty():
 		_state = "idle"
 		return
@@ -157,9 +157,9 @@ func _move_to(target_coord: Vector2i, grid) -> void:
 
 ## 寻路并移动一步，返回 true 表示已到达目标邻接格（可作业）
 ## 子类（MinerRobot）可复用此方法
-func _move_step(grid, targets: Array, locked: Dictionary, robot_positions: Dictionary) -> bool:
+func _move_step(grid, targets: Array, locked: Dictionary) -> bool:
 	var path_result := Pathfinding.find_nearest_target(
-		grid, coord, targets, locked, robot_positions, self)
+		grid, coord, targets, locked, self)
 	if path_result.is_empty():
 		return false
 	if path_result.work_pos == coord:

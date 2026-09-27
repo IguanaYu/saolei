@@ -31,7 +31,7 @@ func _process(delta: float) -> void:
 		_resolve_detection()
 
 
-func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func do_tick(grid, locked: Dictionary) -> void:
 	# 检测阶段不处理 tick（由 _process 管理）
 	if _detector_state == DetectorState.DETECTING:
 		return
@@ -58,7 +58,7 @@ func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
 			_detector_state = DetectorState.IDLE
 			return
 		var found := Pathfinding.find_nearest_target(
-			grid, coord, available, locked, robot_positions, self)
+			grid, coord, available, locked, self)
 		if found.is_empty():
 			_state = "idle"
 			_detector_state = DetectorState.IDLE
@@ -68,7 +68,7 @@ func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
 
 	# 寻路到目标
 	var path_result := Pathfinding.find_nearest_target(
-		grid, coord, [_current_target], locked, robot_positions, self)
+		grid, coord, [_current_target], locked, self)
 	if path_result.is_empty():
 		_state = "idle"
 		_detector_state = DetectorState.IDLE

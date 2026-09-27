@@ -56,11 +56,9 @@ func get_robot_positions() -> Dictionary:
 
 func tick_all(delta: float, grid) -> void:
 	var locked: Dictionary = GameState.locked_targets
-	var positions: Dictionary = get_robot_positions()
 	var any_busy: bool = false
 	for robot in robots:
-		positions[robot.coord] = robot  # 动态更新，避免两机器人挤一格
-		robot.accumulate_and_maybe_tick(delta, grid, locked, positions)
+		robot.accumulate_and_maybe_tick(delta, grid, locked)
 		if not robot.is_idle():
 			any_busy = true
 

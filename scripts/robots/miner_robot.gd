@@ -25,19 +25,19 @@ func _update_visual() -> void:
 	super()  # 皮肤逻辑在基类（按 robot_type 取帧）
 
 
-func do_tick(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func do_tick(grid, locked: Dictionary) -> void:
 	match miner_state:
 		"to_mine":
-			_tick_to_mine(grid, locked, robot_positions)
+			_tick_to_mine(grid, locked)
 		"mining":
 			_tick_mining(grid)
 		"to_base":
-			_tick_to_base(grid, locked, robot_positions)
+			_tick_to_base(grid, locked)
 		"unloading":
 			_tick_unloading()
 
 
-func _tick_to_mine(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func _tick_to_mine(grid, locked: Dictionary) -> void:
 	# 如果当前矿脉无效，找新矿脉
 	if _current_vein_coord == null:
 		var success := _find_new_vein(grid)
@@ -53,7 +53,7 @@ func _tick_to_mine(grid, locked: Dictionary, robot_positions: Dictionary) -> voi
 		return
 
 	# 矿工不用 locked_targets，传空字典
-	var reached: bool = _move_step(grid, [_current_vein_coord], {}, robot_positions)
+	var reached: bool = _move_step(grid, [_current_vein_coord], {})
 	if reached:
 		miner_state = "mining"
 		_state = "working"
@@ -81,7 +81,7 @@ func _tick_mining(grid) -> void:
 		_state = "working"
 
 
-func _tick_to_base(grid, locked: Dictionary, robot_positions: Dictionary) -> void:
+func _tick_to_base(grid, locked: Dictionary) -> void:
 	if GameState.bases.is_empty():
 		_state = "idle"
 		return
@@ -91,7 +91,7 @@ func _tick_to_base(grid, locked: Dictionary, robot_positions: Dictionary) -> voi
 		_state = "idle"
 		return
 
-	var reached: bool = _move_step(grid, [nearest], {}, robot_positions)
+	var reached: bool = _move_step(grid, [nearest], {})
 	if reached:
 		miner_state = "unloading"
 		_state = "working"

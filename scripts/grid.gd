@@ -14,6 +14,8 @@ var show_grid_lines := false
 var cells: Dictionary = {}  # {Vector2i: Cell}
 
 const CELL_SCENE := preload("res://scenes/Cell.tscn")
+const FLY_ICON_OPEN := preload("res://assets/ui/icons/icon_robot_opener.png")
+const FLY_ICON_FLAG := preload("res://assets/ui/icons/icon_robot_marker.png")
 
 ## 网格线覆盖层：作为最后一个子节点画在所有格子之上
 class GridLines extends Node2D:
@@ -134,6 +136,32 @@ func place_first_base(coord: Vector2i) -> bool:
 	GameState.register_base(coord)
 	GameState.set_game_phase("playing")
 	return true
+
+
+## 固定盘面装载（试玩版教学关）：写雷位 → 预开烘焙区 → 预置基地，跳过 placing_base 阶段
+## data 结构见 FixedBoards：{"mines": [Vector2i...], "preopen": [Vector2i...], "base": Vector2i}
+func apply_fixed_board(data: Dictionary) -> void:
+	var mine_set: Dictionary = {}
+	for m in data.mines:
+		mine_set[m] = true
+	for c in cells:
+		cells[c].is_mine = mine_set.has(c)
+		cells[c].adjacent_mines = 0
+	# 数字：以雷格邻域计数
+	for c in mine_set:
+		for n in get_neighbors(c):
+			n.adjacent_mines += 1
+	# 预开（直接设字段，不触发 cell_opened 信号，不给奖励；refresh_visual 自带描边刷新）
+	for sc in data.preopen:
+		if cells.has(sc):
+			cells[sc].is_opened = true
+			cells[sc].refresh_visual()
+	# 预置基地
+	var base_coord: Vector2i = data.base
+	if cells.has(base_coord):
+		cells[base_coord].become_base()
+		GameState.register_base(base_coord)
+	GameState.set_game_phase("playing")
 
 
 ## 玩家放置后续基地（必须在已开格上）
@@ -314,15 +342,78 @@ func _flood_open(start: Vector2i, by_actor: String) -> void:
 
 
 func _on_cell_left_clicked(cell: Cell) -> void:
-	if GameState.game_active:
-		open_cell(cell.coord, "player")
+	if not GameState.game_active:
+		return
+	if GameState.is_player_blocked():
+		GameState.cd_blocked.emit()
+		return
+	# 先判断动作是否会生效（只对生效动作计 CD 次数），执行后再计数
+	var will_open: bool = not cell.is_opened and not cell.is_collapsed \
+			and not cell.is_flagged and not cell.is_base
+	open_cell(cell.coord, "player")
+	if will_open:
+		GameState.consume_player_action()
+		play_player_action_visual(cell.coord, FLY_ICON_OPEN)
 
 
 func _on_cell_right_clicked(cell: Cell) -> void:
-	if GameState.game_active:
-		toggle_flag(cell.coord, "player")
+	if not GameState.game_active:
+		return
+	if GameState.is_player_blocked():
+		GameState.cd_blocked.emit()
+		return
+	var will_toggle: bool = not cell.is_opened and not cell.is_collapsed
+	toggle_flag(cell.coord, "player")
+	if will_toggle:
+		GameState.consume_player_action()
+		play_player_action_visual(cell.coord, FLY_ICON_FLAG)
 
 
 func _on_cell_double_clicked(cell: Cell) -> void:
-	if GameState.game_active:
+	if not GameState.game_active:
+		return
+	if GameState.is_player_blocked():
+		GameState.cd_blocked.emit()
+		return
+	if _chord_would_open(cell):
 		chord(cell.coord, "player")
+		GameState.consume_player_action()
+		play_player_action_visual(cell.coord, FLY_ICON_OPEN)
+
+
+## 和弦预判：数字格、旗数匹配、且至少有一个可开邻格（与 chord() 判定一致）
+func _chord_would_open(cell: Cell) -> bool:
+	if not cell.is_opened or cell.adjacent_mines == 0:
+		return false
+	var flagged := 0
+	var openable := 0
+	for n in get_neighbors(cell.coord):
+		if n.is_flagged:
+			flagged += 1
+		elif not n.is_opened:
+			openable += 1
+	return flagged == cell.adjacent_mines and openable > 0
+
+
+## 玩家操作=一次性机器人：动作瞬发生效后，小机器人图标从最近基地飞落目标格（纯视觉）
+func play_player_action_visual(to_coord: Vector2i, icon: Texture2D) -> void:
+	var from_coord: Vector2i = to_coord
+	var nearest = GameState.get_nearest_base(to_coord)
+	if nearest != null:
+		from_coord = nearest
+	var spr := Sprite2D.new()
+	spr.texture = icon
+	spr.scale = Vector2(0.55, 0.55)
+	spr.z_index = 50
+	add_child(spr)
+	spr.position = Vector2(
+		from_coord.x * cell_size + cell_size / 2.0,
+		from_coord.y * cell_size + cell_size / 2.0)
+	var to_pos := Vector2(
+		to_coord.x * cell_size + cell_size / 2.0,
+		to_coord.y * cell_size + cell_size / 2.0)
+	var tw := create_tween()
+	tw.tween_property(spr, "position", to_pos, 0.35).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(spr, "rotation", TAU, 0.35)
+	tw.tween_property(spr, "scale", Vector2(0.1, 0.1), 0.15)
+	tw.tween_callback(spr.queue_free)

@@ -241,6 +241,17 @@ func format_duration(sec: float) -> String:
 	return "%d:%02d" % [s / 60, s % 60]
 
 
+## 外部试玩盲测埋点：每局一条记录，收档时直接从存档 JSON 解析
+func record_playtest(entry: Dictionary) -> void:
+	entry["ts"] = Time.get_unix_time_from_system()
+	var arr: Array = stats.get("playtest", [])
+	arr.append(entry)
+	if arr.size() > 200:
+		arr = arr.slice(arr.size() - 200)  # 封顶防膨胀
+	stats["playtest"] = arr
+	save_game()
+
+
 # ==================== 每日挑战 ====================
 
 func get_daily_badges() -> Array:

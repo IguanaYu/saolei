@@ -44,9 +44,32 @@ func _build() -> void:
 		ch.theme_color = CHAPTER_COLORS[ch_idx]
 		for s_idx in range(5):
 			var lvl := _make_level(ch_idx, s_idx)
+			if ch_idx == 0 and s_idx == 0:
+				_apply_playtest_level1(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
+
+
+## 外部试玩版第一关（教学关）：固定地图 + 无时限无命 + 全局 CD + 商店限购
+## 设计文档：docs/active/试玩版内容/第一关-设计文档.md
+func _apply_playtest_level1(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(10, 10)
+	lvl.mine_count = 10
+	lvl.time_limit_sec = -1.0   # 无时限
+	lvl.start_gold = 75         # 原则：免费阶段收入 + 75，耗尽时刻恰好够买 opener+marker（100）
+	lvl.start_lives = 0         # 无命限制
+	lvl.free_clicks = 8         # 免费阶段：第 8 次有效动作耗尽
+	lvl.free_correct_flags = 5  # 或第 5 面正确旗耗尽（先到为准）
+	lvl.cooldown_sec = 30.0
+	lvl.cooldown_after_purchase = 3.0
+	lvl.shop_limits = {"opener": 1, "marker": 1}
+	lvl.shop_hidden = ["base", "drone", "upgrade", "debug"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.fixed_mines.assign(FixedBoards.L1.mines)
+	lvl.fixed_base = FixedBoards.L1.base
+	lvl.preopen_coords.assign(FixedBoards.L1.preopen)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

@@ -22,6 +22,9 @@ extends Node
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
 var placing_mode: String = ""
 
+# 试玩版第一关剧本控制器（_ready 时创建）
+var level1_director: Level1Director = null
+
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
 # FLAG_N_MINES 目标计数
@@ -88,6 +91,14 @@ func _ready() -> void:
 	daily_panel.start_requested.connect(_start_daily)
 	# 确认框
 	confirm_dialog.confirmed.connect(_on_confirm_confirmed)
+	# 光标恢复环（CD 期间跟随鼠标）
+	var cd_ring := CDRing.new()
+	cd_ring.name = "CDRing"
+	$UILayer.add_child(cd_ring)
+	# 试玩版第一关剧本控制器
+	level1_director = Level1Director.new()
+	level1_director.name = "Level1Director"
+	add_child(level1_director)
 
 
 # ---- 闪屏 / 主菜单 ----
@@ -179,6 +190,14 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			grid.wall_style = wall_style
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具
+		# 固定盘面：直接装载雷位/预开区/预置基地，跳过放基地阶段
+		if lvl.has_fixed_board():
+			grid.apply_fixed_board({
+				"mines": lvl.fixed_mines,
+				"preopen": lvl.preopen_coords,
+				"base": lvl.fixed_base,
+			})
+			GameState.game_active = true
 	robot_manager.remove_all()
 	_update_objective_progress()
 	_maybe_start_tutorial()
@@ -189,34 +208,9 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 func _maybe_start_tutorial() -> void:
 	if GameState.daily_mode:
 		return
-	if GameState.current_level_id != "ch01_s01":
-		return
-	if bool(GameSettings.get_value("tutorial_done")):
-		return
-	var tw := create_tween()
-	tw.tween_interval(0.5)
-	tw.tween_callback(func(): tutorial_guide.begin(_build_guide_steps()))
-
-
-func _build_guide_steps() -> Array:
-	var board_size := Vector2(grid.rows * grid.cell_size, grid.cols * grid.cell_size)
-	return [
-		{"node": grid, "size": board_size,
-			"text": "欢迎来到矿场！点击任意一格，放置你的第一个基地（机器人从基地出发工作）",
-			"event": "base_placed", "tip": "right"},
-		{"node": shop.buy_opener_button,
-			"text": "购买「开墙型」机器人，它会在岩壁上凿出缺口",
-			"event": "robot_bought", "tip": "below"},
-		{"node": grid, "size": board_size,
-			"text": "机器人会自动干活。你也可以点击格子：左键挖开、右键插旗（插对雷有奖励）",
-			"event": "", "tip": "right"},
-		{"node": hud.objective_label,
-			"text": "完成顶部目标即可过关；剩余生命越多、速度越快，星越多",
-			"event": "", "tip": "below"},
-		{"node": shop.upgrade_button,
-			"text": "金币富余时可升级机器人。祝挖矿顺利！",
-			"event": "", "tip": "below"},
-	]
+	# 试玩版第一关：剧本教学每次进关都触发（不看 tutorial_done，盲测者每遍都要看到）
+	if GameState.current_level_id == "ch01_s01" and level1_director != null:
+		level1_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -276,8 +270,9 @@ func _do_abandon() -> void:
 	tutorial_guide.hide()
 	var lvl := GameState.get_current_level()
 	var total: float = lvl.time_limit_sec if lvl != null else 90.0
-	SaveSystem.record_game_result("abandon", max(0.0, total - GameState.time_left),
-			GameState.score, false)
+	var duration: float = GameState.elapsed if not GameState.has_time_limit() \
+			else max(0.0, total - GameState.time_left)
+	SaveSystem.record_game_result("abandon", duration, GameState.score, false)
 	var keep_ore: int = GameState.score / 20
 	if keep_ore > 0:
 		SaveSystem.add_ore(keep_ore)
@@ -289,8 +284,7 @@ func _do_abandon() -> void:
 # ---- 设置 / 清档 ----
 
 func _on_tutorial_rewatch() -> void:
-	GameSettings.set_value("tutorial_done", false)
-	hud.show_toast("教程将在关卡 1-1 开始时重播", 3.0)
+	hud.show_toast("第一关开场自带教学，进 1-1 即可", 3.0)
 
 
 func _ask_clear_save() -> void:
@@ -323,15 +317,18 @@ func _on_robot_removed(_robot, reason: String) -> void:
 func _process(delta: float) -> void:
 	if not GameState.game_active:
 		return
-	GameState.time_left -= delta
-	GameState.time_changed.emit(GameState.time_left)
-	if GameState.time_left <= 0:
-		var obj := GameState.current_objective
-		if obj != null and obj.type == ObjectiveData.Type.SURVIVE_TIME:
-			_end_game("win")  # 生存目标：熬到时间到即胜利
-		else:
-			_end_game("timeout")
-		return
+	GameState.elapsed += delta
+	GameState.tick_cd(delta)
+	if GameState.has_time_limit():
+		GameState.time_left -= delta
+		GameState.time_changed.emit(GameState.time_left)
+		if GameState.time_left <= 0:
+			var obj := GameState.current_objective
+			if obj != null and obj.type == ObjectiveData.Type.SURVIVE_TIME:
+				_end_game("win")  # 生存目标：熬到时间到即胜利
+			else:
+				_end_game("timeout")
+			return
 	robot_manager.tick_all(delta, grid)
 
 
@@ -502,12 +499,23 @@ func _on_cell_opened(_cell, by_actor: String) -> void:
 		return  # 无人机开的格子不给奖励
 	GameState.add_money(1)
 	GameState.add_score(1)
+	GameState.result_stats["open_score"] += 1
+	if by_actor == "player":
+		GameState.result_stats["player_ops"] += 1
+	elif by_actor.begins_with("robot_"):
+		GameState.result_stats["robot_ops"] += 1
 
 
-func _on_cell_flagged(_cell, _by_actor: String, correct: bool) -> void:
+func _on_cell_flagged(_cell, by_actor: String, correct: bool) -> void:
 	if correct:
 		GameState.add_money(5)
 		GameState.add_score(5)
+		GameState.result_stats["flag_score"] += 5
+		if by_actor == "player":
+			GameState.result_stats["player_ops"] += 1
+			GameState.notify_player_correct_flag()  # 免费阶段第 N 面正确旗触发耗尽
+		elif by_actor.begins_with("robot_"):
+			GameState.result_stats["robot_ops"] += 1
 		var obj := GameState.current_objective
 		if obj != null and obj.type == ObjectiveData.Type.FLAG_N_MINES:
 			_flag_count += 1
@@ -515,10 +523,14 @@ func _on_cell_flagged(_cell, _by_actor: String, correct: bool) -> void:
 			if _flag_count >= obj.target_value:
 				_end_game("win")
 	else:
-		GameState.add_score(-3)
+		# 设计 v1.1：标错旗无奖励无惩罚（原 -3 分废除），仅保留埋点统计
+		GameState.result_stats["wrong_flags"] += 1
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:
+	# 无命限制关：踩雷仅该格坍塌（坍塌已在 grid 层完成），无失败状态
+	if not GameState.has_life_limit():
+		return
 	GameState.lose_life()
 	if GameState.lives <= 0:
 		_end_game("lose")

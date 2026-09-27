@@ -12,7 +12,9 @@ const MOVE_OFFSETS := [
 ## 返回 {target: Vector2i, path: Array[Vector2i], work_pos: Vector2i} 或 {}
 ## path[0] 是从 start 出发要走到的下一格；work_pos 是机器人作业时站的位置
 ## except_robot：调用方自己；锁是它自己锁的 target 不算"被占用"
-static func find_nearest_target(grid, start: Vector2i, targets: Array, locked: Dictionary, robot_at: Dictionary, except_robot: Variant = null) -> Dictionary:
+## 机器人之间允许互相穿越（可短暂同格）：若把对方格子当墙，
+## 对向行进的两台会各自"退绕"再相遇，形成永久震荡活锁
+static func find_nearest_target(grid, start: Vector2i, targets: Array, locked: Dictionary, except_robot: Variant = null) -> Dictionary:
 	var target_set: Dictionary = {}
 	for t in targets:
 		var locked_by: Variant = locked.get(t, null)
@@ -40,8 +42,6 @@ static func find_nearest_target(grid, start: Vector2i, targets: Array, locked: D
 			if visited.has(n):
 				continue
 			if not grid.is_walkable(n):
-				continue
-			if robot_at.has(n) and n != start:
 				continue
 			visited[n] = true
 			queue.append([n, path + [n]])
