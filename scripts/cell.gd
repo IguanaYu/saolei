@@ -38,22 +38,32 @@ const NUMBER_COLORS := [
 # ---- 视觉素材 ----
 # 岩壁（未开格）：无缝纹理 336px = 12 格周期；相邻格按坐标定位切块 → 整片连续
 # 风格 8 种：A1-A4 连体岩壁 / B1-B4 碎石泥土（Grid.wall_style 配置，章节可换）
-var wall_style: String = "A1"
+var wall_style: String = "V2"
 const WALL_GRID := 12
 const WALL_TILE_PX := 28
 
 # 洞底（已开格）：默认暗沙；有配套 floor_<风格> 时自动跟随（如 D 系主题套）
-const FLOOR_DEFAULT := preload("res://assets/tiles/floor_dark.png")
+const FLOOR_DEFAULT := preload("res://visual_v2/runtime/tiles/floor_V2.png")
 const FLOOR_GRID := 12
 const FLOOR_TILE_PX := 28
 
 # 挖开边缘碎裂条（中性色，配所有岩壁风格）
-const EDGE_T := preload("res://assets/tiles/wall_edge_T.png")
-const EDGE_B := preload("res://assets/tiles/wall_edge_B.png")
-const EDGE_L := preload("res://assets/tiles/wall_edge_L.png")
-const EDGE_R := preload("res://assets/tiles/wall_edge_R.png")
+const EDGE_T := preload("res://visual_v2/runtime/tiles/wall_edge_T.png")
+const EDGE_B := preload("res://visual_v2/runtime/tiles/wall_edge_B.png")
+const EDGE_L := preload("res://visual_v2/runtime/tiles/wall_edge_L.png")
+const EDGE_R := preload("res://visual_v2/runtime/tiles/wall_edge_R.png")
+const SPECIAL_BASE := preload("res://visual_v2/runtime/tiles/special_base.png")
+const SPECIAL_FLAG := preload("res://visual_v2/runtime/tiles/special_flag.png")
+const SPECIAL_VEIN := preload("res://visual_v2/runtime/tiles/special_vein.png")
+const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/tiles/special_collapse.png")
+
+# 洞壁生态装饰（E 系主题套）：有 deco_<风格>_sheet 的风格在未开岩壁随机点缀
+const DECO_GRID := 4          # sheet 4x2
+const DECO_TILE_PX := 28
+const DECO_DENSITY := 0.10
 
 var _floor_atlas: AtlasTexture
+var _deco_tex: TextureRect = null
 
 # 双击检测
 var _last_click_time: float = 0.0
@@ -63,6 +73,7 @@ const DOUBLE_CLICK_THRESHOLD := 0.35
 func _ready() -> void:
 	_setup_wall()
 	_setup_floor()
+	_setup_deco()
 	refresh_visual()
 	refresh_wall_edges()
 	# 本格状态变化后，刷新周围格子的岩壁边缘描边
@@ -72,7 +83,7 @@ func _ready() -> void:
 
 func _setup_wall() -> void:
 	# 按坐标确定性取块（非随机）：相邻格取相邻区块 → 岩壁跨格连成一体
-	var sheet: Texture2D = load("res://assets/tiles/wall_%s.png" % wall_style)
+	var sheet: Texture2D = load("res://visual_v2/runtime/tiles/wall_%s.png" % wall_style)
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
 	atlas.region = Rect2(
@@ -97,7 +108,7 @@ func _setup_floor() -> void:
 	# 风格配套：优先 floor_<wall_style>（D 系主题套），否则用默认暗沙
 	# exists() 先探测：load() 对不存在路径会刷 ERROR 日志
 	var sheet: Texture2D = null
-	var path := "res://assets/tiles/floor_%s.png" % wall_style
+	var path := "res://visual_v2/runtime/tiles/floor_%s.png" % wall_style
 	if ResourceLoader.exists(path):
 		sheet = load(path)
 	if sheet == null:
@@ -112,6 +123,45 @@ func _setup_floor() -> void:
 	floor_tex.texture = _floor_atlas
 	floor_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	floor_tex.visible = false
+
+
+## 主题生态装饰：仅当风格配了 deco_<风格>_sheet（E 系）才散布；
+## A-D 系无专属表 → 保持原视觉不变
+func _setup_deco() -> void:
+	var path := "res://visual_v2/runtime/tiles/deco_%s_sheet.png" % wall_style
+	if not ResourceLoader.exists(path):
+		return
+	if randf() > DECO_DENSITY:
+		return
+	var atlas := AtlasTexture.new()
+	atlas.atlas = load(path)
+	var idx := randi() % (DECO_GRID * 2)
+	atlas.region = Rect2(
+		(idx % DECO_GRID) * DECO_TILE_PX,
+		(idx / DECO_GRID) * DECO_TILE_PX,
+		DECO_TILE_PX, DECO_TILE_PX)
+	atlas.filter_clip = true
+	_deco_tex = TextureRect.new()
+	_deco_tex.name = "WallDeco"  # 明确命名：避免 get_children 遍历误匹配
+	_deco_tex.texture = atlas
+	_deco_tex.expand_mode = 1  # AtlasTexture 必须显式（默认 KEEP_SIZE 会把控件撑到纹理尺寸）
+	_deco_tex.position = Vector2(-14, -14)
+	_deco_tex.size = Vector2(DECO_TILE_PX, DECO_TILE_PX)
+	_deco_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_deco_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_deco_tex)
+
+
+## 原地切换岩壁风格（调试键/章节主题用）：重建墙/洞底/装饰，不动局面
+func apply_wall_style(style: String) -> void:
+	wall_style = style
+	_setup_wall()
+	_setup_floor()
+	if _deco_tex != null:
+		_deco_tex.queue_free()
+		_deco_tex = null
+	_setup_deco()
+	refresh_visual()
 
 
 func _on_state_changed_refresh_edges(_cell: Cell) -> void:
@@ -230,30 +280,35 @@ func _play_collapse_flicker() -> void:
 func refresh_visual() -> void:
 	var bg: ColorRect = $Background
 	var lbl: Label = $Label
+	var special: TextureRect = $SpecialIcon
 	var show_wall := false
 	var show_floor := false
+	special.texture = null
 	if is_base:
-		bg.color = Color(0.15, 0.35, 0.75)
-		lbl.text = "B"
-		lbl.modulate = Color.WHITE
+		show_floor = true
+		bg.color = Color(0.17, 0.16, 0.15)
+		lbl.text = ""
+		special.texture = SPECIAL_BASE
 	elif is_vein:
-		bg.color = Color(0.7, 0.55, 0.1)
-		lbl.text = "◆"
-		lbl.modulate = Color(1.0, 0.85, 0.3)
+		show_floor = true
+		bg.color = Color(0.22, 0.18, 0.10)
+		lbl.text = ""
+		special.texture = SPECIAL_VEIN
 	elif is_collapsed:
-		bg.color = Color(0.4, 0.05, 0.05)
-		lbl.text = "✸"
-		lbl.modulate = Color.WHITE
+		show_floor = true
+		bg.color = Color(0.22, 0.07, 0.07)
+		lbl.text = ""
+		special.texture = SPECIAL_COLLAPSE
 	elif is_flagged:
 		# 旗格仍是未开岩壁：岩壁上插旗
 		show_wall = true
-		bg.color = Color(0.2, 0.17, 0.13)
-		lbl.text = "⚑"
-		lbl.modulate = Color(1.0, 0.8, 0.2)
+		bg.color = Color(0.20, 0.21, 0.25)
+		lbl.text = ""
+		special.texture = SPECIAL_FLAG
 	elif is_opened:
 		# 已开格：铺暗色洞底，数字叠在上面
 		show_floor = true
-		bg.color = Color(0.2, 0.17, 0.12)
+		bg.color = Color(0.17, 0.14, 0.12)
 		if adjacent_mines == 0:
 			lbl.text = ""
 		else:
@@ -262,10 +317,13 @@ func refresh_visual() -> void:
 	else:
 		# 未开格：连体岩壁
 		show_wall = true
-		bg.color = Color(0.2, 0.17, 0.13)
+		bg.color = Color(0.20, 0.21, 0.25)
 		lbl.text = ""
 	$WallTex.visible = show_wall
+	if _deco_tex != null:
+		_deco_tex.visible = show_wall  # 装饰长在岩壁上，跟墙同步显隐
 	$FloorTex.visible = show_floor
+	special.visible = special.texture != null
 	if not show_wall:
 		refresh_wall_edges()  # 开侧格不显示描边，直接清掉
 	cell_state_changed.emit(self)

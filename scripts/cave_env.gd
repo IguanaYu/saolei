@@ -3,13 +3,13 @@ extends Control
 ## 地图外围洞窟环境：cave_bg 平铺背景 + 岩体边框环抱地图 + 外围矿洞道具散布
 ## main.gd 在 grid.configure() 之后调用 layout_env() 重排
 
-const CAVE_BG := preload("res://assets/tiles/cave_bg.png")
-const FRAME_T := preload("res://assets/tiles/frame_T.png")
-const FRAME_B := preload("res://assets/tiles/frame_B.png")
-const FRAME_L := preload("res://assets/tiles/frame_L.png")
-const FRAME_R := preload("res://assets/tiles/frame_R.png")
+const CAVE_BG := preload("res://visual_v2/runtime/backgrounds/mine_cutaway.png")
+const FRAME_T := preload("res://visual_v2/runtime/tiles/frame_T.png")
+const FRAME_B := preload("res://visual_v2/runtime/tiles/frame_B.png")
+const FRAME_L := preload("res://visual_v2/runtime/tiles/frame_L.png")
+const FRAME_R := preload("res://visual_v2/runtime/tiles/frame_R.png")
 const FRAME_THICK := 20
-const OUTER_PROPS := preload("res://assets/tiles/deco_outer_sheet.png")
+const OUTER_PROPS := preload("res://visual_v2/runtime/tiles/deco_outer_sheet.png")
 const PROP_GRID := 4   # sheet 4x2，每件 28px
 const PROP_PX := 28
 
@@ -31,7 +31,9 @@ func _build_static() -> void:
 	_bg_rect.name = "CaveBgRect"
 	_bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bg_rect.texture = CAVE_BG
-	_bg_rect.stretch_mode = TextureRect.STRETCH_TILE
+	_bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_bg_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_bg_rect.modulate = Color(0.72, 0.72, 0.72)
 	_bg_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_bg_rect)
@@ -69,7 +71,7 @@ func layout_env() -> void:
 	_add_frame_piece("FrameRight", FRAME_R, Vector2(origin.x + size.x, origin.y), Vector2(FRAME_THICK, size.y), false)
 	# 四角
 	for piece_name in ["FrameCornerTL", "FrameCornerTR", "FrameCornerBL", "FrameCornerBR"]:
-		var tex := load("res://assets/tiles/frame_%s.png" % piece_name.substr("FrameCorner".length()))
+		var tex := load("res://visual_v2/runtime/tiles/frame_%s.png" % piece_name.substr("FrameCorner".length()))
 		var pos: Vector2
 		if piece_name.ends_with("TL"):
 			pos = rect.position
@@ -88,7 +90,7 @@ func layout_env() -> void:
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_frame_layer.add_child(tr)
 
-	_scatter_props(rect)
+	# V2 背景已经绘有完整的轨道、矿车和灯具；不再叠加随机漂浮道具。
 
 
 func _find_grid() -> Grid:
@@ -144,6 +146,7 @@ func _scatter_props(map_rect: Rect2) -> void:
 		tr.position = slot
 		tr.size = Vector2(PROP_PX, PROP_PX)
 		tr.texture = atlas
+		tr.expand_mode = 1
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_props_layer.add_child(tr)

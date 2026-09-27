@@ -1,0 +1,21 @@
+# 视觉替换 V2 · 三屏概念稿
+
+生成方式：内置 image_gen。三张图均为 1448×1086 的整体视觉稿，尚未切成 Godot 可直接使用的精灵、纹理或九宫格 UI 图。
+
+## 01_gameplay.png
+
+参考图：`tmp/ui_overview_assets/old_s1.png`，仅参考功能布局。
+
+> Create a BRAND NEW 4:3 full-screen visual concept for the actual PC game '扫雷挖矿' (Minesweeper Mining), using the attached screenshot only as a reference for functional layout: centered square 16x16 minesweeper board, compact status HUD at top, compact equipment/shop strip at bottom. Replace every existing visual motif and texture. Art direction: coherent premium pixel art, underground industrial exploration, chunky hand placed pixels, charcoal slate caverns, warm sandstone and brass structural edges, restrained cyan machine status lights, amber ore glow, rare vermilion hazard accents. The closed cells form a continuous stratified rock mass, opened cells are a quieter dark earthen excavation floor, crisp jagged boundary between them. Clearly distinct tiny silhouettes: cyan drill-opening robot, red flag marker robot, violet scanner robot, amber mining cart robot; small base depot; a few yellow ore veins; red flags. The grid is the visual focus and remains easy to read at native size, simple isolated clear numerals 1 2 3 on some revealed squares, no clutter behind numbers. Build the UI as functional pixel-art panel elements with empty label slots rather than invented text. No words, no letter-like glyphs, no fake writing, no logos, no watermark. No smooth gradients, no painterly effects, no blurry pseudo pixel texture, no photorealism. This is an art direction mockup, not a finished asset sheet. Strong hierarchy and believable game UI.
+
+## 02_main_menu.png
+
+参考图：`01_gameplay.png` 用于风格，`tmp/ui_overview_assets/old_s5.png` 仅用于功能布局。
+
+> Generate a NEW 4:3 full-screen main menu visual concept for the same PC game shown in reference image 1. Image 1 is the exact style reference: match its crisp premium pixel-art density, industrial brass-and-charcoal frames, sandstone rock, cyan equipment lights, amber ore lights, compact small mining machines, and restrained red hazard. Image 2 is ONLY a guide to which functional regions the menu needs; replace all its old imagery. This should clearly belong to the same art set as image 1. Center a strong but simple mining-company emblem area at upper center: a stylized crossed pickaxe and small square mine-grid motif inside a brass signboard, with generous blank space for a Chinese title to be typeset later. Under it four large centered button plates, clearly primary/secondary hierarchy, blank interiors for later typesetting. Behind the menu, show a dim, atmospheric cutaway mine with the same machines and ore rail carts from the gameplay style; low contrast behind buttons, asymmetrically lit by small amber lanterns and cyan signal beacons. A compact resource indicator panel at top right. No text, no numbers, no letter-like marks, no fake writing, no watermark. This is an art direction mockup, not a final production sprite sheet. Pixel-perfect square edges, limited palette, no gradients, no blur, no photorealism. Readable layout and uncluttered center.
+
+## 03_results.png
+
+参考图：`01_gameplay.png`、`02_main_menu.png` 用于风格，`tmp/ui_overview_assets/old_s4.png` 仅用于功能布局。
+
+> Create a brand-new 4:3 pixel-art successful results screen for the same minesweeper mining game as reference images 1 and 2. Use their charcoal cave, sandstone, brass industrial frames, tiny cyan status lamps, amber ore, restrained red danger, sharp chunky pixel density, and visual proportions. Reference 3 guides only the UI layout: one centered result panel in front of a dim game board. Replace every old graphic. The panel has a blank title plate at top with a small pickaxe-and-ore-cart emblem, three star medallions (two lit gold, one dark), four tidy icon-and-value rows for opened tiles, marked mines, recovered ore, and time, a prominent total-score display area, and two large blank button plates for replay and next level. Add a small celebratory ore cart and restrained gold glints. Keep text areas blank for later accurate Chinese typesetting. No text, numbers, letters, fake glyphs, logos, or watermark. No smooth gradients, blur, photorealism, or pseudo pixel noise. Full-screen art direction mockup, not a sprite sheet.

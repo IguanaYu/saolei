@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/daily_challenge.gd" id="1_dc"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/icon_star.png" id="2_star"]
+[ext_resource type="Texture2D" path="res://visual_v2/runtime/ui/icons/icon_star.png" id="2_star"]
 
 [node name="DailyPanel" type="Control"]
 anchor_right = 1.0

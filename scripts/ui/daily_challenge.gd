@@ -6,7 +6,7 @@ signal start_requested
 signal close_requested
 
 const DAILY_ORE := 30
-const STYLE_POOL := ["A1", "C1", "E1", "E2", "E3", "E4", "E5", "E6"]
+const STYLE_POOL := ["V2", "V2C", "V2M", "V2R"]
 
 @onready var date_label: Label = $Center/Panel/VBox/DateLabel
 @onready var map_name_label: Label = $Center/Panel/VBox/MapCard/VBox/MapNameLabel

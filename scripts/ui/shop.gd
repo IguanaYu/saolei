@@ -13,13 +13,13 @@ extends Control
 
 
 const BUTTON_ICONS := {
-	"opener": preload("res://assets/ui/icons/icon_robot_opener.png"),
-	"marker": preload("res://assets/ui/icons/icon_robot_marker.png"),
-	"detector": preload("res://assets/ui/icons/icon_robot_detector.png"),
-	"miner": preload("res://assets/ui/icons/icon_robot_miner.png"),
-	"base": preload("res://assets/ui/icons/icon_base.png"),
-	"drone": preload("res://assets/ui/icons/icon_drone.png"),
-	"upgrade": preload("res://assets/ui/icons/icon_upgrade.png"),
+	"opener": preload("res://visual_v2/runtime/ui/icons/icon_robot_opener.png"),
+	"marker": preload("res://visual_v2/runtime/ui/icons/icon_robot_marker.png"),
+	"detector": preload("res://visual_v2/runtime/ui/icons/icon_robot_detector.png"),
+	"miner": preload("res://visual_v2/runtime/ui/icons/icon_robot_miner.png"),
+	"base": preload("res://visual_v2/runtime/ui/icons/icon_base.png"),
+	"drone": preload("res://visual_v2/runtime/ui/icons/icon_drone.png"),
+	"upgrade": preload("res://visual_v2/runtime/ui/icons/icon_upgrade.png"),
 }
 
 

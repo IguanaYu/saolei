@@ -1,0 +1,11 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+FLOW L1 cells=100 style=V2
+FLOW L3 cells=256 style=V2
+FLOW atlas=V2
+FLOW atlas=V2C
+FLOW atlas=V2M
+FLOW atlas=V2R
+FLOW ch04_s01 style=V2C
+FLOW ch07_s01 style=V2M
+FLOW ch10_s01 style=V2R

@@ -3,7 +3,7 @@ extends Control
 
 signal close_requested
 
-const ICON_STAR := preload("res://assets/ui/icons/icon_star.png")
+const ICON_STAR := preload("res://visual_v2/runtime/ui/icons/icon_star.png")
 
 @onready var subtitle_label: Label = $Center/Panel/VBox/SubtitleLabel
 @onready var cards_row: HBoxContainer = $Center/Panel/VBox/CardsRow

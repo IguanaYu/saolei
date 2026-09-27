@@ -3,8 +3,8 @@ extends Control
 
 signal close_requested
 
-const ICON_ORE := preload("res://assets/ui/icons/icon_ore.png")
-const ICON_STAR := preload("res://assets/ui/icons/icon_star.png")
+const ICON_ORE := preload("res://visual_v2/runtime/ui/icons/icon_ore.png")
+const ICON_STAR := preload("res://visual_v2/runtime/ui/icons/icon_star.png")
 
 @onready var streak_label: Label = $Center/Panel/VBox/TitleRow/StreakLabel
 @onready var days_row: HBoxContainer = $Center/Panel/VBox/DaysRow
