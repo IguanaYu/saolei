@@ -38,12 +38,12 @@ func begin() -> void:
 	tw.tween_callback(func() -> void:
 		_guide.begin([
 			{"node": _grid, "size": board_size,
-				"text": COPY_INTRO, "event": "player_acted", "tip": "right"},
+				"text": COPY_INTRO, "event": "board_click", "tip": "right"},
 		]))
 
 
 func _on_cd_exhausted() -> void:
-	if not GameState.game_active:
+	if not GameState.game_active or GameState.current_level_id != "ch01_s01":
 		return
 	_exhausted_seen = true
 	var board_size := Vector2(_grid.rows * _grid.cell_size, _grid.cols * _grid.cell_size)

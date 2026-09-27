@@ -46,6 +46,7 @@ func _ready() -> void:
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
 	GameState.base_placed.connect(func(_c): _refresh_prices())
+	GameState.robot_spawned.connect(func(_t): _refresh_prices())  # 赠送/购买都会抬价格阶梯
 	SaveSystem.unlock_changed.connect(func(_k): _refresh_prices())
 	_refresh_prices()
 
@@ -167,3 +168,5 @@ func _apply_level_shop_config() -> void:
 	drone_button.visible = not hidden.has("drone")
 	upgrade_button.visible = not hidden.has("upgrade")
 	debug_button.visible = not hidden.has("debug")
+	buy_detector_button.visible = not hidden.has("detector")
+	buy_miner_button.visible = not hidden.has("miner")

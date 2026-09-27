@@ -18,12 +18,14 @@ extends Node
 @onready var sign_in_panel = $UILayer/SignInPanel
 @onready var confirm_dialog = $UILayer/ConfirmDialog
 @onready var splash = $UILayer/SplashScreen
+@onready var upgrade_panel = $UILayer/UpgradePanel
 
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
 var placing_mode: String = ""
 
-# 试玩版第一关剧本控制器（_ready 时创建）
+# 试玩版第一/二关剧本控制器（_ready 时创建）
 var level1_director: Level1Director = null
+var level2_director: Level2Director = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -70,6 +72,10 @@ func _ready() -> void:
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.base_placed.connect(func(_c): tutorial_guide.notify_event("base_placed"))
 	GameState.robot_spawned.connect(func(_t): tutorial_guide.notify_event("robot_bought"))
+	grid.board_clicked.connect(func(): tutorial_guide.notify_event("board_click"))
+	upgrade_panel.visibility_changed.connect(func():
+		if upgrade_panel.visible:
+			tutorial_guide.notify_event("upgrade_panel_opened"))
 	# 闪屏 → 主菜单（+ 每日首启签到弹窗）
 	splash.finished.connect(_on_splash_finished)
 	main_menu.hide()  # 闪屏期间藏住主菜单
@@ -95,10 +101,13 @@ func _ready() -> void:
 	var cd_ring := CDRing.new()
 	cd_ring.name = "CDRing"
 	$UILayer.add_child(cd_ring)
-	# 试玩版第一关剧本控制器
+	# 试玩版第一/二关剧本控制器
 	level1_director = Level1Director.new()
 	level1_director.name = "Level1Director"
 	add_child(level1_director)
+	level2_director = Level2Director.new()
+	level2_director.name = "Level2Director"
+	add_child(level2_director)
 
 
 # ---- 闪屏 / 主菜单 ----
@@ -199,6 +208,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			})
 			GameState.game_active = true
 	robot_manager.remove_all()
+	if lvl != null and not lvl.start_robots.is_empty() and lvl.has_fixed_board():
+		_gift_start_robots(lvl)
 	_update_objective_progress()
 	_maybe_start_tutorial()
 
@@ -208,9 +219,11 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 func _maybe_start_tutorial() -> void:
 	if GameState.daily_mode:
 		return
-	# 试玩版第一关：剧本教学每次进关都触发（不看 tutorial_done，盲测者每遍都要看到）
+	# 试玩版剧本教学每次进关都触发（不看 tutorial_done，盲测者每遍都要看到）
 	if GameState.current_level_id == "ch01_s01" and level1_director != null:
 		level1_director.begin()
+	elif GameState.current_level_id == "ch01_s02" and level2_director != null:
+		level2_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -492,6 +505,24 @@ func _in_bounds(coord: Vector2i) -> bool:
 	return coord.x >= 0 and coord.x < grid.rows and coord.y >= 0 and coord.y < grid.cols
 
 
+## 开局赠送机器人：基地格 + 周围已开邻格依次落位（一格一机）
+func _gift_start_robots(lvl: LevelData) -> void:
+	var spots: Array = [lvl.fixed_base]
+	for n in grid.get_neighbors(lvl.fixed_base):
+		if n.is_opened and not n.is_base:
+			spots.append(n.coord)
+			if spots.size() >= 4:
+				break
+	for robot_type in lvl.start_robots:
+		for i in int(lvl.start_robots[robot_type]):
+			if spots.is_empty():
+				return
+			var coord: Vector2i = spots.pop_front()
+			GameState.gift_robot(robot_type)
+			robot_manager.spawn_robot(coord, robot_type, grid)
+			GameState.robot_spawned.emit(robot_type)
+
+
 # ---- 奖励逻辑（玩家和机器人走同一条通道）----
 
 func _on_cell_opened(_cell, by_actor: String) -> void:
@@ -548,7 +579,23 @@ func _end_game(result: String) -> void:
 		return
 	GameState.game_active = false
 	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
+	if result == "win":
+		_apply_time_bonus()
 	GameState.game_over.emit(result)
+
+
+## 胜利时间加分：剩余秒 × 关卡系数，计入总分与最高分口径（设计 §3，Q4 已定）
+func _apply_time_bonus() -> void:
+	var lvl := GameState.get_current_level()
+	if lvl == null or lvl.time_bonus_per_sec <= 0 or not GameState.has_time_limit():
+		return
+	var secs := int(max(0.0, floor(GameState.time_left)))
+	var bonus: int = secs * lvl.time_bonus_per_sec
+	if bonus <= 0:
+		return
+	GameState.result_stats["time_bonus"] = bonus
+	GameState.result_stats["time_bonus_secs"] = secs
+	GameState.add_score(bonus)
 
 
 # ---- 目标进度 ----

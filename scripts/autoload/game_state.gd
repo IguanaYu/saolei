@@ -15,12 +15,17 @@ var lives_cfg: int = 3              # 关卡配置原始值（<=0 = 无命限制
 # 游戏阶段：placing_base=等玩家放第一个基地 / playing=正常游戏
 var game_phase: String = "placing_base"
 
-# 升级等级（0-2）
+# 升级等级（速度轨 0-3，折扣轨 0-2）
 var opener_speed_level: int = 0
 var marker_speed_level: int = 0
 var detector_speed_level: int = 0
 var miner_speed_level: int = 0
 var discount_level: int = 0
+
+# 升级轨默认配置（关卡可用 LevelData 覆盖速度轨；折扣轨砍出试玩版，仅余价格）
+const DEFAULT_SPEED_PRICES := [50, 70, 100]
+const DEFAULT_SPEED_LEVELS := [2.0, 1.6, 1.3, 1.0]
+const DISCOUNT_PRICES := [200, 500]
 
 # 已购买机器人计数（用于价格递增）
 var opener_count: int = 0
@@ -57,7 +62,11 @@ var player_actions_used: int = 0    # 本局玩家有效动作总数（埋点口
 var result_stats := {
 	"open_score": 0, "flag_score": 0, "wrong_flags": 0,
 	"player_ops": 0, "robot_ops": 0, "player_actions": 0,
+	"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 }
+
+# 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
+var _speed_levels_cache: Array = DEFAULT_SPEED_LEVELS.duplicate()
 
 # ---- 信号总线 ----
 signal money_changed(new_value: int)
@@ -161,9 +170,11 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 			else (LevelSystem.get_level(level_id) if level_id != "" else null)
 	if lvl != null:
 		current_objective = lvl.objectives[0] if not lvl.objectives.is_empty() else null
-		money = lvl.start_gold + 50 * int(su.unlocks.get("start_money", 0))
+		# meta_progression=false 的关（试玩 L1/L2）不吃局外加成，保证盲测冷启动确定
+		var meta: bool = lvl.meta_progression
+		money = lvl.start_gold + (50 * int(su.unlocks.get("start_money", 0)) if meta else 0)
 		# 无命限制关（start_lives<=0）不吃局外加命，保持"无失败状态"承诺
-		lives = 0 if lvl.start_lives <= 0 else lvl.start_lives + int(su.unlocks.get("start_lives", 0))
+		lives = 0 if lvl.start_lives <= 0 else lvl.start_lives + (int(su.unlocks.get("start_lives", 0)) if meta else 0)
 		time_left = lvl.time_limit_sec
 		time_limit_cfg = lvl.time_limit_sec
 		lives_cfg = lvl.start_lives
@@ -191,9 +202,14 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	result_stats = {
 		"open_score": 0, "flag_score": 0, "wrong_flags": 0,
 		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
+		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 	}
-	# 全局速度加成（局外升级直接给所有机器人同级）
-	var gs: int = int(su.unlocks.get("global_speed", 0))
+	# 速度档位缓存（关卡可覆盖；买档越界时 get_speed_interval 钳制）
+	_speed_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
+			else DEFAULT_SPEED_LEVELS).duplicate()
+	# 全局速度加成（局外升级直接给所有机器人同级；meta 关跳过）
+	var gs: int = (int(su.unlocks.get("global_speed", 0))
+			if lvl == null or lvl.meta_progression else 0)
 	opener_speed_level = gs
 	marker_speed_level = gs
 	detector_speed_level = gs
@@ -242,7 +258,10 @@ func get_current_level() -> LevelData:
 # ---- 基地 ----
 
 func get_base_price() -> int:
-	# 第 1 个 80，第 2 个 160，第 3 个 320...（base × 2^N）
+	# 关卡平价（base_price_flat>0）优先；否则第 1 个 80，第 2 个 160...（base × 2^N）
+	var lvl := get_current_level()
+	if lvl != null and lvl.base_price_flat > 0:
+		return lvl.base_price_flat
 	return 80 * (1 << base_count)
 
 
@@ -324,6 +343,15 @@ func purchase_robot(robot_type: String) -> bool:
 	return true
 
 
+## 开局赠送机器人：计数+1 抬升价格阶梯，但不扣钱、不触发首购 CD 恢复
+func gift_robot(robot_type: String) -> void:
+	match robot_type:
+		"opener": opener_count += 1
+		"marker": marker_count += 1
+		"detector": detector_count += 1
+		"miner": miner_count += 1
+
+
 func get_speed_interval(robot_type: String) -> float:
 	var level: int = 0
 	match robot_type:
@@ -331,4 +359,59 @@ func get_speed_interval(robot_type: String) -> float:
 		"marker": level = marker_speed_level
 		"detector": level = detector_speed_level
 		"miner": level = miner_speed_level
-	return [2.0, 1.5, 1.0][level]
+	level = mini(level, _speed_levels_cache.size() - 1)
+	return float(_speed_levels_cache[level])
+
+
+# ---- 局内升级 ----
+
+func get_speed_levels() -> Array:
+	var lvl := get_current_level()
+	if lvl != null and not lvl.upgrade_speed_levels.is_empty():
+		return lvl.upgrade_speed_levels
+	return DEFAULT_SPEED_LEVELS
+
+
+func get_speed_prices() -> Array:
+	var lvl := get_current_level()
+	if lvl != null and not lvl.upgrade_speed_prices.is_empty():
+		return lvl.upgrade_speed_prices
+	return DEFAULT_SPEED_PRICES
+
+
+func get_upgrade_prices(upgrade_id: String) -> Array:
+	if upgrade_id == "discount":
+		return DISCOUNT_PRICES
+	return get_speed_prices()
+
+
+func get_upgrade_level(upgrade_id: String) -> int:
+	match upgrade_id:
+		"opener_speed": return opener_speed_level
+		"marker_speed": return marker_speed_level
+		"discount": return discount_level
+	return 0
+
+
+func set_upgrade_level(upgrade_id: String, lvl: int) -> void:
+	match upgrade_id:
+		"opener_speed": opener_speed_level = lvl
+		"marker_speed": marker_speed_level = lvl
+		"discount": discount_level = lvl
+
+
+## 购买一档升级（面板只调用此入口；价格/满级由关卡配置决定）
+func purchase_upgrade(upgrade_id: String) -> bool:
+	var cur: int = get_upgrade_level(upgrade_id)
+	var prices: Array = get_upgrade_prices(upgrade_id)
+	if cur >= prices.size():
+		return false
+	var price: int = prices[cur]
+	if price < 0 or money < price:
+		return false
+	add_money(-price)
+	set_upgrade_level(upgrade_id, cur + 1)
+	if float(result_stats.get("first_upgrade_elapsed", -1.0)) < 0.0:
+		result_stats["first_upgrade_elapsed"] = snappedf(elapsed, 0.1)
+	upgrade_changed.emit(upgrade_id, cur + 1)
+	return true

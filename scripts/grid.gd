@@ -40,6 +40,8 @@ signal mine_stepped(cell, by_actor: String)
 signal all_safe_opened()
 signal vein_created(coord: Vector2i)
 signal vein_depleted(coord: Vector2i)
+## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
+signal board_clicked
 
 
 func _ready() -> void:
@@ -344,6 +346,7 @@ func _flood_open(start: Vector2i, by_actor: String) -> void:
 func _on_cell_left_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
+	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
@@ -359,6 +362,7 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 func _on_cell_right_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
+	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
@@ -372,6 +376,7 @@ func _on_cell_right_clicked(cell: Cell) -> void:
 func _on_cell_double_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
+	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return

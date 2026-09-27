@@ -218,6 +218,7 @@ func day_of_year() -> int:
 
 ## 每局结束埋点。result: "win"/"lose"/"timeout"/"abandon"
 ## track_best=false 时（每日挑战）不计入最佳时间/最高积分
+## 到点/命尽 = "强行停止并结算"非失败态（设计 v1.2）：不清零连胜；仅主动放弃清零
 func record_game_result(result: String, time_used: float, score: int, track_best := true) -> void:
 	stats.total_games = int(stats.total_games) + 1
 	stats.total_play_sec = float(stats.total_play_sec) + max(0.0, time_used)
@@ -229,7 +230,7 @@ func record_game_result(result: String, time_used: float, score: int, track_best
 			if float(stats.best_time) < 0 or time_used < float(stats.best_time):
 				stats.best_time = time_used
 			stats.best_score = max(int(stats.best_score), score)
-	else:
+	elif result == "abandon":
 		stats.cur_streak = 0
 	save_game()
 

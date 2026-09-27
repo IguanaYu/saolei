@@ -31,7 +31,18 @@ var cooldown_after_purchase: float = -1.0  # >=0：首台机器人购买后 CD �
 
 # ---- 商店限制 ----
 var shop_limits: Dictionary = {}    # 如 {"opener":1, "marker":1}；空 = 不限购
-var shop_hidden: Array = []         # 本关隐藏的商店按钮 type："base"/"drone"/"upgrade"/"debug"
+var shop_hidden: Array = []         # 本关隐藏的商店按钮 type："base"/"drone"/"upgrade"/"debug"/"detector"/"miner"
+var start_robots: Dictionary = {}   # 开局赠送机器人 {"opener":1, "marker":1}；计数照常抬升价格阶梯
+
+# ---- 升级轨（局内）----
+var upgrade_speed_prices: Array = [50, 70, 100]        # 速度轨价格（长度 = 可购档数）
+var upgrade_speed_levels: Array = [2.0, 1.6, 1.3, 1.0] # 档位值（含 Lv0，长度 = 档数+1）
+var upgrades_hidden: Array = []     # 本关隐藏的升级轨 id："discount" 等
+
+# ---- 经济参数 ----
+var base_price_flat: int = -1      # >0：本关基地固定价（覆盖 80×2^N 翻倍公式）
+var time_bonus_per_sec: int = 0    # >0：胜利结算时 剩余秒 × 此值 计入总分
+var meta_progression: bool = true  # false：不吃局外加成（起始资金/命/全局速度），盲测冷启动确定
 
 # ---- 结算表现 ----
 var no_stars: bool = false          # true = 结算不显示星级

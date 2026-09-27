@@ -15,6 +15,8 @@ const ICON_STAR := preload("res://assets/ui/icons/icon_star.png")
 
 const STAR_GRAY := Color(0.38, 0.35, 0.3)
 const DAILY_ORE := 30
+# 到点/命尽（强行停止）的矿石口径：积分折算（Q1 待定，改这一个常量即可）
+const FORCED_STOP_ORE_DIVISOR := 10
 
 @onready var title_label: Label = $Center/Panel/VBox/TitleLabel
 @onready var record_badge: PanelContainer = $Center/Panel/VBox/RecordBadge
@@ -68,18 +70,23 @@ func _time_used() -> float:
 
 ## 盲测埋点：每局一条记录进存档（外部试玩收档解析用）
 func _record_playtest(result: String) -> void:
+	var s: Dictionary = GameState.result_stats
 	SaveSystem.record_playtest({
 		"level": GameState.current_level_id,
 		"result": result,
 		"elapsed": snappedf(GameState.elapsed, 0.1),
 		"score": GameState.score,
 		"money_left": GameState.money,
-		"open_score": GameState.result_stats["open_score"],
-		"flag_score": GameState.result_stats["flag_score"],
-		"wrong_flags": GameState.result_stats["wrong_flags"],
-		"player_ops": GameState.result_stats["player_ops"],
-		"robot_ops": GameState.result_stats["robot_ops"],
-		"player_actions": GameState.result_stats["player_actions"],
+		"open_score": s["open_score"],
+		"flag_score": s["flag_score"],
+		"wrong_flags": s["wrong_flags"],
+		"player_ops": s["player_ops"],
+		"robot_ops": s["robot_ops"],
+		"player_actions": s["player_actions"],
+		"time_bonus": s.get("time_bonus", 0),
+		"first_upgrade_elapsed": s.get("first_upgrade_elapsed", -1.0),
+		"speed_levels_final": [GameState.opener_speed_level, GameState.marker_speed_level],
+		"robots_final": [GameState.opener_count, GameState.marker_count],
 	})
 
 
@@ -111,14 +118,21 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	record_badge.visible = is_record
 	_clear_rewards()
 	_add_row(ICON_CLOCK, "本局用时", SaveSystem.format_duration(_time_used()))
+	var lvl := GameState.get_current_level()
 	if result != "win":
-		title_label.text = "失败" if result == "lose" else "时间到"
+		# 到点/命尽 = 强行停止并结算（非失败态，设计 v1.2）：正常给矿、不算过关、可重玩
+		title_label.text = "本次挖掘结束"
 		stars_row.visible = false
 		star_hint_label.visible = false
+		var ore_earned: int = GameState.score / FORCED_STOP_ORE_DIVISOR
+		if ore_earned > 0:
+			SaveSystem.add_ore(ore_earned)
+		_add_row(ICON_ORE, "结算矿石", "+%d" % ore_earned)
 		_add_row(ICON_HEART, "剩余生命", "%d" % GameState.lives)
+		if lvl != null and lvl.is_playtest:
+			_add_playtest_rows(false)
 		final_score_label.text = str(GameState.score)
 		return
-	var lvl := GameState.get_current_level()
 	var stars := 0 if (lvl != null and lvl.no_stars) else _calculate_stars()
 	var is_first: bool = not SaveSystem.is_first_clear_claimed(GameState.current_level_id)
 	if is_first:
@@ -144,7 +158,7 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	final_score_label.text = str(GameState.score)
 
 
-func _add_playtest_rows() -> void:
+func _add_playtest_rows(include_time_bonus := true) -> void:
 	var s: Dictionary = GameState.result_stats
 	_add_row(ICON_COIN, "开格分", str(s["open_score"]))
 	_add_row(ICON_COIN, "标旗分", str(s["flag_score"]))
@@ -152,6 +166,9 @@ func _add_playtest_rows() -> void:
 	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
 	_add_row(ICON_STAR, "你的操作",
 		"%d 次 · 机器人 %d 次（你占 %d%%）" % [s["player_ops"], s["robot_ops"], pct])
+	if include_time_bonus and int(s.get("time_bonus", 0)) > 0:
+		_add_row(ICON_CLOCK, "时间加分",
+			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s["time_bonus"])])
 
 
 func _handle_daily(result: String) -> void:

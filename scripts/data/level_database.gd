@@ -46,6 +46,8 @@ func _build() -> void:
 			var lvl := _make_level(ch_idx, s_idx)
 			if ch_idx == 0 and s_idx == 0:
 				_apply_playtest_level1(lvl)
+			elif ch_idx == 0 and s_idx == 1:
+				_apply_playtest_level2(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -70,6 +72,38 @@ func _apply_playtest_level1(lvl: LevelData) -> void:
 	lvl.fixed_mines.assign(FixedBoards.L1.mines)
 	lvl.fixed_base = FixedBoards.L1.base
 	lvl.preopen_coords.assign(FixedBoards.L1.preopen)
+
+
+## 外部试玩版第二关（升级关）：时限/命/升级考题首登场
+## 设计文档：docs/active/试玩版内容/第二关-设计文档.md（v1.2）
+func _apply_playtest_level2(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 24
+	var obj := ObjectiveData.new()  # s_idx==1 默认生成 FLAG_N_MINES，必须覆写回清空
+	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 90.0
+	lvl.start_gold = 100        # = 双轨 Lv1（50+50）；一对机器人开局赠送（升级引导优先）
+	lvl.start_lives = 3
+	lvl.start_robots = {"opener": 1, "marker": 1}
+	lvl.free_clicks = 5         # 开局 5 次免 CD（纯次数口径，不按旗计）
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0  # 无"首购恢复"概念，开局即 3s
+	lvl.shop_limits = {}
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "debug"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.base_price_flat = 80    # 预设 1 基地后第 2 个仍 80（设计 §3），不走翻倍
+	lvl.time_bonus_per_sec = 3
+	lvl.allowed_modules = ["opener", "marker"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.meta_progression = false  # 盲测冷启动确定，不吃局外加成
+	lvl.fixed_mines.assign(FixedBoards.L2.mines)
+	lvl.fixed_base = FixedBoards.L2.base
+	lvl.preopen_coords.assign(FixedBoards.L2.preopen)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:
