@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/ConfirmDialog.tscn" id="18_cd"]
 [ext_resource type="PackedScene" path="res://scenes/ui/SplashScreen.tscn" id="19_ss"]
 [ext_resource type="PackedScene" path="res://scenes/ui/OreShop.tscn" id="20_os"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_manager.gd" id="21_em"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -47,6 +48,9 @@ script = ExtResource("2_grid")
 
 [node name="RobotManager" type="Node2D" parent="."]
 script = ExtResource("3_rm")
+
+[node name="EnemyManager" type="Node2D" parent="."]
+script = ExtResource("21_em")
 
 [node name="UILayer" type="CanvasLayer" parent="."]
 process_mode = 3

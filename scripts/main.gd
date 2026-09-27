@@ -4,6 +4,7 @@ extends Node
 
 @onready var grid: Grid = $Grid
 @onready var robot_manager: RobotManager = $RobotManager
+@onready var enemy_manager: EnemyManager = $EnemyManager
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
 @onready var main_menu = $UILayer/MainMenu
@@ -24,10 +25,11 @@ extends Node
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/"...")
 var placing_mode: String = ""
 
-# 试玩版第一/二关剧本控制器（_ready 时创建）
+# 试玩版第一/二/三/四关剧本控制器（_ready 时创建）
 var level1_director: Level1Director = null
 var level2_director: Level2Director = null
 var level3_director: Level3Director = null
+var level4_director: Level4Director = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -36,6 +38,9 @@ var _flag_count: int = 0
 
 # 确认框待执行动作
 var _pending_confirm: String = ""
+
+# L4 pregen 关的开局赠机（放完基地后在基地旁落位）
+var _pending_gifts: Dictionary = {}
 
 # 岩壁风格循环（F5 调试切换）：V2 视觉包四套环境
 const WALL_STYLE_CYCLE := ["V2", "V2C", "V2M", "V2R"]
@@ -54,6 +59,7 @@ func _ready() -> void:
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
+	grid.obstacle_cleared.connect(_on_obstacle_cleared)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
 	main_menu.start_requested.connect(_on_start_adventure)
@@ -106,7 +112,7 @@ func _ready() -> void:
 	var cd_ring := CDRing.new()
 	cd_ring.name = "CDRing"
 	$UILayer.add_child(cd_ring)
-	# 试玩版第一/二/三关剧本控制器
+	# 试玩版第一/二/三/四关剧本控制器
 	level1_director = Level1Director.new()
 	level1_director.name = "Level1Director"
 	add_child(level1_director)
@@ -116,6 +122,9 @@ func _ready() -> void:
 	level3_director = Level3Director.new()
 	level3_director.name = "Level3Director"
 	add_child(level3_director)
+	level4_director = Level4Director.new()
+	level4_director.name = "Level4Director"
+	add_child(level4_director)
 
 
 # ---- 闪屏 / 主菜单 ----
@@ -203,6 +212,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	SaveSystem.mark_level_entered(id)  # 间场「变强」高亮依据（进关即记）
 	GameState.reset_state(id, lvl)
 	_flag_count = 0
+	robot_manager.remove_all()
+	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
 	if lvl != null:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
@@ -220,7 +231,11 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			# 预开算分（设计 v1.2）：只计分不计钱；300 > 预开上限 115，不会开局误判过线
 			if lvl.preopen_scores:
 				GameState.add_score(lvl.preopen_coords.size())
-	robot_manager.remove_all()
+		# 随机盘（L4 除害关）：进关预生成雷+洪水预开，不设 game_active——
+		# 放完基地才激活（波次计时随之从放基地起算，elapsed 只在 active 后累计）
+		elif lvl.pregen_random:
+			grid.apply_random_board()
+			enemy_manager.setup_board(grid)
 	# 开局赠送机器人 = 关卡自带 + 局外 start_robot 购买（meta 关才吃局外，Q2：计入 count）
 	var gifts: Dictionary = lvl.start_robots.duplicate() if lvl != null else {}
 	if lvl != null and lvl.meta_progression:
@@ -231,6 +246,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			gifts["marker"] = int(gifts.get("marker", 0)) + 1
 	if not gifts.is_empty() and lvl != null and lvl.has_fixed_board():
 		_gift_start_robots(gifts)
+	elif not gifts.is_empty() and lvl != null and lvl.pregen_random:
+		_pending_gifts = gifts  # L4：放完基地后在基地旁落位（此时还没有基地）
 	_update_objective_progress()
 	_maybe_start_tutorial()
 
@@ -247,6 +264,8 @@ func _maybe_start_tutorial() -> void:
 		level2_director.begin()
 	elif GameState.current_level_id == "ch01_s03" and level3_director != null:
 		level3_director.begin()
+	elif GameState.current_level_id == "ch01_s04" and level4_director != null:
+		level4_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -321,6 +340,7 @@ func _do_abandon() -> void:
 		SaveSystem.add_ore(keep_ore)
 	GameState.game_active = false
 	robot_manager.remove_all()
+	enemy_manager.clear()
 	_show_main_menu()
 
 
@@ -405,6 +425,7 @@ func _process(delta: float) -> void:
 				_end_game("timeout")
 			return
 	robot_manager.tick_all(delta, grid)
+	enemy_manager.tick(delta, grid)  # L4 敌虫：与机器人同点驱动，pause/结算天然停摆
 
 
 # ---- 初始基地放置阶段 ----
@@ -435,6 +456,14 @@ func _input(event: InputEvent) -> void:
 			_try_place_first_base_at(event.position)
 			get_viewport().set_input_as_handled()
 		return
+	# L4 敌害实体命中优先于格子（设计 §9.9）：Godot 重叠 Area2D 全收到 input_event
+	# 且 set_input_as_handled 不阻断传播（godot#29825）→ 改 _input 几何命中拦截。
+	# 仅 game_active 时（放基地阶段点虫无效，回归清单 §5.5）；放置模式下放置优先
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT and placing_mode == "":
+		if _try_hit_enemy_at(event.position):
+			get_viewport().set_input_as_handled()
+			return
 	if placing_mode == "":
 		return
 	if event is InputEventMouseButton and event.pressed:
@@ -505,17 +534,50 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 		return false
 	# 基地放完，激活游戏开始倒计时
 	GameState.game_active = true
+	# L4 pregen 关：局外赠机此时落位（基地格旁，同固定盘口径）
+	if not _pending_gifts.is_empty():
+		_gift_start_robots(_pending_gifts)
+		_pending_gifts = {}
 	return true
+
+
+## L4 敌害实体点击命中（几何测试：距实体中心 < 0.6 格即命中，Q9 初值）：
+## 虫 = 点杀（吃 1 CD），巢 = 受击（吃 1 CD）；CD 检查与格子点击同口径
+func _try_hit_enemy_at(world_pos: Vector2) -> bool:
+	if not GameState.game_active:
+		return false
+	var hit_radius: float = grid.cell_size * 0.6
+	# 先虫后巢（虫 z_index 更高、会压在巢上）
+	for e in enemy_manager.enemies:
+		if e.is_alive() and e.global_position.distance_to(world_pos) < hit_radius:
+			if GameState.is_player_blocked():
+				GameState.cd_blocked.emit()
+				return true
+			enemy_manager.kill_enemy(e, "player")
+			GameState.consume_player_action()
+			return true
+	for n in enemy_manager.nests:
+		if n.is_alive() and n.global_position.distance_to(world_pos) < hit_radius:
+			if GameState.is_player_blocked():
+				GameState.cd_blocked.emit()
+				return true
+			n.hit()  # HP-1 + 受击/摧毁动效（埋点在 destroyed 信号里）
+			GameState.consume_player_action()
+			return true
+	return false
 
 
 # ---- 放置模式（商店购买后）----
 
 func _enter_placing_mode(mode: String) -> void:
-	# mode: "opener"/"marker"/"detector"/"miner"/"base"/"charge_tower"/...
+	# mode: "opener"/"marker"/"detector"/"miner"/"guard"/"base"/"probe"/"charge_tower"/...
 	# 价格检查留给实际放置时做（基地价格递增、机器人价格递增）
-	if mode in ["opener", "marker", "detector", "miner"] and GameState.money < GameState.get_robot_price(mode):
+	if mode in ["opener", "marker", "detector", "miner", "guard"] \
+			and GameState.money < GameState.get_robot_price(mode):
 		return
 	if mode == "base" and GameState.money < GameState.get_base_price():
+		return
+	if mode == "probe" and GameState.money < 100:  # L4 探测：100/次一次性瞬发
 		return
 	placing_mode = mode
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
@@ -546,7 +608,20 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		grid.place_base(coord)
 		return true
 
-	# 机器人放置（opener / marker / detector / miner）
+	# L4 探测机器人：一次性瞬发，目标格任意（开/关均可，已确认格除外）；
+	# 3×3 雷位标「确认雷」（机器人视同旗/不计分/穿锁）；不吃 CD（Q3：放置类口径）
+	if placing_mode == "probe":
+		var target_cell = grid.get_cell(coord)
+		if target_cell == null or target_cell.is_confirmed_mine:
+			return false
+		if GameState.money < 100:
+			return false
+		_exit_placing_mode()
+		GameState.add_money(-100)
+		_trigger_probe(coord)
+		return true
+
+	# 机器人放置（opener / marker / detector / miner / guard）
 	if not grid.is_walkable(coord):
 		return false
 	if robot_manager.get_robot_positions().has(coord):
@@ -560,6 +635,9 @@ func _try_place_at(world_pos: Vector2) -> bool:
 
 	robot_manager.spawn_robot(coord, type, grid)
 	GameState.robot_spawned.emit(type)
+	# L4 埋点：保安购买时点（-1=未买）
+	if type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
+		GameState.result_stats["guard_bought_elapsed"] = snappedf(GameState.elapsed, 0.1)
 	return true
 
 
@@ -604,6 +682,8 @@ func _on_cell_opened(_cell, by_actor: String) -> void:
 func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) -> void:
 	if correct and not first_time:
 		return  # 撤旗重插：无奖励无惩罚，也不计操作数（WP7 防刷）
+	if correct and _cell.is_confirmed_mine:
+		return  # L4 探测「确认雷」格再插旗不重复给分（设计 §5 同格首次原则）
 	if correct:
 		GameState.add_money(5)
 		GameState.add_score(5)
@@ -622,6 +702,14 @@ func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) 
 	else:
 		# 设计 v1.1：标错旗无奖励无惩罚（原 -3 分废除），仅保留埋点统计
 		GameState.result_stats["wrong_flags"] += 1
+
+
+## L4 障碍清除埋点：玩家点清与保安清障分列（设计 §9.10 分工口径）
+func _on_obstacle_cleared(_cell, _kind: String, by_actor: String) -> void:
+	if by_actor == "player":
+		GameState.result_stats["obstacles_cleared_player"] += 1
+	elif by_actor == "robot_guard":
+		GameState.result_stats["obstacles_cleared_guard"] += 1
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:
@@ -721,3 +809,21 @@ func _trigger_drone() -> void:
 	var coords: Array = grid.get_farthest_closed_cells(3, base_coord)
 	for coord in coords:
 		grid.open_cell(coord, "drone")
+
+
+## L4 探测机器人：3×3 强制探雷（设计 §9.5）——雷位标「确认雷」
+## 机器人视同旗（Solver 计雷）、不计标旗分、情报穿锁（锁只拦交互）；零分零钱纯情报
+func _trigger_probe(center: Vector2i) -> void:
+	var confirmed: int = 0
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var c = grid.get_cell(center + Vector2i(dx, dy))
+			if c != null and c.is_mine and not c.is_confirmed_mine:
+				c.confirm_mine()
+				confirmed += 1
+	GameState.result_stats["probe_used"] += 1
+	var coords: String = GameState.result_stats["probe_coords"]
+	GameState.result_stats["probe_coords"] = (coords + ";" if coords != "" else "") \
+			+ "%d,%d" % [center.x, center.y]
+	grid.play_player_action_visual(center, Grid.FLY_ICON_OPEN)
+	hud.show_toast("探测完成：%d 格确认雷" % confirmed, 2.5)

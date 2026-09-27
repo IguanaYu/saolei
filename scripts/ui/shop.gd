@@ -5,9 +5,11 @@ extends Control
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
 @onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyDetectorButton
 @onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMinerButton
+@onready var guard_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/GuardButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var drone_button: Button = $MarginContainer/VBoxContainer/BuildRow/DroneButton
+@onready var probe_button: Button = $MarginContainer/VBoxContainer/BuildRow/ProbeButton
 @onready var hint_label: Label = $MarginContainer/VBoxContainer/HintLabel
 @onready var debug_button: Button = $MarginContainer/VBoxContainer/DebugButton
 
@@ -39,9 +41,11 @@ func _ready() -> void:
 	buy_marker_button.pressed.connect(_on_buy_marker)
 	buy_detector_button.pressed.connect(_on_buy_detector)
 	buy_miner_button.pressed.connect(_on_buy_miner)
+	guard_button.pressed.connect(_on_buy_guard)
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
 	drone_button.pressed.connect(_on_trigger_drone)
+	probe_button.pressed.connect(_on_buy_probe)
 	debug_button.pressed.connect(_on_debug_button)
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
@@ -65,6 +69,19 @@ func _on_buy_detector() -> void:
 
 func _on_buy_miner() -> void:
 	_buy("miner")
+
+
+## L4 保安：走标准机器人放置流程（80 限购 1 由 shop_limits 管控）
+func _on_buy_guard() -> void:
+	_buy("guard")
+
+
+## L4 探测：一次性瞬发，进入 probe 放置模式（点目标格后 3×3 确认雷）
+func _on_buy_probe() -> void:
+	if GameState.money < 100:
+		return
+	var main := get_node("/root/Main")
+	main.call("_enter_placing_mode", "probe")
 
 
 func _on_debug_button() -> void:
@@ -141,6 +158,8 @@ func _refresh_prices() -> void:
 	_refresh_one(buy_marker_button, "marker", "标雷型")
 	_refresh_one(buy_detector_button, "detector", "检测型")
 	_refresh_one(buy_miner_button, "miner", "矿工型")
+	if guard_button.visible:
+		_refresh_one(guard_button, "guard", "保安")
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
@@ -148,6 +167,9 @@ func _refresh_prices() -> void:
 	var drone_unlocked: bool = bool(SaveSystem.unlocks.get("drone", false))
 	drone_button.text = "🔒 无人机" if not drone_unlocked else "无人机 ¥100"
 	drone_button.disabled = not drone_unlocked or GameState.money < 100
+	if probe_button.visible:
+		probe_button.text = "探测 ¥100"
+		probe_button.disabled = GameState.money < 100
 
 
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
@@ -161,12 +183,16 @@ func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void
 
 
 ## 关卡级商店配置：隐藏本关不出现的按钮（教学关只留 opener/marker，钱不可能花错）
+## L4 新按钮（guard/probe）默认隐藏，仅 shop_extra 含对应键的关显示（与 shop_hidden 反向）
 func _apply_level_shop_config() -> void:
 	var lvl: LevelData = GameState.get_current_level()
 	var hidden: Array = lvl.shop_hidden if lvl != null else []
+	var extra: Array = lvl.shop_extra if lvl != null else []
 	build_base_button.visible = not hidden.has("base")
 	drone_button.visible = not hidden.has("drone")
 	upgrade_button.visible = not hidden.has("upgrade")
 	debug_button.visible = not hidden.has("debug")
 	buy_detector_button.visible = not hidden.has("detector")
 	buy_miner_button.visible = not hidden.has("miner")
+	guard_button.visible = extra.has("guard")
+	probe_button.visible = extra.has("probe")

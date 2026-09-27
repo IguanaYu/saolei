@@ -96,6 +96,16 @@ func _record_playtest(result: String) -> void:
 		"speed_levels_final": [GameState.opener_move_level, GameState.opener_work_level,
 				GameState.marker_move_level, GameState.marker_work_level],
 		"robots_final": [GameState.opener_count, GameState.marker_count],
+		# L4 除害关（设计 §9.10）
+		"nest_cleared_elapsed": s.get("nest_cleared_elapsed", -1.0),
+		"nests_destroyed": s.get("nests_destroyed", 0),
+		"guard_bought_elapsed": s.get("guard_bought_elapsed", -1.0),
+		"probe_used": s.get("probe_used", 0),
+		"probe_coords": s.get("probe_coords", ""),
+		"enemy_kills": [s.get("enemy_kills_player", 0), s.get("enemy_kills_guard", 0)],
+		"obstacles_cleared": [s.get("obstacles_cleared_player", 0), s.get("obstacles_cleared_guard", 0)],
+		"stall_seconds": snappedf(float(s.get("stall_seconds", 0.0)), 0.1),
+		"slowed_seconds": snappedf(float(s.get("slowed_seconds", 0.0)), 0.1),
 		# 本局开局时的局外解锁快照（L3 起玩家数值分化的分组依据，设计 §4.1）
 		"meta_snapshot": {
 			"start_money": int(SaveSystem.unlocks.get("start_money", 0)),
@@ -186,6 +196,14 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 	if include_time_bonus and int(s.get("time_bonus", 0)) > 0:
 		_add_row(ICON_CLOCK, "时间加分",
 			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s["time_bonus"])])
+	# L4 除害关：敌人数据行 + 探测次数（设计 §3 结算；到点/命尽分支也显示）
+	if GameState.current_level_id == "ch01_s04":
+		_add_row(ICON_STAR, "除害",
+			"除巢 %d · 击杀 %d · 清障 %d" % [
+				int(s.get("nests_destroyed", 0)),
+				int(s.get("enemy_kills_player", 0)) + int(s.get("enemy_kills_guard", 0)),
+				int(s.get("obstacles_cleared_player", 0)) + int(s.get("obstacles_cleared_guard", 0))])
+		_add_row(ICON_STAR, "探测", "%d 次" % int(s.get("probe_used", 0)))
 
 
 func _handle_daily(result: String) -> void:

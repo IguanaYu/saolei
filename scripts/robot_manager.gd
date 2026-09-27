@@ -5,6 +5,7 @@ extends Node2D
 const ROBOT_SCENE := preload("res://scenes/Robot.tscn")
 const DETECTOR_ROBOT_SCENE := preload("res://scenes/DetectorRobot.tscn")
 const MINER_ROBOT_SCENE := preload("res://scenes/MinerRobot.tscn")
+const GUARD_ROBOT_SCENE := preload("res://scenes/GuardRobot.tscn")
 const IDLE_WARNING_THRESHOLD := 3.0  # 所有机器人连续 idle 超过这个秒数就报警
 
 signal idle_warning_changed(show: bool)
@@ -21,6 +22,7 @@ func spawn_robot(start_coord: Vector2i, robot_type: String, grid) -> Robot:
 	match robot_type:
 		"detector": robot = DETECTOR_ROBOT_SCENE.instantiate()
 		"miner": robot = MINER_ROBOT_SCENE.instantiate()
+		"guard": robot = GUARD_ROBOT_SCENE.instantiate()
 		_: robot = ROBOT_SCENE.instantiate()
 	add_child(robot)
 	robot.robot_type = robot_type
@@ -70,6 +72,7 @@ func tick_all(delta: float, grid) -> void:
 		_reset_idle_warning()
 	else:
 		_all_idle_seconds += delta
+		GameState.result_stats["stall_seconds"] += delta  # L4 埋点：全场停摆累计时长
 		if _all_idle_seconds >= IDLE_WARNING_THRESHOLD and not _idle_warning_on:
 			_idle_warning_on = true
 			idle_warning_changed.emit(true)

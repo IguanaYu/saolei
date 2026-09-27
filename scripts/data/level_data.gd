@@ -22,6 +22,7 @@ var repeat_reward: RewardData
 var fixed_mines: Array[Vector2i] = []       # 雷位
 var fixed_base: Vector2i = Vector2i(-1, -1)  # 预置基地；(-1,-1) = 玩家自放
 var preopen_coords: Array[Vector2i] = []    # 预开区（含洪水结果，直接烘焙）
+var pregen_random: bool = false             # true：进关预生成随机盘+洪水预开（L4 裸随机路径）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽
@@ -32,6 +33,7 @@ var cooldown_after_purchase: float = -1.0  # >=0：首台机器人购买后 CD �
 # ---- 商店限制 ----
 var shop_limits: Dictionary = {}    # 如 {"opener":1, "marker":1}；空 = 不限购
 var shop_hidden: Array = []         # 本关隐藏的商店按钮 type："base"/"drone"/"upgrade"/"debug"/"detector"/"miner"
+var shop_extra: Array = []          # 本关额外显示的商店按钮 type："guard"/"probe"（默认隐藏，L4 用）
 var start_robots: Dictionary = {}   # 开局赠送机器人 {"opener":1, "marker":1}；计数照常抬升价格阶梯
 
 # ---- 升级轨（局内）----

@@ -52,3 +52,31 @@ static func _is_adjacent_8(a: Vector2i, b: Vector2i) -> bool:
 	var dx: int = abs(a.x - b.x)
 	var dy: int = abs(a.y - b.y)
 	return dx <= 1 and dy <= 1 and not (dx == 0 and dy == 0)
+
+
+## 无限制 BFS（L4 敌虫用）：不受 walkable 限制（虫爬岩壁），全盘 4 向可走
+## 返回从 start 走向 goal 的下一格（Vector2i），start==goal 或不可达返回 Vector2i(-9,-9)
+static func find_path_free_step(grid, start: Vector2i, goal: Vector2i) -> Vector2i:
+	if start == goal:
+		return Vector2i(-9, -9)
+	var queue: Array = [start]
+	var came_from: Dictionary = {start: Vector2i(-9, -9)}  # coord -> 前驱（根为哨兵）
+	while not queue.is_empty():
+		var pos: Vector2i = queue.pop_front()
+		if pos == goal:
+			break
+		for offset in MOVE_OFFSETS:
+			var n: Vector2i = pos + offset
+			if came_from.has(n):
+				continue
+			if not grid.cells.has(n):
+				continue
+			came_from[n] = pos
+			queue.append(n)
+	if not came_from.has(goal):
+		return Vector2i(-9, -9)  # 理论不可达（goal 越界）
+	# 回溯到 start 的下一步
+	var step: Vector2i = goal
+	while came_from[step] != start:
+		step = came_from[step]
+	return step

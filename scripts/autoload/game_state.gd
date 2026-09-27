@@ -37,6 +37,7 @@ var opener_count: int = 0
 var marker_count: int = 0
 var detector_count: int = 0
 var miner_count: int = 0
+var guard_count: int = 0
 
 # 建筑状态
 var bases: Array[Vector2i] = []
@@ -68,6 +69,18 @@ var result_stats := {
 	"open_score": 0, "flag_score": 0, "wrong_flags": 0,
 	"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 	"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
+	# L4 除害关（敌人/探测，设计 §9.10）
+	"nest_cleared_elapsed": -1.0,   # 首巢摧毁时点（-1=未除）
+	"nests_destroyed": 0,           # 结算行「除巢数」
+	"guard_bought_elapsed": -1.0,   # 保安购买时点（-1=未买）
+	"probe_used": 0,                # 探测使用次数
+	"probe_coords": "",             # 探测坐标串 "x,y;x,y"（埋点分析用）
+	"enemy_kills_player": 0,        # 玩家点杀虫数
+	"enemy_kills_guard": 0,         # 保安击杀虫数
+	"obstacles_cleared_player": 0,  # 玩家清障数（锁/网/黏液）
+	"obstacles_cleared_guard": 0,   # 保安清障数
+	"stall_seconds": 0.0,           # 全场机器人停摆累计时长
+	"slowed_seconds": 0.0,          # 机器人在黏液 3×3 内的累计时长
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -210,6 +223,11 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"open_score": 0, "flag_score": 0, "wrong_flags": 0,
 		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
+		"nest_cleared_elapsed": -1.0, "nests_destroyed": 0,
+		"guard_bought_elapsed": -1.0, "probe_used": 0, "probe_coords": "",
+		"enemy_kills_player": 0, "enemy_kills_guard": 0,
+		"obstacles_cleared_player": 0, "obstacles_cleared_guard": 0,
+		"stall_seconds": 0.0, "slowed_seconds": 0.0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
@@ -231,6 +249,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	marker_count = 0
 	detector_count = 0
 	miner_count = 0
+	guard_count = 0
 	bases.clear()
 	base_count = 0
 	locked_targets.clear()
@@ -322,6 +341,7 @@ func get_robot_price(robot_type: String) -> int:
 		"marker": count = marker_count; base = 50
 		"detector": count = detector_count; base = 80
 		"miner": count = miner_count; base = 60
+		"guard": count = guard_count; base = 80  # L4 保安：限购 1 下无翻倍问题
 	base *= 1 << count
 	var discount: float = [1.0, 0.75, 0.5][discount_level]
 	return int(base * discount)
@@ -333,6 +353,7 @@ func get_robot_purchased_count(robot_type: String) -> int:
 		"marker": return marker_count
 		"detector": return detector_count
 		"miner": return miner_count
+		"guard": return guard_count
 	return 0
 
 
@@ -346,6 +367,7 @@ func purchase_robot(robot_type: String) -> bool:
 		"marker": marker_count += 1
 		"detector": detector_count += 1
 		"miner": miner_count += 1
+		"guard": guard_count += 1
 	# 首购恢复 CD（教学关：30s → 3s，立刻恢复一次次数）
 	if cd_phase != "off" and cd_after_purchase >= 0.0 and not cd_purchase_boosted:
 		cd_purchase_boosted = true
@@ -362,6 +384,7 @@ func gift_robot(robot_type: String) -> void:
 		"marker": marker_count += 1
 		"detector": detector_count += 1
 		"miner": miner_count += 1
+		"guard": guard_count += 1
 
 
 ## 移动间隔（opener/marker 走移动轨等级；detector/miner 单间隔同表）

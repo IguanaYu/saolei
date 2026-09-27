@@ -71,6 +71,10 @@ func _update_visual() -> void:
 		body.color = Color(0.20, 0.45, 0.95)
 		lbl.text = "⛏"
 		lbl.modulate = Color.WHITE
+	elif robot_type == "guard":
+		body.color = Color(0.25, 0.55, 0.60)
+		lbl.text = "🛡"
+		lbl.modulate = Color.WHITE
 	else:
 		body.color = Color(0.95, 0.80, 0.15)
 		lbl.text = "⚑"
@@ -85,6 +89,10 @@ func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
 				if _next_tick_is_work() else GameState.get_move_interval(robot_type)
 	else:
 		tick_interval = GameState.get_speed_interval(robot_type)
+	# L4 黏液减速：对"下一 tick 将做什么"的间隔统一 ×2（含移动/工作双轨；布尔判定不叠乘）
+	if grid.is_slime_nearby(coord):
+		tick_interval *= 2.0
+		GameState.result_stats["slowed_seconds"] += delta
 	_tick_timer += delta
 	if _tick_timer >= tick_interval:
 		_tick_timer = 0.0

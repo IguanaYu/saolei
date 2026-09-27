@@ -40,6 +40,7 @@ signal mine_stepped(cell, by_actor: String)
 signal all_safe_opened()
 signal vein_created(coord: Vector2i)
 signal vein_depleted(coord: Vector2i)
+signal obstacle_cleared(cell, kind: String, by_actor: String)  # L4 障碍清除（埋点/剧本转发）
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 
@@ -68,6 +69,7 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 	cols = new_cols
 	mine_count = new_mines
 	rewarded_flags.clear()
+	board_generated = false
 	_center_grid()
 	init_empty_grid()
 
@@ -97,6 +99,7 @@ func init_empty_grid() -> void:
 			cell.cell_left_clicked.connect(_on_cell_left_clicked)
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
+			cell.cell_obstacle_cleared.connect(_on_cell_obstacle_cleared)
 			cells[coord] = cell
 	# 网格线覆盖层挪到最后，保证画在格子之上
 	if _lines != null:
@@ -115,9 +118,20 @@ func set_wall_style(style: String) -> void:
 
 ## 玩家放置第一个基地：触发雷生成 + 预开安全区 + 标记基地
 ## 任意关闭格都可放置（特例：不需要先开格）
+## pregen_random 关（L4）：盘面已由 apply_random_board 预生成，只校验+落基地
+var board_generated := false
+
 func place_first_base(coord: Vector2i) -> bool:
 	if not cells.has(coord):
 		return false
+	if board_generated:
+		# L4 随机盘路径：不放雷、不预开安全区；基地只能落在已开格（设计 §3「玩家自放」）
+		if not cells[coord].is_opened:
+			return false
+		cells[coord].become_base()
+		GameState.register_base(coord)
+		GameState.set_game_phase("playing")
+		return true
 	# 安全区半径：基础 1 + 局外升级
 	var radius: int = 1 + int(SaveSystem.unlocks.get("expand_zone", 0))
 	var safe_coords: Array = []
@@ -168,6 +182,55 @@ func apply_fixed_board(data: Dictionary) -> void:
 		cells[base_coord].become_base()
 		GameState.register_base(base_coord)
 	GameState.set_game_phase("playing")
+
+
+## 随机盘装载（试玩版 L4 除害关·裸随机，设计 §7）：
+## 40 雷随机布（无排除区）→ 从一个安全零格洪水预开（连通展开自然落多少算多少，不卡比例）
+## → 不预置基地（game_phase 保持 placing_base，强制玩家第一步自放，仅已开格可放）
+func apply_random_board() -> void:
+	var data: Dictionary = MapGenerator.generate_excluding(rows, cols, mine_count, [])
+	var mine_set: Dictionary = data.mine_set
+	var numbers: Dictionary = data.numbers
+	for c in cells:
+		cells[c].is_mine = mine_set.has(c)
+		cells[c].adjacent_mines = int(numbers.get(c, 0))
+	# 起点选择：随机取一个非雷零格（保证有洪水连锁；无零格则任取非雷格）
+	var zero_cells: Array = []
+	var safe_cells: Array = []
+	for c in cells:
+		if not cells[c].is_mine:
+			safe_cells.append(c)
+			if cells[c].adjacent_mines == 0:
+				zero_cells.append(c)
+	var pool: Array = zero_cells if not zero_cells.is_empty() else safe_cells
+	if pool.is_empty():
+		push_warning("随机盘生成失败：无安全格")
+		board_generated = true
+		return
+	pool.shuffle()
+	var start: Vector2i = pool[0]
+	# 洪水预开：与 _flood_open 同构的连通展开，但直接设字段不 emit 信号（不给奖励，
+	# 同 apply_fixed_board 预开写法；从起点格自身开起）
+	var queue: Array = [start]
+	var visited: Dictionary = {start: true}
+	cells[start].is_opened = true
+	cells[start].refresh_visual()
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_front()
+		for o in MapGenerator.NEIGHBOR_OFFSETS:
+			var n: Vector2i = c + o
+			if visited.has(n) or not cells.has(n):
+				continue
+			visited[n] = true
+			var n_cell: Cell = cells[n]
+			if n_cell.is_opened or n_cell.is_flagged or n_cell.is_mine:
+				continue
+			n_cell.is_opened = true
+			n_cell.refresh_visual()
+			if n_cell.adjacent_mines == 0:
+				queue.append(n)
+	board_generated = true
+	# 裂缝与预置虫害的放置在 EnemyManager.setup_board（放基地前即可见，剧本 #0）
 
 
 ## 玩家放置后续基地（必须在已开格上）
@@ -310,6 +373,16 @@ func is_walkable(coord: Vector2i) -> bool:
 	return cells[coord].is_opened  # 坍塌格视为已开
 
 
+## 黏液减速判定（L4）：coord 的 3×3 内任一格有黏液 → 机器人间隔 ×2（布尔判定天然不叠乘）
+func is_slime_nearby(coord: Vector2i) -> bool:
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var c: Cell = cells.get(coord + Vector2i(dx, dy))
+			if c != null and c.is_slimed:
+				return true
+	return false
+
+
 func count_safe_remaining() -> int:
 	var count: int = 0
 	for cell in cells.values():
@@ -351,12 +424,35 @@ func _flood_open(start: Vector2i, by_actor: String) -> void:
 				queue.append(n)
 
 
+## 障碍清除统一入口（优先级 锁>网>黏液，同保安索敌序）：返回清除的 kind，""=无可清
+func clear_cell_obstacle(cell: Cell, by_actor: String) -> String:
+	if cell.is_locked and not cell.is_opened:
+		return "lock" if cell.clear_lock(by_actor) else ""
+	if cell.is_webbed and cell.is_opened:
+		return "web" if cell.clear_web(by_actor) else ""
+	if cell.is_slimed:
+		return "slime" if cell.clear_slime(by_actor) else ""
+	return ""
+
+
+func _on_cell_obstacle_cleared(cell, kind: String, by_actor: String) -> void:
+	obstacle_cleared.emit(cell, kind, by_actor)
+
+
 func _on_cell_left_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
 	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
+		return
+	# L4 障碍清除分流（设计 §9.9）：点击命中障碍 → 本击只清障不开格，吃 1 次 CD
+	# （黏液不阻断开/标，但点击命中的是障碍：先清后开，第二击再开格）
+	if cell.has_obstacle():
+		var kind := clear_cell_obstacle(cell, "player")
+		if kind != "":
+			GameState.consume_player_action()
+			play_player_action_visual(cell.coord, FLY_ICON_OPEN)
 		return
 	# 先判断动作是否会生效（只对生效动作计 CD 次数），执行后再计数
 	var will_open: bool = not cell.is_opened and not cell.is_collapsed \
@@ -373,6 +469,12 @@ func _on_cell_right_clicked(cell: Cell) -> void:
 	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
+		return
+	# 锁格右键也走清锁：锁同时拦开与标，清除是唯一出路（计划 WP2.3）
+	if cell.is_locked and not cell.is_opened:
+		if cell.clear_lock("player"):
+			GameState.consume_player_action()
+			play_player_action_visual(cell.coord, FLY_ICON_FLAG)
 		return
 	var will_toggle: bool = not cell.is_opened and not cell.is_collapsed
 	toggle_flag(cell.coord, "player")

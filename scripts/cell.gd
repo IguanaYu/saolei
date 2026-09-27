@@ -16,11 +16,19 @@ var is_base: bool = false        # 基地建筑
 var is_vein: bool = false        # 矿脉
 var vein_resources: int = 0      # 矿脉剩余资源
 
+# ---- L4 虫害三状态（独立状态位，不碰雷位数字真值，设计 §5「⑥ 合规」）----
+var is_webbed: bool = false     # 网=显示遮罩：盖住已开数字（玩家与机器人同盲，Q7）
+var is_locked: bool = false     # 锁=交互阻断：谁都开不了也标不了（旗不可撤直到清锁，Q6）
+var is_slimed: bool = false     # 黏液=速度修正：3×3 内机器人间隔 ×2，不阻断开/标
+var is_confirmed_mine: bool = false  # 探测「确认雷」：机器人视同旗、不计分、穿锁
+
 # 信号
 signal cell_left_clicked(cell: Cell)
 signal cell_right_clicked(cell: Cell)
 signal cell_double_clicked(cell: Cell)
 signal cell_state_changed(cell: Cell)
+## 障碍被清除（玩家点清/保安射清）：kind = "web"/"lock"/"slime"，埋点用
+signal cell_obstacle_cleared(cell: Cell, kind: String, by_actor: String)
 
 # 数字配色（索引 0 不用）
 const NUMBER_COLORS := [
@@ -64,6 +72,7 @@ const DECO_DENSITY := 0.10
 
 var _floor_atlas: AtlasTexture
 var _deco_tex: TextureRect = null
+var _obstacle_mark: Label = null  # L4 障碍覆盖（网/锁/确认雷占位图标，显式命名防误匹配）
 
 # 双击检测
 var _last_click_time: float = 0.0
@@ -74,11 +83,26 @@ func _ready() -> void:
 	_setup_wall()
 	_setup_floor()
 	_setup_deco()
+	_setup_obstacle_mark()
 	refresh_visual()
 	refresh_wall_edges()
 	# 本格状态变化后，刷新周围格子的岩壁边缘描边
 	cell_state_changed.connect(_on_state_changed_refresh_edges)
 	input_event.connect(_on_input_event)
+
+
+## L4 障碍覆盖层：网/锁/确认雷的占位图标（正式素材列美术需求，Q5）
+func _setup_obstacle_mark() -> void:
+	_obstacle_mark = Label.new()
+	_obstacle_mark.name = "ObstacleMark"  # 显式命名：避免 get_children 遍历误匹配
+	_obstacle_mark.offset_left = -14
+	_obstacle_mark.offset_top = -14
+	_obstacle_mark.offset_right = 14
+	_obstacle_mark.offset_bottom = 14
+	_obstacle_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_obstacle_mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_obstacle_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_obstacle_mark)
 
 
 func _setup_wall() -> void:
@@ -211,6 +235,8 @@ func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> voi
 
 func open(by_actor: String) -> bool:
 	# 返回 true 表示状态真的改变了
+	if is_locked:
+		return false  # 锁=交互阻断：谁都不能开（玩家/机器人/无人机一律拦）
 	if is_opened or is_collapsed or is_flagged:
 		return false
 	if is_base:
@@ -242,6 +268,8 @@ func deplete_vein() -> void:
 
 
 func toggle_flag() -> bool:
+	if is_locked:
+		return false  # 锁同时拦插旗与撤旗（Q6：已插旗格被锁，旗不可撤直到清锁）
 	if is_opened or is_collapsed:
 		return false
 	is_flagged = not is_flagged
@@ -249,6 +277,76 @@ func toggle_flag() -> bool:
 	if is_flagged:
 		_play_open_pulse()
 	return true
+
+
+# ---- L4 虫害障碍：apply 幂等（已有同类状态返回 false），clear 是玩家/保安共用入口 ----
+
+func apply_web() -> bool:
+	if is_webbed or not is_opened or is_base or is_vein or is_collapsed:
+		return false  # 网只盖已开数字格（基地/矿脉/坍塌无数字可盖）
+	is_webbed = true
+	refresh_visual()
+	return true
+
+
+func apply_lock() -> bool:
+	if is_locked or is_opened or is_base or is_vein or is_collapsed:
+		return false  # 锁只锁关闭格
+	is_locked = true
+	refresh_visual()
+	return true
+
+
+func apply_slime() -> bool:
+	if is_slimed:
+		return false
+	is_slimed = true
+	refresh_visual()
+	return true
+
+
+func clear_web(by_actor: String) -> bool:
+	if not is_webbed:
+		return false
+	is_webbed = false
+	refresh_visual()
+	cell_obstacle_cleared.emit(self, "web", by_actor)
+	return true
+
+
+func clear_lock(by_actor: String) -> bool:
+	if not is_locked:
+		return false
+	is_locked = false
+	refresh_visual()
+	cell_obstacle_cleared.emit(self, "lock", by_actor)
+	return true
+
+
+func clear_slime(by_actor: String) -> bool:
+	if not is_slimed:
+		return false
+	is_slimed = false
+	refresh_visual()
+	cell_obstacle_cleared.emit(self, "slime", by_actor)
+	return true
+
+
+## 点击分流用：本格是否叠着可清除的障碍（锁未开/网已开/黏液任意）
+func has_obstacle() -> bool:
+	if is_locked and not is_opened:
+		return true
+	if is_webbed and is_opened:
+		return true
+	return is_slimed
+
+
+## 探测「确认雷」：不 open 不 flag、绕过锁（锁只拦交互，情报可穿透，设计 §5）
+func confirm_mine() -> void:
+	if is_confirmed_mine:
+		return
+	is_confirmed_mine = true
+	refresh_visual()
 
 
 func collapse() -> void:
@@ -326,4 +424,22 @@ func refresh_visual() -> void:
 	special.visible = special.texture != null
 	if not show_wall:
 		refresh_wall_edges()  # 开侧格不显示描边，直接清掉
+	# ---- L4 障碍覆盖（叠在基础视觉之上，黏液只染色不改表现）----
+	if is_webbed:
+		# 网盖数字：数字对玩家同样不可见（Q7「玩家与机器人同盲」）
+		lbl.text = ""
+	if _obstacle_mark != null:
+		if is_locked:
+			_obstacle_mark.text = "🔒"
+			_obstacle_mark.modulate = Color.WHITE
+		elif is_webbed:
+			_obstacle_mark.text = "🕸"
+			_obstacle_mark.modulate = Color(0.85, 0.9, 1.0)
+		elif is_confirmed_mine and not is_opened:
+			_obstacle_mark.text = "◆"  # 确认雷占位：橙色菱形（与旗区分）
+			_obstacle_mark.modulate = Color(1.0, 0.6, 0.15)
+		else:
+			_obstacle_mark.text = ""
+	if is_slimed:
+		bg.color = bg.color.lerp(Color(0.25, 0.65, 0.2), 0.45)  # 黏液：绿色浸染，不改变开/旗表现
 	cell_state_changed.emit(self)

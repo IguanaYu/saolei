@@ -50,6 +50,10 @@ text = "矿工型 ¥60"
 custom_minimum_size = Vector2(160, 46)
 text = "升级面板"
 
+[node name="GuardButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(160, 46)
+text = "保安 ¥80"
+
 [node name="BuildRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 theme_override_constants/separation = 16
 alignment = 1
@@ -62,6 +66,10 @@ text = "建基地 ¥80"
 [node name="DroneButton" type="Button" parent="MarginContainer/VBoxContainer/BuildRow"]
 custom_minimum_size = Vector2(160, 46)
 text = "无人机 ¥100"
+
+[node name="ProbeButton" type="Button" parent="MarginContainer/VBoxContainer/BuildRow"]
+custom_minimum_size = Vector2(160, 46)
+text = "探测 ¥100"
 
 [node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 visible = false
