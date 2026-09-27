@@ -10,9 +10,10 @@ var ore: int = 0
 var unlocks: Dictionary = {
 	"start_money": 0,    # 起始金币加成，每级 +50，max 2
 	"start_lives": 0,    # 起始额外生命，每级 +1，max 2
-	"global_speed": 0,   # 全局速度加成，每级提速，max 2
-	"expand_zone": 0,    # 安全区扩大，每级 +1 半径，max 2
-	"start_robot": 0,    # 开局送机器人，每级 +1，max 2
+	"global_speed": 0,   # 移动速度加成（原「全局速度」更名，键不改免存档迁移），开局送同级移动档，max 2
+	"work_speed": 0,     # 工作速度加成（L3 新轨），开局送同级工作档，max 2
+	"expand_zone": 0,    # 安全区扩大，每级 +1 半径，max 2（固定预开地图下无用，商店行隐藏）
+	"start_robot": 0,    # 开局送机器人，Lv1 送 opener，Lv2 再送 marker，max 2
 	"detector": false,   # 解锁检测型（章 2 通关解锁）
 	"miner": false,      # 解锁矿工型（章 3 通关解锁）
 	"tower": false,      # 解锁充能塔（章 4 通关解锁，功能未实现）
@@ -24,6 +25,7 @@ var cleared_levels: Dictionary = {}        # {"ch01_s01": true}
 var level_stars: Dictionary = {}           # {"ch01_s01": 3}
 var first_clear_claimed: Dictionary = {}   # {"ch01_s01": true}
 var unlocked_chapters: Array = ["ch01"]
+var levels_entered: Dictionary = {}        # {"ch01_s03": true} 进关即记（间场「变强」高亮依据）
 
 # ---- 统计 / 每日挑战 / 签到（v4）----
 var stats := {
@@ -67,6 +69,7 @@ func load_game() -> void:
 	cleared_levels = data.get("cleared_levels", {})
 	level_stars = data.get("level_stars", {})
 	first_clear_claimed = data.get("first_clear_claimed", {})
+	levels_entered = data.get("levels_entered", {})
 	var saved_chapters: Variant = data.get("unlocked_chapters", ["ch01"])
 	if typeof(saved_chapters) == TYPE_ARRAY and not saved_chapters.is_empty():
 		unlocked_chapters = saved_chapters
@@ -90,6 +93,7 @@ func save_game() -> void:
 		"cleared_levels": cleared_levels, "level_stars": level_stars,
 		"first_clear_claimed": first_clear_claimed,
 		"unlocked_chapters": unlocked_chapters,
+		"levels_entered": levels_entered,
 		"stats": stats, "daily": daily, "signin": signin,
 	}
 	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -176,6 +180,18 @@ func unlock_chapter(ch_id: String) -> void:
 	save_game()
 
 
+## 进关即记（从未进过 L3 = 间场「变强」高亮条件，设计 §4.1）
+func mark_level_entered(id: String) -> void:
+	if id == "" or levels_entered.has(id):
+		return
+	levels_entered[id] = true
+	save_game()
+
+
+func has_entered_level(id: String) -> bool:
+	return levels_entered.has(id)
+
+
 # ==================== 日期工具（本地时区） ====================
 
 func _local_unix() -> int:
@@ -253,6 +269,32 @@ func record_playtest(entry: Dictionary) -> void:
 	save_game()
 
 
+## 给最后一条盲测记录补字段（继续挑战离开时补 continued/continue_gain）
+func amend_last_playtest(fields: Dictionary) -> void:
+	var arr: Array = stats.get("playtest", [])
+	if arr.is_empty():
+		return
+	var last: Dictionary = arr[arr.size() - 1]
+	for k in fields:
+		last[k] = fields[k]
+	save_game()
+
+
+## 局外购买埋点（顺序即购买顺序，L3 起玩家数值分化的分组依据，设计 §4.1）
+func record_meta_purchase(key: String, level: int) -> void:
+	var arr: Array = stats.get("meta_purchases", [])
+	arr.append({"ts": Time.get_unix_time_from_system(), "key": key, "level": level})
+	stats["meta_purchases"] = arr
+	save_game()
+
+
+## 仅当分数更高时刷新最高分（继续挑战离开用，Q4：不重复走 record_game_result）
+func refresh_best_score(score: int) -> void:
+	if score > int(stats.best_score):
+		stats.best_score = score
+		save_game()
+
+
 # ==================== 每日挑战 ====================
 
 func get_daily_badges() -> Array:
@@ -326,13 +368,15 @@ func reset_all() -> void:
 	## 清空游戏存档（GameSettings 里的设置保留）
 	ore = 0
 	unlocks = {
-		"start_money": 0, "start_lives": 0, "global_speed": 0, "expand_zone": 0,
-		"start_robot": 0, "detector": false, "miner": false, "tower": false, "drone": false,
+		"start_money": 0, "start_lives": 0, "global_speed": 0, "work_speed": 0,
+		"expand_zone": 0, "start_robot": 0,
+		"detector": false, "miner": false, "tower": false, "drone": false,
 	}
 	cleared_levels = {}
 	level_stars = {}
 	first_clear_claimed = {}
 	unlocked_chapters = ["ch01"]
+	levels_entered = {}
 	stats = {"total_games": 0, "wins": 0, "best_time": -1.0, "best_score": 0,
 			"cur_streak": 0, "max_streak": 0, "total_play_sec": 0.0}
 	daily = {"today_key": "", "today_best": -1.0, "all_best": -1.0, "badges": {}, "chest_weeks": []}

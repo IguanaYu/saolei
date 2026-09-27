@@ -48,6 +48,8 @@ func _build() -> void:
 				_apply_playtest_level1(lvl)
 			elif ch_idx == 0 and s_idx == 1:
 				_apply_playtest_level2(lvl)
+			elif ch_idx == 0 and s_idx == 2:
+				_apply_playtest_level3(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -104,6 +106,46 @@ func _apply_playtest_level2(lvl: LevelData) -> void:
 	lvl.fixed_mines.assign(FixedBoards.L2.mines)
 	lvl.fixed_base = FixedBoards.L2.base
 	lvl.preopen_coords.assign(FixedBoards.L2.preopen)
+
+
+## 外部试玩版第三关（局外成长关·积分目标）：大盘 + 过线即胜 + 继续挑战 + 局外效果进场即见
+## 设计文档：docs/active/试玩版内容/第三关-设计文档.md（v1.2）
+func _apply_playtest_level3(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(16, 16)
+	lvl.mine_count = 40
+	var obj := ObjectiveData.new()  # s_idx==2 默认生成 REACH_SCORE target=40，必须覆写为 300
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 300
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 120.0
+	lvl.start_gold = 300        # 再叠局外起始金币（meta_progression=true）
+	lvl.start_lives = 3
+	lvl.free_clicks = 5         # 同 L2：开局 5 次免 CD，用完 3s/次
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.shop_limits = {}
+	lvl.shop_hidden = ["detector", "miner", "drone", "debug"]  # 基地可买（80 平价）
+	lvl.upgrades_hidden = ["discount"]                          # 折扣轨砍出试玩版
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.base_price_flat = 80
+	lvl.time_bonus_per_sec = 3
+	lvl.meta_progression = true   # 本关吃全部局外加成（教学：矿石变强进场即见）
+	lvl.preopen_scores = true     # 预开格进关即 +1 分/格（只计分不计钱，设计 v1.2）
+	lvl.allow_continue = true     # 过线结算后可「继续挑战」（倒计时冻结/免命/分数累加）
+	lvl.first_clear_reward = RewardData.new()
+	lvl.first_clear_reward.ore = 200
+	lvl.repeat_reward = RewardData.new()
+	lvl.repeat_reward.ore = 50
+	lvl.allowed_modules = ["opener", "marker"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.fixed_mines.assign(FixedBoards.L3.mines)
+	lvl.fixed_base = FixedBoards.L3.base
+	lvl.preopen_coords.assign(FixedBoards.L3.preopen)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

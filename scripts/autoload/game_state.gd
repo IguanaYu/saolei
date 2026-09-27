@@ -15,12 +15,17 @@ var lives_cfg: int = 3              # 关卡配置原始值（<=0 = 无命限制
 # 游戏阶段：placing_base=等玩家放第一个基地 / playing=正常游戏
 var game_phase: String = "placing_base"
 
-# 升级等级（速度轨 0-3，折扣轨 0-2）
-var opener_speed_level: int = 0
-var marker_speed_level: int = 0
+# 升级等级（opener/marker 双轨：移动+工作；detector/miner 单间隔；折扣轨 0-2）
+var opener_move_level: int = 0
+var opener_work_level: int = 0
+var marker_move_level: int = 0
+var marker_work_level: int = 0
 var detector_speed_level: int = 0
 var miner_speed_level: int = 0
 var discount_level: int = 0
+
+# 继续挑战模式（胜利结算后回盘面：倒计时冻结/加分锁定/免命/分数累加）
+var continue_mode: bool = false
 
 # 升级轨默认配置（关卡可用 LevelData 覆盖速度轨；折扣轨砍出试玩版，仅余价格）
 const DEFAULT_SPEED_PRICES := [50, 70, 100]
@@ -66,7 +71,8 @@ var result_stats := {
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
-var _speed_levels_cache: Array = DEFAULT_SPEED_LEVELS.duplicate()
+var _move_levels_cache: Array = DEFAULT_SPEED_LEVELS.duplicate()
+var _work_levels_cache: Array = []  # 空 = 本关无工作轨，工作间隔取移动表（L1/L2 手感不变）
 
 # ---- 信号总线 ----
 signal money_changed(new_value: int)
@@ -187,6 +193,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	score = 0
 	elapsed = 0.0
 	game_active = false
+	continue_mode = false
 	game_phase = "placing_base"
 	# 玩家操作 CD 初始化（cooldown_sec>0 才启用；免费阶段无 CD 概念）
 	cd_phase = "free" if lvl != null and lvl.cooldown_sec > 0.0 else "off"
@@ -204,16 +211,21 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 	}
-	# 速度档位缓存（关卡可覆盖；买档越界时 get_speed_interval 钳制）
-	_speed_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
+	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
+	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
 			else DEFAULT_SPEED_LEVELS).duplicate()
-	# 全局速度加成（局外升级直接给所有机器人同级；meta 关跳过）
-	var gs: int = (int(su.unlocks.get("global_speed", 0))
-			if lvl == null or lvl.meta_progression else 0)
-	opener_speed_level = gs
-	marker_speed_level = gs
-	detector_speed_level = gs
-	miner_speed_level = gs
+	_work_levels_cache = (lvl.upgrade_work_levels.duplicate()
+			if lvl != null and not lvl.upgrade_work_levels.is_empty() else [])
+	# 局外速度加成：移动/工作分轨直送（meta=false 关跳过，盲测冷启动确定）
+	var meta_spd: bool = lvl == null or lvl.meta_progression
+	var gs_move: int = int(su.unlocks.get("global_speed", 0)) if meta_spd else 0
+	var gs_work: int = int(su.unlocks.get("work_speed", 0)) if meta_spd else 0
+	opener_move_level = gs_move
+	marker_move_level = gs_move
+	opener_work_level = gs_work
+	marker_work_level = gs_work
+	detector_speed_level = gs_move
+	miner_speed_level = gs_move
 	discount_level = 0
 	opener_count = 0
 	marker_count = 0
@@ -352,15 +364,30 @@ func gift_robot(robot_type: String) -> void:
 		"miner": miner_count += 1
 
 
-func get_speed_interval(robot_type: String) -> float:
+## 移动间隔（opener/marker 走移动轨等级；detector/miner 单间隔同表）
+func get_move_interval(robot_type: String) -> float:
 	var level: int = 0
 	match robot_type:
-		"opener": level = opener_speed_level
-		"marker": level = marker_speed_level
+		"opener": level = opener_move_level
+		"marker": level = marker_move_level
 		"detector": level = detector_speed_level
 		"miner": level = miner_speed_level
-	level = mini(level, _speed_levels_cache.size() - 1)
-	return float(_speed_levels_cache[level])
+	level = mini(level, _move_levels_cache.size() - 1)
+	return float(_move_levels_cache[level])
+
+
+## 工作间隔（邻接连作节奏）。工作表为空 = 本关无工作轨 → 取移动表（L1/L2 手感不变）
+func get_work_interval(robot_type: String) -> float:
+	if _work_levels_cache.is_empty() or not (robot_type == "opener" or robot_type == "marker"):
+		return get_move_interval(robot_type)
+	var level: int = opener_work_level if robot_type == "opener" else marker_work_level
+	level = mini(level, _work_levels_cache.size() - 1)
+	return float(_work_levels_cache[level])
+
+
+## 兼容旧口径（detector/miner 单间隔）
+func get_speed_interval(robot_type: String) -> float:
+	return get_move_interval(robot_type)
 
 
 # ---- 局内升级 ----
@@ -370,6 +397,20 @@ func get_speed_levels() -> Array:
 	if lvl != null and not lvl.upgrade_speed_levels.is_empty():
 		return lvl.upgrade_speed_levels
 	return DEFAULT_SPEED_LEVELS
+
+
+func get_work_levels() -> Array:
+	var lvl := get_current_level()
+	if lvl != null and not lvl.upgrade_work_levels.is_empty():
+		return lvl.upgrade_work_levels
+	return get_speed_levels()  # 无工作轨的关，展示层用移动表兜底
+
+
+## 面板显示用档位表（工作轨显示工作表）
+func get_upgrade_levels_table(upgrade_id: String) -> Array:
+	if upgrade_id.ends_with("_work"):
+		return get_work_levels()
+	return get_speed_levels()
 
 
 func get_speed_prices() -> Array:
@@ -387,16 +428,29 @@ func get_upgrade_prices(upgrade_id: String) -> Array:
 
 func get_upgrade_level(upgrade_id: String) -> int:
 	match upgrade_id:
-		"opener_speed": return opener_speed_level
-		"marker_speed": return marker_speed_level
+		"opener_speed": return opener_move_level
+		"opener_move": return opener_move_level
+		"opener_work": return opener_work_level
+		"marker_speed": return marker_move_level
+		"marker_move": return marker_move_level
+		"marker_work": return marker_work_level
 		"discount": return discount_level
 	return 0
 
 
 func set_upgrade_level(upgrade_id: String, lvl: int) -> void:
 	match upgrade_id:
-		"opener_speed": opener_speed_level = lvl
-		"marker_speed": marker_speed_level = lvl
+		# 通用速度轨（L1/L2）：移动+工作同步——单 tick 时代的手感完全保留
+		"opener_speed":
+			opener_move_level = lvl
+			opener_work_level = lvl
+		"marker_speed":
+			marker_move_level = lvl
+			marker_work_level = lvl
+		"opener_move": opener_move_level = lvl
+		"opener_work": opener_work_level = lvl
+		"marker_move": marker_move_level = lvl
+		"marker_work": marker_work_level = lvl
 		"discount": discount_level = lvl
 
 

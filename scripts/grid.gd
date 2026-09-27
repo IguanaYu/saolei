@@ -7,15 +7,15 @@ extends Node2D
 @export var mine_count: int = 32
 @export var cell_size: int = 28
 ## 岩壁视觉风格：A1-A4 连体岩壁 / B1-B4 碎石泥土（章节可配）
-@export var wall_style: String = "A1"
+@export var wall_style: String = "V2"
 
 var show_grid_lines := false
 
 var cells: Dictionary = {}  # {Vector2i: Cell}
 
-const CELL_SCENE := preload("res://scenes/Cell.tscn")
-const FLY_ICON_OPEN := preload("res://assets/ui/icons/icon_robot_opener.png")
-const FLY_ICON_FLAG := preload("res://assets/ui/icons/icon_robot_marker.png")
+const CELL_SCENE := preload("res://scenes/cell.tscn")
+const FLY_ICON_OPEN := preload("res://visual_v2/runtime/ui/icons/icon_robot_opener.png")
+const FLY_ICON_FLAG := preload("res://visual_v2/runtime/ui/icons/icon_robot_marker.png")
 
 ## 网格线覆盖层：作为最后一个子节点画在所有格子之上
 class GridLines extends Node2D:
@@ -35,13 +35,16 @@ class GridLines extends Node2D:
 var _lines: GridLines = null
 
 signal cell_opened(cell, by_actor: String)
-signal cell_flagged(cell, by_actor: String, correct: bool)
+signal cell_flagged(cell, by_actor: String, correct: bool, first_time: bool)
 signal mine_stepped(cell, by_actor: String)
 signal all_safe_opened()
 signal vein_created(coord: Vector2i)
 signal vein_depleted(coord: Vector2i)
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
+
+# 已发过正确旗奖励的格子（coord→true）：同一格奖励仅首次发放、撤旗不退分（设计 §5，防刷）
+var rewarded_flags: Dictionary = {}
 
 
 func _ready() -> void:
@@ -64,6 +67,7 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 	rows = new_rows
 	cols = new_cols
 	mine_count = new_mines
+	rewarded_flags.clear()
 	_center_grid()
 	init_empty_grid()
 
@@ -275,7 +279,11 @@ func toggle_flag(coord: Vector2i, by_actor: String) -> void:
 	if not cell.toggle_flag():
 		return
 	if not was_flagged and cell.is_flagged:
-		cell_flagged.emit(cell, by_actor, cell.is_mine)
+		# 同格正确奖励仅首次发放（WP7）：撤旗再插不重复给奖/不重复计数
+		var first_time: bool = not rewarded_flags.has(coord)
+		if cell.is_mine and first_time:
+			rewarded_flags[coord] = true
+		cell_flagged.emit(cell, by_actor, cell.is_mine, first_time)
 
 
 func chord(coord: Vector2i, by_actor: String) -> void:

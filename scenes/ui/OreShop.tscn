@@ -1,39 +1,45 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="1_up"]
+[ext_resource type="Script" path="res://scripts/ui/ore_shop.gd" id="1_os"]
 
-[node name="UpgradePanel" type="Panel"]
+[node name="OreShop" type="Panel"]
 visible = false
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -170.0
-offset_right = 220.0
-offset_bottom = 170.0
+offset_left = -260.0
+offset_top = -200.0
+offset_right = 260.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_up")
+script = ExtResource("1_os")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = -16.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -18.0
 mouse_filter = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
-text = "局内升级（金钱）"
+text = "变强（矿石）"
 horizontal_alignment = 1
 
+[node name="OreLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+text = "总矿石: 0"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.55, 0.75, 0.9, 1)
+
 [node name="RowsBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
-theme_override_constants/separation = 12
+size_flags_vertical = 3
+theme_override_constants/separation = 10
 
 [node name="CloseButton" type="Button" parent="MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)

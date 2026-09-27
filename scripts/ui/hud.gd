@@ -1,8 +1,8 @@
 extends Control
 ## 顶部 HUD：图标化资源条（钱/矿石/积分）+ 命数心形 + 倒计时 + 暂停按钮 + 提示
 
-const HEART_FULL := preload("res://assets/ui/icons/icon_heart.png")
-const HEART_EMPTY := preload("res://assets/ui/icons/icon_heart_empty.png")
+const HEART_FULL := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
+const HEART_EMPTY := preload("res://visual_v2/runtime/ui/icons/icon_heart_empty.png")
 const MAX_HEARTS := 3
 
 signal pause_requested
@@ -17,6 +17,7 @@ signal pause_requested
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart3,
 ]
 @onready var objective_label: Label = $MarginContainer/VBoxContainer/ObjectiveLabel
+@onready var objective_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/ObjectiveProgressBar
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
 @onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
@@ -74,6 +75,7 @@ func _on_money_changed(v: int) -> void:
 
 func _on_score_changed(v: int) -> void:
 	score_label.text = str(v)
+	_refresh_objective_bar()
 
 
 func _on_lives_changed(v: int) -> void:
@@ -97,6 +99,20 @@ func _on_time_changed(t: float) -> void:
 func _on_objective_progress_updated(text: String) -> void:
 	objective_label.text = text
 	objective_label.visible = text != ""
+	_refresh_objective_bar()
+
+
+## 积分目标进度条（设计 §9.2）：REACH_SCORE 关可见，过线后满格置金
+func _refresh_objective_bar() -> void:
+	var obj := GameState.current_objective
+	if obj == null or obj.type != ObjectiveData.Type.REACH_SCORE or obj.target_value <= 0:
+		objective_progress_bar.visible = false
+		return
+	objective_progress_bar.visible = true
+	objective_progress_bar.max_value = obj.target_value
+	objective_progress_bar.value = mini(GameState.score, obj.target_value)
+	var crossed: bool = GameState.score >= obj.target_value
+	objective_progress_bar.modulate = Color(1.0, 0.82, 0.35) if crossed else Color.WHITE
 
 
 func show_toast(text: String, duration: float = 3.0) -> void:

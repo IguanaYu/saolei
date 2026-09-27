@@ -19,13 +19,15 @@ extends Node
 @onready var confirm_dialog = $UILayer/ConfirmDialog
 @onready var splash = $UILayer/SplashScreen
 @onready var upgrade_panel = $UILayer/UpgradePanel
+@onready var ore_shop = $UILayer/OreShop
 
-# 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/...）
+# 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/"...")
 var placing_mode: String = ""
 
 # 试玩版第一/二关剧本控制器（_ready 时创建）
 var level1_director: Level1Director = null
 var level2_director: Level2Director = null
+var level3_director: Level3Director = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -35,15 +37,15 @@ var _flag_count: int = 0
 # 确认框待执行动作
 var _pending_confirm: String = ""
 
-# 岩壁风格循环（F5 调试切换）：默认 A1 + 已拍板的 E 系 4 套
-const WALL_STYLE_CYCLE := ["A1", "E1", "E2", "E3", "E4"]
+# 岩壁风格循环（F5 调试切换）：V2 视觉包四套环境
+const WALL_STYLE_CYCLE := ["V2", "V2C", "V2M", "V2R"]
 const WALL_STYLE_NAMES := {
-	"A1": "连体岩壁（默认）",
-	"E1": "沙岩层窟",
-	"E2": "冰晶裂谷",
-	"E3": "苔藓菌窟",
-	"E4": "遗迹砖窟",
+	"V2": "勘探矿洞",
+	"V2C": "蓝晶矿洞",
+	"V2M": "苔藓矿洞",
+	"V2R": "砂岩遗迹",
 }
+const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 
 
 func _ready() -> void:
@@ -59,6 +61,8 @@ func _ready() -> void:
 	main_menu.daily_requested.connect(func(): daily_panel.open())
 	main_menu.signin_requested.connect(func(): sign_in_panel.open())
 	main_menu.settings_requested.connect(func(): settings_panel.open())
+	main_menu.powerup_requested.connect(func(): ore_shop.open())
+	level_select.powerup_requested.connect(func(): ore_shop.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
 	level_select.start_requested.connect(_on_start_game)
@@ -66,6 +70,7 @@ func _ready() -> void:
 	results_panel.restart_requested.connect(_on_restart_requested)
 	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
 	results_panel.back_to_menu_requested.connect(_show_main_menu)
+	results_panel.continue_challenge_requested.connect(_on_continue_challenge)
 	results_panel.share_requested.connect(
 		func(): hud.show_toast("分享功能开发中，先截个图吧！", 3.0))
 	GameState.score_changed.connect(_on_score_changed)
@@ -101,13 +106,16 @@ func _ready() -> void:
 	var cd_ring := CDRing.new()
 	cd_ring.name = "CDRing"
 	$UILayer.add_child(cd_ring)
-	# 试玩版第一/二关剧本控制器
+	# 试玩版第一/二/三关剧本控制器
 	level1_director = Level1Director.new()
 	level1_director.name = "Level1Director"
 	add_child(level1_director)
 	level2_director = Level2Director.new()
 	level2_director.name = "Level2Director"
 	add_child(level2_director)
+	level3_director = Level3Director.new()
+	level3_director.name = "Level3Director"
+	add_child(level3_director)
 
 
 # ---- 闪屏 / 主菜单 ----
@@ -192,11 +200,13 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	tutorial_guide.hide()  # 中断上一局的引导
 	get_tree().paused = false
 	var id := lvl.id if lvl != null else ""
+	SaveSystem.mark_level_entered(id)  # 间场「变强」高亮依据（进关即记）
 	GameState.reset_state(id, lvl)
 	_flag_count = 0
 	if lvl != null:
-		if wall_style != "":
-			grid.wall_style = wall_style
+		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
+		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
+		grid.wall_style = wall_style if wall_style != "" else chapter_style
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具
 		# 固定盘面：直接装载雷位/预开区/预置基地，跳过放基地阶段
@@ -207,9 +217,20 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"base": lvl.fixed_base,
 			})
 			GameState.game_active = true
+			# 预开算分（设计 v1.2）：只计分不计钱；300 > 预开上限 115，不会开局误判过线
+			if lvl.preopen_scores:
+				GameState.add_score(lvl.preopen_coords.size())
 	robot_manager.remove_all()
-	if lvl != null and not lvl.start_robots.is_empty() and lvl.has_fixed_board():
-		_gift_start_robots(lvl)
+	# 开局赠送机器人 = 关卡自带 + 局外 start_robot 购买（meta 关才吃局外，Q2：计入 count）
+	var gifts: Dictionary = lvl.start_robots.duplicate() if lvl != null else {}
+	if lvl != null and lvl.meta_progression:
+		var sr: int = int(SaveSystem.unlocks.get("start_robot", 0))
+		if sr >= 1:
+			gifts["opener"] = int(gifts.get("opener", 0)) + 1
+		if sr >= 2:
+			gifts["marker"] = int(gifts.get("marker", 0)) + 1
+	if not gifts.is_empty() and lvl != null and lvl.has_fixed_board():
+		_gift_start_robots(gifts)
 	_update_objective_progress()
 	_maybe_start_tutorial()
 
@@ -224,6 +245,8 @@ func _maybe_start_tutorial() -> void:
 		level1_director.begin()
 	elif GameState.current_level_id == "ch01_s02" and level2_director != null:
 		level2_director.begin()
+	elif GameState.current_level_id == "ch01_s03" and level3_director != null:
+		level3_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -240,7 +263,7 @@ func _in_game() -> bool:
 	return not (splash.visible or main_menu.visible or chapter_select.visible
 			or level_select.visible or results_panel.visible or pause_panel.visible
 			or settings_panel.visible or stats_panel.visible or daily_panel.visible
-			or sign_in_panel.visible or confirm_dialog.visible)
+			or sign_in_panel.visible or confirm_dialog.visible or ore_shop.visible)
 
 
 func _open_pause() -> void:
@@ -270,6 +293,13 @@ func _on_pause_restart() -> void:
 
 
 func _ask_abandon() -> void:
+	if GameState.continue_mode:
+		# 继续挑战中离开：不走放弃流程（胜利结算已入账），文案单独一套
+		_pending_confirm = "leave_continue"
+		confirm_dialog.ask("离开本局？",
+			"胜利结算已入账\n继续挑战的分数将计入最高分",
+			"确认离开", "继续挖掘", true)
+		return
 	_pending_confirm = "abandon"
 	var keep_ore: int = GameState.score / 20
 	confirm_dialog.ask("放弃本局？",
@@ -311,11 +341,39 @@ func _on_confirm_confirmed() -> void:
 	match _pending_confirm:
 		"abandon":
 			_do_abandon()
+		"leave_continue":
+			_leave_after_continue()
 		"clear_save":
 			SaveSystem.reset_all()
 			get_tree().paused = false
 			get_tree().reload_current_scene()
 	_pending_confirm = ""
+
+
+# ---- 继续挑战（目标型胜利：过线结算后可回盘面，设计 §3/§5）----
+
+func _on_continue_challenge() -> void:
+	results_panel.hide()
+	GameState.continue_mode = true
+	GameState.game_active = true  # 机器人恢复；倒计时在 _process 中冻结
+
+
+## 继续挑战中离开（Q3/Q4）：不走放弃流程、不二次发矿、不记 abandon；
+## 仅当累计分更高时刷新 best_score，并给最后一条盲测记录补 continued/continue_gain
+func _leave_after_continue() -> void:
+	get_tree().paused = false
+	pause_panel.hide()
+	tutorial_guide.hide()
+	GameState.game_active = false
+	var win_score: int = int(GameState.result_stats.get("win_score", 0))
+	SaveSystem.refresh_best_score(GameState.score)
+	SaveSystem.amend_last_playtest({
+		"continued": true,
+		"continue_gain": GameState.score - win_score,
+		"final_score": GameState.score,
+	})
+	robot_manager.remove_all()
+	_on_back_to_level_select()
 
 
 func _on_idle_warning_changed(show: bool) -> void:
@@ -332,6 +390,10 @@ func _process(delta: float) -> void:
 		return
 	GameState.elapsed += delta
 	GameState.tick_cd(delta)
+	if GameState.continue_mode:
+		# 继续挑战：倒计时冻结（CD 照计，乱插旗刷分自限依赖此）
+		robot_manager.tick_all(delta, grid)
+		return
 	if GameState.has_time_limit():
 		GameState.time_left -= delta
 		GameState.time_changed.emit(GameState.time_left)
@@ -505,16 +567,18 @@ func _in_bounds(coord: Vector2i) -> bool:
 	return coord.x >= 0 and coord.x < grid.rows and coord.y >= 0 and coord.y < grid.cols
 
 
-## 开局赠送机器人：基地格 + 周围已开邻格依次落位（一格一机）
-func _gift_start_robots(lvl: LevelData) -> void:
-	var spots: Array = [lvl.fixed_base]
-	for n in grid.get_neighbors(lvl.fixed_base):
+## 开局赠送机器人：基地格 + 周围已开邻格依次落位（一格一机）。gifts: {"opener":1,...}
+func _gift_start_robots(gifts: Dictionary) -> void:
+	var base_coord: Vector2i = GameState.bases[0] if not GameState.bases.is_empty() \
+			else Vector2i(grid.rows / 2, grid.cols / 2)
+	var spots: Array = [base_coord]
+	for n in grid.get_neighbors(base_coord):
 		if n.is_opened and not n.is_base:
 			spots.append(n.coord)
 			if spots.size() >= 4:
 				break
-	for robot_type in lvl.start_robots:
-		for i in int(lvl.start_robots[robot_type]):
+	for robot_type in gifts:
+		for i in int(gifts[robot_type]):
 			if spots.is_empty():
 				return
 			var coord: Vector2i = spots.pop_front()
@@ -537,7 +601,9 @@ func _on_cell_opened(_cell, by_actor: String) -> void:
 		GameState.result_stats["robot_ops"] += 1
 
 
-func _on_cell_flagged(_cell, by_actor: String, correct: bool) -> void:
+func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) -> void:
+	if correct and not first_time:
+		return  # 撤旗重插：无奖励无惩罚，也不计操作数（WP7 防刷）
 	if correct:
 		GameState.add_money(5)
 		GameState.add_score(5)
@@ -559,6 +625,9 @@ func _on_cell_flagged(_cell, by_actor: String, correct: bool) -> void:
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:
+	# 继续挑战中踩雷不扣命（防"胜利后又失败"坏状态，设计 §5）；格子坍塌照常浪费动作
+	if GameState.continue_mode:
+		return
 	# 无命限制关：踩雷仅该格坍塌（坍塌已在 grid 层完成），无失败状态
 	if not GameState.has_life_limit():
 		return
@@ -580,7 +649,13 @@ func _end_game(result: String) -> void:
 	GameState.game_active = false
 	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
 	if result == "win":
+		var obj := GameState.current_objective
+		if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE:
+			# 过线时刻埋点（时间加分入账前的行动分轨迹，盲测校准 §10）
+			GameState.result_stats["crossing_elapsed"] = snappedf(GameState.elapsed, 0.1)
 		_apply_time_bonus()
+		# 结算分快照（继续挑战的增量口径，见 _leave_after_continue）
+		GameState.result_stats["win_score"] = GameState.score
 	GameState.game_over.emit(result)
 
 
@@ -596,6 +671,10 @@ func _apply_time_bonus() -> void:
 	GameState.result_stats["time_bonus"] = bonus
 	GameState.result_stats["time_bonus_secs"] = secs
 	GameState.add_score(bonus)
+	# 积分目标关的过线瞬间提示（设计 §4.2：过线即跳结算 + toast）
+	var obj := GameState.current_objective
+	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE:
+		hud.show_toast("过线！+%d 分" % bonus, 3.0)
 
 
 # ---- 目标进度 ----
@@ -603,7 +682,9 @@ func _apply_time_bonus() -> void:
 func _on_score_changed(_v: int) -> void:
 	_update_objective_progress()
 	var obj := GameState.current_objective
-	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE and GameState.score >= obj.target_value:
+	# 继续挑战中分数只累加，不再二次触发胜利（发奖/解锁/埋点只发生一次）
+	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE \
+			and GameState.score >= obj.target_value and not GameState.continue_mode:
 		_end_game("win")
 
 

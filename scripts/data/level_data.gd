@@ -36,13 +36,17 @@ var start_robots: Dictionary = {}   # 开局赠送机器人 {"opener":1, "marker
 
 # ---- 升级轨（局内）----
 var upgrade_speed_prices: Array = [50, 70, 100]        # 速度轨价格（长度 = 可购档数）
-var upgrade_speed_levels: Array = [2.0, 1.6, 1.3, 1.0] # 档位值（含 Lv0，长度 = 档数+1）
+var upgrade_speed_levels: Array = [2.0, 1.6, 1.3, 1.0] # 移动档位值（含 Lv0，长度 = 档数+1）
+var upgrade_work_levels: Array = []    # 工作档位值（含 Lv0）；空 = 本关无工作轨，工作间隔取移动表（L1/L2 手感不变）
+var upgrade_tracks: Array = ["opener_speed", "marker_speed"]  # 本关升级面板的轨 id；L3 覆写为 4 轨
 var upgrades_hidden: Array = []     # 本关隐藏的升级轨 id："discount" 等
 
 # ---- 经济参数 ----
 var base_price_flat: int = -1      # >0：本关基地固定价（覆盖 80×2^N 翻倍公式）
 var time_bonus_per_sec: int = 0    # >0：胜利结算时 剩余秒 × 此值 计入总分
 var meta_progression: bool = true  # false：不吃局外加成（起始资金/命/全局速度），盲测冷启动确定
+var preopen_scores: bool = false   # true：预开格进关即 +1 分/格（只计分不计钱，设计 L3 v1.2）
+var allow_continue: bool = false   # true：胜利结算后可「继续挑战」（倒计时冻结/免命/分数累加）
 
 # ---- 结算表现 ----
 var no_stars: bool = false          # true = 结算不显示星级

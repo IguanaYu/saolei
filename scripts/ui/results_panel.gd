@@ -6,12 +6,13 @@ signal restart_requested
 signal back_to_level_select_requested
 signal back_to_menu_requested
 signal share_requested
+signal continue_challenge_requested  # 继续挑战（allow_continue 关的胜利结算）
 
-const ICON_COIN := preload("res://assets/ui/icons/icon_coin.png")
-const ICON_ORE := preload("res://assets/ui/icons/icon_ore.png")
-const ICON_CLOCK := preload("res://assets/ui/icons/icon_clock.png")
-const ICON_HEART := preload("res://assets/ui/icons/icon_heart.png")
-const ICON_STAR := preload("res://assets/ui/icons/icon_star.png")
+const ICON_COIN := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
+const ICON_ORE := preload("res://visual_v2/runtime/ui/icons/icon_ore.png")
+const ICON_CLOCK := preload("res://visual_v2/runtime/ui/icons/icon_clock.png")
+const ICON_HEART := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
+const ICON_STAR := preload("res://visual_v2/runtime/ui/icons/icon_star.png")
 
 const STAR_GRAY := Color(0.38, 0.35, 0.3)
 const DAILY_ORE := 30
@@ -27,6 +28,7 @@ const FORCED_STOP_ORE_DIVISOR := 10
 @onready var restart_button: Button = $Center/Panel/VBox/ButtonsRow/RestartButton
 @onready var back_button: Button = $Center/Panel/VBox/ButtonsRow/BackButton
 @onready var share_button: Button = $Center/Panel/VBox/ButtonsRow/ShareButton
+@onready var continue_button: Button = $Center/Panel/VBox/ButtonsRow/ContinueButton
 
 
 func _ready() -> void:
@@ -35,6 +37,7 @@ func _ready() -> void:
 	restart_button.pressed.connect(func(): restart_requested.emit())
 	back_button.pressed.connect(_on_back)
 	share_button.pressed.connect(func(): share_requested.emit())
+	continue_button.pressed.connect(func(): continue_challenge_requested.emit())
 
 
 func _on_back() -> void:
@@ -47,9 +50,12 @@ func _on_back() -> void:
 func _on_game_over(result: String) -> void:
 	show()
 	record_badge.visible = false
+	# 继续挑战：仅积分目标关的胜利结算显示（每日/自由/其他结果一律隐藏）
+	var lvl := GameState.get_current_level()
+	continue_button.visible = result == "win" and lvl != null and lvl.allow_continue \
+			and not GameState.daily_mode
 	# 每日挑战计入总局数/连胜，但不挤占关卡最佳时间/最高积分
 	var is_record := _record_stats(result, not GameState.daily_mode)
-	var lvl := GameState.get_current_level()
 	if lvl != null and lvl.is_playtest:
 		_record_playtest(result)
 	if GameState.daily_mode:
@@ -84,9 +90,20 @@ func _record_playtest(result: String) -> void:
 		"robot_ops": s["robot_ops"],
 		"player_actions": s["player_actions"],
 		"time_bonus": s.get("time_bonus", 0),
+		"crossing_elapsed": s.get("crossing_elapsed", -1.0),  # 过线时刻（L3 目标型玩法）
 		"first_upgrade_elapsed": s.get("first_upgrade_elapsed", -1.0),
-		"speed_levels_final": [GameState.opener_speed_level, GameState.marker_speed_level],
+		# 4 轨终值 [开墙移动, 开墙工作, 标雷移动, 标雷工作]（L1/L2 无工作轨=与移动同步）
+		"speed_levels_final": [GameState.opener_move_level, GameState.opener_work_level,
+				GameState.marker_move_level, GameState.marker_work_level],
 		"robots_final": [GameState.opener_count, GameState.marker_count],
+		# 本局开局时的局外解锁快照（L3 起玩家数值分化的分组依据，设计 §4.1）
+		"meta_snapshot": {
+			"start_money": int(SaveSystem.unlocks.get("start_money", 0)),
+			"start_lives": int(SaveSystem.unlocks.get("start_lives", 0)),
+			"global_speed": int(SaveSystem.unlocks.get("global_speed", 0)),
+			"work_speed": int(SaveSystem.unlocks.get("work_speed", 0)),
+			"start_robot": int(SaveSystem.unlocks.get("start_robot", 0)),
+		},
 	})
 
 

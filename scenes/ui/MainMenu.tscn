@@ -1,16 +1,21 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_mm"]
+[ext_resource type="Texture2D" path="res://visual_v2/runtime/backgrounds/mine_cutaway.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://visual_v2/runtime/branding/menu_emblem.png" id="3_emblem"]
 
 [node name="MainMenu" type="Panel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1_mm")
 
-[node name="BgColor" type="ColorRect" parent="."]
+[node name="MineBackground" type="TextureRect" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.08, 0.06, 0.04, 0.95)
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+texture_filter = 1
 mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
@@ -33,6 +38,15 @@ theme_override_constants/margin_bottom = 0
 custom_minimum_size = Vector2(520, 0)
 theme_override_constants/separation = 12
 
+[node name="Emblem" type="TextureRect" parent="MarginContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(56, 56)
+size_flags_horizontal = 4
+texture = ExtResource("3_emblem")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+mouse_filter = 2
+
 [node name="TitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
 text = "扫雷挖矿"
 horizontal_alignment = 1
@@ -53,69 +67,13 @@ theme_override_font_sizes/font_size = 22
 [node name="HSeparator" type="HSeparator" parent="MarginContainer/CenterContainer/VBoxContainer"]
 
 [node name="SubtitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = "局外升级"
+text = "局外变强"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 18
 
-[node name="StartMoneyRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "起始金币"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "Lv0 (+0金币)"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/StartMoneyRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "→Lv1 50矿"
-
-[node name="StartLivesRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "起始生命"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "Lv0 (+0命)"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/StartLivesRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "→Lv1 80矿"
-
-[node name="GlobalSpeedRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "全局速度"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "Lv0"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/GlobalSpeedRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "→Lv1 100矿"
-
-[node name="ExpandZoneRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
-theme_override_constants/separation = 12
-
-[node name="NameLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "安全区扩大"
-
-[node name="LevelLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
-custom_minimum_size = Vector2(120, 0)
-text = "Lv0"
-
-[node name="BuyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/ExpandZoneRow"]
-custom_minimum_size = Vector2(180, 0)
-text = "→Lv1 100矿"
+[node name="PowerUpButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(180, 40)
+text = "变强商店"
 
 [node name="SpacerLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
 text = ""

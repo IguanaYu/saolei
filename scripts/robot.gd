@@ -15,10 +15,10 @@ var _state: String = "idle"  # "idle" | "moving" | "working"
 
 # 皮肤帧（4 型 × 待机/移动；与商店/HUD 图标同设计语言）
 const SKINS := {
-	"opener": [preload("res://assets/robots/robot_opener_idle.png"), preload("res://assets/robots/robot_opener_move.png")],
-	"marker": [preload("res://assets/robots/robot_marker_idle.png"), preload("res://assets/robots/robot_marker_move.png")],
-	"detector": [preload("res://assets/robots/robot_detector_idle.png"), preload("res://assets/robots/robot_detector_move.png")],
-	"miner": [preload("res://assets/robots/robot_miner_idle.png"), preload("res://assets/robots/robot_miner_move.png")],
+	"opener": [preload("res://visual_v2/runtime/robots/robot_opener_idle.png"), preload("res://visual_v2/runtime/robots/robot_opener_move.png")],
+	"marker": [preload("res://visual_v2/runtime/robots/robot_marker_idle.png"), preload("res://visual_v2/runtime/robots/robot_marker_move.png")],
+	"detector": [preload("res://visual_v2/runtime/robots/robot_detector_idle.png"), preload("res://visual_v2/runtime/robots/robot_detector_move.png")],
+	"miner": [preload("res://visual_v2/runtime/robots/robot_miner_idle.png"), preload("res://visual_v2/runtime/robots/robot_miner_move.png")],
 }
 const SKIN_FRAME_INTERVAL := 0.18  # 移动时帧交替间隔
 
@@ -78,11 +78,23 @@ func _update_visual() -> void:
 
 
 func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
-	tick_interval = GameState.get_speed_interval(robot_type)
+	# 节奏分离（设计 §9.4）：opener/marker 的移动/工作间隔独立计时；
+	# detector/miner 单间隔不变（走 get_speed_interval 兼容口径）
+	if robot_type == "opener" or robot_type == "marker":
+		tick_interval = GameState.get_work_interval(robot_type) \
+				if _next_tick_is_work() else GameState.get_move_interval(robot_type)
+	else:
+		tick_interval = GameState.get_speed_interval(robot_type)
 	_tick_timer += delta
 	if _tick_timer >= tick_interval:
 		_tick_timer = 0.0
 		do_tick(grid, locked)
+
+
+## 下一 tick 将做什么：已有目标且与目标相邻（切比雪夫距离 ≤1）→ 作业；否则 → 移动
+func _next_tick_is_work() -> bool:
+	return _current_target != null \
+			and maxi(abs(coord.x - _current_target.x), abs(coord.y - _current_target.y)) <= 1
 
 
 func do_tick(grid, locked: Dictionary) -> void:
