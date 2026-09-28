@@ -299,6 +299,13 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		_gift_start_robots(gifts)
 	elif not gifts.is_empty() and lvl != null and lvl.pregen_random:
 		_pending_gifts = gifts  # L4：放完基地后在基地旁落位（此时还没有基地）
+	# HUD 关名（试玩关「第 N 关 · 短名」；短名未配置回退 display_name）
+	if lvl != null:
+		var n: int = lvl.display_name.substr(2).to_int() if lvl.display_name.length() > 2 else 1
+		hud.set_level_title("第 %d 关 · %s" % [n,
+				lvl.short_name if lvl.short_name != "" else lvl.display_name])
+	else:
+		hud.set_level_title("")
 	_update_objective_progress()
 	_maybe_start_tutorial()
 

@@ -7,17 +7,17 @@ const MAX_HEARTS := 3
 
 signal pause_requested
 
-@onready var money_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/MoneyLabel
-@onready var score_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/ScoreLabel
+@onready var money_label: Label = $MarginContainer/VBoxContainer/TopRow/MoneyPanel/ResBox/MoneyLabel
+@onready var level_title_label: Label = $MarginContainer/VBoxContainer/TopRow/MiddleBox/LevelTitleLabel
+@onready var score_label: Label = $MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/ScoreLabel
 @onready var time_label: Label = $MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/TimeLabel
-@onready var ore_label: Label = $MarginContainer/VBoxContainer/TopRow/ResPanel/ResBox/OreLabel
 @onready var hearts: Array = [
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart1,
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart2,
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart3,
 ]
-@onready var objective_label: Label = $MarginContainer/VBoxContainer/ObjectiveLabel
-@onready var objective_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/ObjectiveProgressBar
+@onready var objective_label: Label = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveLabel
+@onready var objective_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveProgressBar
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
 @onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
@@ -32,12 +32,16 @@ func _ready() -> void:
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.game_phase_changed.connect(_on_game_phase_changed)
 	GameState.objective_progress_updated.connect(_on_objective_progress_updated)
-	SaveSystem.ore_changed.connect(_on_ore_changed)
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/PauseButton.pressed.connect(
 		func(): pause_requested.emit())
 	_refresh_all()
-	_on_ore_changed(SaveSystem.ore)
 	_on_game_phase_changed(GameState.game_phase)
+
+
+## 局内关名（"第 1 关 · 自动扫雷"）；空串隐藏
+func set_level_title(text: String) -> void:
+	level_title_label.text = text
+	level_title_label.visible = text != ""
 
 
 func set_idle_warning(show: bool) -> void:
@@ -120,7 +124,3 @@ func show_toast(text: String, duration: float = 3.0) -> void:
 	t.tween_interval(duration)
 	t.tween_property(toast_label, "modulate:a", 0.0, 0.5)
 	t.tween_callback(func(): toast_label.visible = false)
-
-
-func _on_ore_changed(v: int) -> void:
-	ore_label.text = str(v)
