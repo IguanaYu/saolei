@@ -17,5 +17,8 @@ claude.md
 tmp/*.import
 tmp/__pycache__/
 
+# 一次性调试运行日志
+tmp/*.log
+
 # secrets
 .env
