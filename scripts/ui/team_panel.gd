@@ -35,15 +35,18 @@ func _refresh() -> void:
 		counts[r.robot_type] = counts.get(r.robot_type, 0) + 1
 		if r.is_idle():
 			idle[r.robot_type] = idle.get(r.robot_type, 0) + 1
+	# 行文字保持单行短句（勿加长文案：autowrap 在主题 FontVariation 下 min size 按逐字断行算，会撑爆面板）
+	var idle_reason := ""
 	for type in NAMES:
 		var n: int = counts.get(type, 0)
 		var line := "%s %d 台" % [NAMES[type], n]
 		if idle.get(type, 0) > 0:
 			line += " · %d 空闲" % idle[type]
-			if idle[type] == n:
-				line += "（%s）" % IDLE_REASON[type]
+			if idle[type] == n and idle_reason == "":
+				idle_reason = IDLE_REASON[type]
 		_rows[type].text = line
 		_rows[type].visible = n > 0 or _type_in_shop(type)   # 没买过的类型：本关可买才显示
+	$Margin/VBox/EventHintLabel.text = "空闲原因：%s" % idle_reason if idle_reason != "" else ""
 	visible = GameState.game_active
 
 
