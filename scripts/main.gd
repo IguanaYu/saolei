@@ -21,6 +21,7 @@ extends Node
 @onready var splash = $UILayer/SplashScreen
 @onready var pre_level_card = $UILayer/PreLevelCard
 @onready var rules_panel = $UILayer/RulesPanel
+@onready var playtest_done = $UILayer/PlaytestDonePanel
 @onready var upgrade_panel = $UILayer/UpgradePanel
 @onready var ore_shop = $UILayer/OreShop
 
@@ -80,7 +81,9 @@ func _ready() -> void:
 	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
 	results_panel.back_to_menu_requested.connect(_show_main_menu)
 	results_panel.next_level_requested.connect(_on_next_level)
-	results_panel.playtest_done_requested.connect(_show_main_menu)   # P11 换成完成页
+	results_panel.playtest_done_requested.connect(_open_playtest_done)
+	playtest_done.done_back_requested.connect(_on_back_to_level_select)
+	playtest_done.done_menu_requested.connect(_show_main_menu)
 	GameState.score_changed.connect(_on_score_changed)
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.base_placed.connect(func(_c): tutorial_guide.notify_event("base_placed"))
@@ -223,6 +226,12 @@ func _on_next_level() -> void:
 	_open_pre_level("ch01_s%02d" % n)
 
 
+## 试玩完成页（s05 达标经结算 BackButton 进入）
+func _open_playtest_done() -> void:
+	results_panel.hide()
+	playtest_done.open()
+
+
 func _on_back_to_level_select() -> void:
 	results_panel.hide()
 	level_select.set_chapter(_current_chapter_id)
@@ -325,7 +334,7 @@ func _in_game() -> bool:
 			or level_select.visible or results_panel.visible or pause_panel.visible
 			or settings_panel.visible or stats_panel.visible or daily_panel.visible
 			or sign_in_panel.visible or confirm_dialog.visible or ore_shop.visible
-			or pre_level_card.visible or rules_panel.visible)
+			or pre_level_card.visible or rules_panel.visible or playtest_done.visible)
 
 
 func _open_pause() -> void:
@@ -549,6 +558,9 @@ func _handle_escape() -> void:
 	if rules_panel.visible:
 		rules_panel.hide()
 		return   # 露出下层：暂停或主菜单（只退一层）
+	if playtest_done.visible:
+		playtest_done.hide()
+		return   # 露出下层：结算面板（只退一层）
 	if pause_panel.visible:
 		_resume()
 		return

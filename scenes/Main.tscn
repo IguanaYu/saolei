@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_manager.gd" id="21_em"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PreLevelCard.tscn" id="22_plc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/RulesPanel.tscn" id="23_rp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PlaytestDonePanel.tscn" id="24_pdp"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -102,4 +103,7 @@ visible = false
 visible = false
 
 [node name="RulesPanel" parent="UILayer" instance=ExtResource("23_rp")]
+visible = false
+
+[node name="PlaytestDonePanel" parent="UILayer" instance=ExtResource("24_pdp")]
 visible = false
