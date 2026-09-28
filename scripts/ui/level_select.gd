@@ -1,5 +1,6 @@
 extends Control
-## 关卡选择：某章的 5 关（动态生成）+ 间场矿石商店入口（L3 教学时机）
+## 选关页（封闭试玩版两栏）：左列 5 关列表 + 右侧详情（目标/最佳/解锁条件）
+## 矿石/变强行 L2 通关后揭示（与主菜单同口径），揭示后带间场教学高亮
 
 signal start_requested(level_id: String)
 signal back_requested
@@ -8,19 +9,30 @@ signal powerup_requested
 const L3_ID := "ch01_s03"
 const COPY_INTERMISSION := "矿石能变强。"  # 间场教学句（设计 §6-1，全关 ≤3 句之一）
 
-@onready var title_label: Label = $MarginContainer/VBoxContainer/TitleLabel
-@onready var grid_container: GridContainer = $MarginContainer/VBoxContainer/GridContainer
-@onready var back_button: Button = $MarginContainer/VBoxContainer/BackButton
-@onready var ore_label: Label = $MarginContainer/VBoxContainer/OreRow/OreLabel
-@onready var powerup_button: Button = $MarginContainer/VBoxContainer/OreRow/PowerUpButton
-@onready var hint_label: Label = $MarginContainer/VBoxContainer/OreRow/HintLabel
+@onready var back_button: Button = $MarginContainer/VBoxContainer/TopBar/BackButton
+@onready var title_label: Label = $MarginContainer/VBoxContainer/TopBar/TitleLabel
+@onready var ore_row: HBoxContainer = $MarginContainer/VBoxContainer/TopBar/OreRow
+@onready var ore_label: Label = $MarginContainer/VBoxContainer/TopBar/OreRow/OreLabel
+@onready var powerup_button: Button = $MarginContainer/VBoxContainer/TopBar/OreRow/PowerUpButton
+@onready var hint_label: Label = $MarginContainer/VBoxContainer/TopBar/OreRow/HintLabel
+@onready var left_list: VBoxContainer = $MarginContainer/VBoxContainer/Body/LeftList
+@onready var detail_title: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/DetailTitleLabel
+@onready var detail_intro: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/DetailIntroLabel
+@onready var detail_goal: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/DetailGoalLabel
+@onready var detail_new: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/DetailNewLabel
+@onready var detail_best: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/DetailBestLabel
+@onready var lock_hint: Label = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/LockHintLabel
+@onready var start_button: Button = $MarginContainer/VBoxContainer/Body/DetailPanel/DetailMargin/DetailVBox/StartButton
 
 var _chapter_id: String = ""
+var _selected: int = 0
+var _row_buttons: Array = []
 
 
 func _ready() -> void:
 	back_button.pressed.connect(func(): back_requested.emit())
 	powerup_button.pressed.connect(func(): powerup_requested.emit())
+	start_button.pressed.connect(_on_start_pressed)
 	SaveSystem.ore_changed.connect(func(_v): _refresh_ore_row())
 	SaveSystem.unlock_changed.connect(func(_k): _refresh_ore_row())
 	hide()
@@ -32,43 +44,94 @@ func set_chapter(ch_id: String) -> void:
 
 
 func refresh() -> void:
-	for child in grid_container.get_children():
+	for child in left_list.get_children():
 		child.queue_free()
+	_row_buttons.clear()
 	var ch := LevelSystem.get_chapter(_chapter_id)
 	if ch == null:
 		return
-	title_label.text = "%s · %s" % [ch.id.to_upper(), ch.display_name]
-	for lvl_id in ch.level_ids:
-		var lvl := LevelSystem.get_level(lvl_id)
-		var unlocked: bool = LevelSystem.is_level_unlocked(lvl_id)
-		var is_boss: bool = ch.level_ids[-1] == lvl_id
-		var stars: int = SaveSystem.get_level_stars(lvl_id)
-		var obj: ObjectiveData = lvl.objectives[0] if not lvl.objectives.is_empty() else null
-		var obj_label: String = obj.short_label() if obj != null else ""
-		var name_line: String = lvl.display_name + (" [BOSS]" if is_boss else "")
-		# 试玩关未通关带「新」角标（设计 §4.1：L3 格子带新标）
-		if lvl.is_playtest and not SaveSystem.is_level_cleared(lvl_id):
-			name_line += " [新]"
-		var lines: Array = [name_line]
-		lines.append("★".repeat(stars) if stars > 0 else ("🔒" if not unlocked else ""))
-		lines.append(obj_label)
+	var cleared := 0
+	for id in ch.level_ids:
+		if SaveSystem.is_level_cleared(id):
+			cleared += 1
+	title_label.text = "试玩矿区 · 进度 %d/%d" % [cleared, ch.level_ids.size()]
+	for i in ch.level_ids.size():
+		var lvl: LevelData = LevelSystem.get_level(ch.level_ids[i])
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(160, 90)
-		btn.text = "\n".join(lines)
-		btn.disabled = not unlocked
-		btn.pressed.connect(_emit_start_requested.bind(lvl_id))
-		grid_container.add_child(btn)
+		btn.name = "LevelRow%02d" % (i + 1)   # 显式命名，防 get_children 遍历误匹配
+		btn.custom_minimum_size = Vector2(314, 90)
+		var state := "✓" if SaveSystem.is_level_cleared(lvl.id) \
+				else ("" if LevelSystem.is_level_unlocked(lvl.id) else "🔒")
+		var sname := lvl.short_name if lvl.short_name != "" else "第 %d 关" % (i + 1)
+		btn.text = "%02d %s  %s\n%s" % [i + 1, sname, state,
+				lvl.intro_line if lvl.intro_line != "" else " "]
+		var idx := i
+		btn.pressed.connect(func(): _select(idx))   # 锁行也可点，只读详情
+		left_list.add_child(btn)
+		_row_buttons.append(btn)
+	_select(clampi(_selected, 0, ch.level_ids.size() - 1))
 	_refresh_ore_row()
+
+
+func _select(idx: int) -> void:
+	_selected = idx
+	var lvl: LevelData = LevelSystem.get_level(_chapter_level_id(idx))
+	if lvl == null:
+		return
+	detail_title.text = "%02d %s" % [idx + 1,
+			lvl.short_name if lvl.short_name != "" else lvl.display_name]
+	detail_intro.text = lvl.intro_line
+	detail_goal.text = "目标：%s" % _goal_line(lvl)
+	detail_new.text = ""   # 本关新增设备/规则（≤2 条）：读 mechanic_tags 差集，关卡数据定案后填
+	var unlocked: bool = LevelSystem.is_level_unlocked(lvl.id)
+	lock_hint.visible = not unlocked
+	lock_hint.text = "通关第 %d 关解锁" % idx
+	start_button.disabled = not unlocked
+	var best: Dictionary = _best_for(lvl.id)
+	detail_best.text = "最佳得分 %d · 最佳用时 %s" % [best.score, best.time] \
+			if not best.is_empty() else "尚无记录"
+	start_button.text = "重玩本关" if SaveSystem.is_level_cleared(lvl.id) else "开始本关"
+	for i in _row_buttons.size():
+		_row_buttons[i].modulate = Color(1.0, 0.85, 0.35) if i == idx else Color.WHITE
+
+
+func _chapter_level_id(idx: int) -> String:
+	var ch := LevelSystem.get_chapter(_chapter_id)
+	if ch == null or idx >= ch.level_ids.size():
+		return ""
+	return ch.level_ids[idx]
+
+
+func _goal_line(lvl: LevelData) -> String:
+	var obj: ObjectiveData = lvl.objectives[0] if not lvl.objectives.is_empty() else null
+	return obj.short_label() if obj != null else "清空安全格"
+
+
+## 每关最佳成绩：从盲测记录（stats.playtest，仅 win）聚合最高分与最快用时
+func _best_for(level_id: String) -> Dictionary:
+	var best_score := -1
+	var best_time := 1e9
+	for r in SaveSystem.stats.get("playtest", []):
+		if r.get("level") == level_id and r.get("result") == "win":
+			best_score = maxi(best_score, int(r.get("score", 0)))
+			best_time = minf(best_time, float(r.get("elapsed", 1e9)))
+	if best_score < 0:
+		return {}
+	return {"score": best_score, "time": SaveSystem.format_duration(best_time)}
+
+
+func _on_start_pressed() -> void:
+	var id := _chapter_level_id(_selected)
+	if id != "":
+		start_requested.emit(id)
 
 
 ## 间场高亮（设计 §4.1）：L3 已解锁且从未进过 L3 → 「变强」按钮高亮 + 教学句
 func _refresh_ore_row() -> void:
+	ore_row.visible = LevelSystem.is_level_unlocked(L3_ID)   # L2 通关前整行不可见
 	ore_label.text = "总矿石: %d" % SaveSystem.ore
 	var highlight: bool = LevelSystem.is_level_unlocked(L3_ID) \
 			and not SaveSystem.has_entered_level(L3_ID)
 	hint_label.visible = highlight
+	hint_label.text = COPY_INTERMISSION
 	powerup_button.modulate = Color(1.0, 0.85, 0.35) if highlight else Color.WHITE
-
-
-func _emit_start_requested(level_id: String) -> void:
-	start_requested.emit(level_id)
