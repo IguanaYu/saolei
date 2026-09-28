@@ -391,6 +391,15 @@ func count_safe_remaining() -> int:
 	return count
 
 
+## 安全格总数（与 count_safe_remaining 同口径；进度条 X/Y 的 Y）
+func count_safe_total() -> int:
+	var count: int = 0
+	for cell in cells.values():
+		if not cell.is_mine:
+			count += 1
+	return count
+
+
 func coord_to_world(coord: Vector2i) -> Vector2:
 	return global_position + Vector2(
 		coord.x * cell_size + cell_size / 2.0,

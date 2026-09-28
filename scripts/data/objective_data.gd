@@ -25,9 +25,12 @@ func get_type_name() -> String:
 
 
 ## HUD 显示的进度文本，如 "目标: 标 5 颗雷 (3/5)"
-func build_progress_text(current: int) -> String:
+## total > 0 时 CLEAR_ALL_SAFE 也带 (已开/总数) 数字
+func build_progress_text(current: int, total: int = 0) -> String:
 	match type:
 		Type.CLEAR_ALL_SAFE:
+			if total > 0:
+				return "目标: 清空安全格 (%d/%d)" % [mini(current, total), total]
 			return "目标: 清空全部安全格"
 		Type.REACH_SCORE:
 			return "目标: 达到 %d 分 (%d/%d)" % [target_value, min(current, target_value), target_value]

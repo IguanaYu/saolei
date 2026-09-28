@@ -97,7 +97,7 @@ signal upgrade_changed(upgrade_id: String, new_level: int)
 signal base_placed(coord: Vector2i)
 signal game_phase_changed(phase: String)
 signal tower_activated  # 预留：充能塔功能落地后 emit
-signal objective_progress_updated(text: String)
+signal objective_progress_updated(text: String, current: int, total: int)
 signal robot_spawned(robot_type: String)
 signal cd_exhausted()                          # 免费阶段 → 耗尽瞬间
 signal cd_blocked()                            # CD 中点击被拦（UI 反馈）

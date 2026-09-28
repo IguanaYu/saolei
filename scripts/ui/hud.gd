@@ -75,7 +75,6 @@ func _on_money_changed(v: int) -> void:
 
 func _on_score_changed(v: int) -> void:
 	score_label.text = str(v)
-	_refresh_objective_bar()
 
 
 func _on_lives_changed(v: int) -> void:
@@ -96,23 +95,16 @@ func _on_time_changed(t: float) -> void:
 	time_label.modulate = Color(1, 0.35, 0.3) if secs <= 30 else Color.WHITE
 
 
-func _on_objective_progress_updated(text: String) -> void:
+func _on_objective_progress_updated(text: String, current: int, total: int) -> void:
 	objective_label.text = text
 	objective_label.visible = text != ""
-	_refresh_objective_bar()
-
-
-## 积分目标进度条（设计 §9.2）：REACH_SCORE 关可见，过线后满格置金
-func _refresh_objective_bar() -> void:
-	var obj := GameState.current_objective
-	if obj == null or obj.type != ObjectiveData.Type.REACH_SCORE or obj.target_value <= 0:
-		objective_progress_bar.visible = false
-		return
-	objective_progress_bar.visible = true
-	objective_progress_bar.max_value = obj.target_value
-	objective_progress_bar.value = mini(GameState.score, obj.target_value)
-	var crossed: bool = GameState.score >= obj.target_value
-	objective_progress_bar.modulate = Color(1.0, 0.82, 0.35) if crossed else Color.WHITE
+	# total>0 的目标类型画细进度条（过线后满格置金）
+	objective_progress_bar.visible = total > 0
+	if total > 0:
+		objective_progress_bar.max_value = total
+		objective_progress_bar.value = mini(current, total)
+		var crossed: bool = current >= total
+		objective_progress_bar.modulate = Color(1.0, 0.82, 0.35) if crossed else Color.WHITE
 
 
 func show_toast(text: String, duration: float = 3.0) -> void:

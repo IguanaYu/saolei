@@ -54,6 +54,11 @@ var allow_continue: bool = false   # true：胜利结算后可「继续挑战」
 var no_stars: bool = false          # true = 结算不显示星级
 var is_playtest: bool = false       # true = 试玩版关卡（结算写入盲测埋点）
 
+# ---- 试玩版展示字段（选关页/关前卡/HUD 同源读取，不另维护文案）----
+var short_name: String = ""      # "自动扫雷"；空则页面回退 display_name
+var intro_line: String = ""      # "亲手买机器人，让它们接手扫雷。"
+var mechanic_tags: Array = []    # ["开墙","标雷","检测","矿工"]
+
 
 func has_fixed_board() -> bool:
 	return not fixed_mines.is_empty()

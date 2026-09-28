@@ -787,21 +787,24 @@ func _on_time_changed(_v: float) -> void:
 func _update_objective_progress() -> void:
 	var obj := GameState.current_objective
 	if obj == null:
-		GameState.objective_progress_updated.emit("")
+		GameState.objective_progress_updated.emit("", 0, 0)
 		return
 	var current: int = 0
+	var total: int = 0   # 页面画细进度条的分母；0 = 该目标类型隐藏条
 	match obj.type:
 		ObjectiveData.Type.CLEAR_ALL_SAFE:
-			current = grid.count_safe_remaining()
+			total = grid.count_safe_total()
+			current = total - grid.count_safe_remaining()   # 已完成数，不是剩余
 		ObjectiveData.Type.REACH_SCORE:
 			current = GameState.score
+			total = obj.target_value
 		ObjectiveData.Type.FLAG_N_MINES:
 			current = _flag_count
 		ObjectiveData.Type.SURVIVE_TIME:
 			current = int(ceil(GameState.time_left))
 		ObjectiveData.Type.ACTIVATE_N_TOWER:
 			current = 0
-	GameState.objective_progress_updated.emit(obj.build_progress_text(current))
+	GameState.objective_progress_updated.emit(obj.build_progress_text(current, total), current, total)
 
 
 ## 无人机技能：打开 3 个最远关闭格
