@@ -426,7 +426,7 @@ func _on_tutorial_rewatch() -> void:
 func _ask_clear_save() -> void:
 	_pending_confirm = "clear_save"
 	confirm_dialog.ask("清除全部存档？",
-		"矿石、关卡进度、升级、统计与签到记录将全部清零\n（设置项保留）",
+		"矿石与试玩进度将全部清零\n（设置项保留）",
 		"确认清除", "取消", true)
 
 
