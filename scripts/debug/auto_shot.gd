@@ -12,6 +12,7 @@ var _done: bool = true
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS   # 验收要在暂停状态截图/退出
 	if not OS.is_debug_build():
 		return
 	# 参数经环境变量传入（AUTOSHOT="shot=3.0:res://tmp/a.png;click=1.2:/root/...;quit=6"），
