@@ -79,9 +79,8 @@ func _ready() -> void:
 	results_panel.restart_requested.connect(_on_restart_requested)
 	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
 	results_panel.back_to_menu_requested.connect(_show_main_menu)
-	results_panel.continue_challenge_requested.connect(_on_continue_challenge)
-	results_panel.share_requested.connect(
-		func(): hud.show_toast("分享功能开发中，先截个图吧！", 3.0))
+	results_panel.next_level_requested.connect(_on_next_level)
+	results_panel.playtest_done_requested.connect(_show_main_menu)   # P11 换成完成页
 	GameState.score_changed.connect(_on_score_changed)
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.base_placed.connect(func(_c): tutorial_guide.notify_event("base_placed"))
@@ -215,6 +214,13 @@ func _on_restart_requested() -> void:
 		_start_daily()
 	else:
 		_start_level(GameState.current_level_id)
+
+
+## 结算「下一关」：经关前卡进下一关（首次必弹卡片）
+func _on_next_level() -> void:
+	results_panel.hide()
+	var n: int = GameState.current_level_id.substr(-1).to_int() + 1
+	_open_pre_level("ch01_s%02d" % n)
 
 
 func _on_back_to_level_select() -> void:
@@ -434,12 +440,6 @@ func _on_confirm_confirmed() -> void:
 
 
 # ---- 继续挑战（目标型胜利：过线结算后可回盘面，设计 §3/§5）----
-
-func _on_continue_challenge() -> void:
-	results_panel.hide()
-	GameState.continue_mode = true
-	GameState.game_active = true  # 机器人恢复；倒计时在 _process 中冻结
-
 
 ## 继续挑战中离开（Q3/Q4）：不走放弃流程、不二次发矿、不记 abandon；
 ## 仅当累计分更高时刷新 best_score，并给最后一条盲测记录补 continued/continue_gain
@@ -814,6 +814,8 @@ func _end_game(result: String) -> void:
 		_apply_time_bonus()
 		# 结算分快照（继续挑战的增量口径，见 _leave_after_continue）
 		GameState.result_stats["win_score"] = GameState.score
+	# 局末目标快照（结算面板状态行「目标达成/未达成 + X/Y」）
+	GameState.result_stats["obj_final_text"] = _update_objective_progress()
 	GameState.game_over.emit(result)
 
 
@@ -850,11 +852,12 @@ func _on_time_changed(_v: float) -> void:
 	_update_objective_progress()
 
 
-func _update_objective_progress() -> void:
+## 刷新 HUD 目标进度；返回进度文本（局末存 result_stats.obj_final_text 供结算显示）
+func _update_objective_progress() -> String:
 	var obj := GameState.current_objective
 	if obj == null:
 		GameState.objective_progress_updated.emit("", 0, 0)
-		return
+		return ""
 	var current: int = 0
 	var total: int = 0   # 页面画细进度条的分母；0 = 该目标类型隐藏条
 	match obj.type:
@@ -870,7 +873,9 @@ func _update_objective_progress() -> void:
 			current = int(ceil(GameState.time_left))
 		ObjectiveData.Type.ACTIVATE_N_TOWER:
 			current = 0
-	GameState.objective_progress_updated.emit(obj.build_progress_text(current, total), current, total)
+	var text: String = obj.build_progress_text(current, total)
+	GameState.objective_progress_updated.emit(text, current, total)
+	return text
 
 
 ## 无人机技能：打开 3 个最远关闭格

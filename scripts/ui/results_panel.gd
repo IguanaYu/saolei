@@ -3,10 +3,10 @@ extends Control
 ## 兼容三种模式：关卡(首通/重刷) / 每日挑战 / 旧自由模式
 
 signal restart_requested
+signal next_level_requested          # 试玩关 win → 经关前卡进下一关
+signal playtest_done_requested       # s05 达标 → 试玩完成页（P11）
 signal back_to_level_select_requested
 signal back_to_menu_requested
-signal share_requested
-signal continue_challenge_requested  # 继续挑战（allow_continue 关的胜利结算）
 
 const ICON_COIN := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
 const ICON_ORE := preload("res://visual_v2/runtime/ui/icons/icon_ore.png")
@@ -20,40 +20,54 @@ const DAILY_ORE := 30
 const FORCED_STOP_ORE_DIVISOR := 10
 
 @onready var title_label: Label = $Center/Panel/VBox/TitleLabel
+@onready var objective_status_label: Label = $Center/Panel/VBox/ObjectiveStatusLabel
 @onready var record_badge: PanelContainer = $Center/Panel/VBox/RecordBadge
 @onready var stars_row: HBoxContainer = $Center/Panel/VBox/StarsRow
 @onready var star_hint_label: Label = $Center/Panel/VBox/StarHintLabel
 @onready var rewards_box: VBoxContainer = $Center/Panel/VBox/RewardsBox
 @onready var final_score_label: Label = $Center/Panel/VBox/ScoreRow/FinalScoreLabel
+@onready var next_button: Button = $Center/Panel/VBox/ButtonsRow/NextLevelButton
 @onready var restart_button: Button = $Center/Panel/VBox/ButtonsRow/RestartButton
 @onready var back_button: Button = $Center/Panel/VBox/ButtonsRow/BackButton
-@onready var share_button: Button = $Center/Panel/VBox/ButtonsRow/ShareButton
-@onready var continue_button: Button = $Center/Panel/VBox/ButtonsRow/ContinueButton
 
 
 func _ready() -> void:
 	hide()
 	GameState.game_over.connect(_on_game_over)
 	restart_button.pressed.connect(func(): restart_requested.emit())
+	next_button.pressed.connect(func(): next_level_requested.emit())
 	back_button.pressed.connect(_on_back)
-	share_button.pressed.connect(func(): share_requested.emit())
-	continue_button.pressed.connect(func(): continue_challenge_requested.emit())
 
 
 func _on_back() -> void:
-	if GameState.daily_mode or GameState.current_level_id == "":
+	# s05（试玩末关）达标 → 查看试玩总结；每日/自由模式回主菜单；其余回选关
+	var lvl := GameState.get_current_level()
+	if lvl != null and lvl.is_playtest and GameState.current_level_id == "ch01_s05" \
+			and _last_result == "win":
+		playtest_done_requested.emit()
+	elif GameState.daily_mode or GameState.current_level_id == "":
 		back_to_menu_requested.emit()
 	else:
 		back_to_level_select_requested.emit()
 
 
+var _last_result: String = ""
+
+
 func _on_game_over(result: String) -> void:
 	show()
+	_last_result = result
 	record_badge.visible = false
-	# 继续挑战：仅积分目标关的胜利结算显示（每日/自由/其他结果一律隐藏）
+	restart_button.text = "重玩本关"
+	# 试玩关达标 → 「下一关」直达（末关 s05 走完成页，BackButton 文案切换）
 	var lvl := GameState.get_current_level()
-	continue_button.visible = result == "win" and lvl != null and lvl.allow_continue \
-			and not GameState.daily_mode
+	var is_last: bool = GameState.current_level_id == "ch01_s05"
+	next_button.visible = result == "win" and lvl != null and lvl.is_playtest and not is_last
+	if result == "win" and lvl != null and lvl.is_playtest and is_last:
+		back_button.text = "查看试玩总结"
+	else:
+		back_button.text = "返回选关" if GameState.current_level_id != "" and not GameState.daily_mode \
+				else "返回主菜单"
 	# 每日挑战计入总局数/连胜，但不挤占关卡最佳时间/最高积分
 	var is_record := _record_stats(result, not GameState.daily_mode)
 	if lvl != null and lvl.is_playtest:
@@ -141,14 +155,14 @@ func _handle_free_mode(result: String) -> void:
 
 
 func _handle_level_mode(result: String, is_record: bool) -> void:
-	back_button.text = "返回选关"
 	record_badge.visible = is_record
 	_clear_rewards()
 	_add_row(ICON_CLOCK, "本局用时", SaveSystem.format_duration(_time_used()))
+	objective_status_label.text = String(GameState.result_stats.get("obj_final_text", ""))
 	var lvl := GameState.get_current_level()
 	if result != "win":
 		# 到点/命尽 = 强行停止并结算（非失败态，设计 v1.2）：正常给矿、不算过关、可重玩
-		title_label.text = "本次挖掘结束"
+		title_label.text = "本次挖矿结束 · 目标未达成"
 		stars_row.visible = false
 		star_hint_label.visible = false
 		var ore_earned: int = GameState.score / FORCED_STOP_ORE_DIVISOR
@@ -160,6 +174,7 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 			_add_playtest_rows(false)
 		final_score_label.text = str(GameState.score)
 		return
+	title_label.text = "目标达成"
 	var stars := 0 if (lvl != null and lvl.no_stars) else _calculate_stars()
 	var is_first: bool = not SaveSystem.is_first_clear_claimed(GameState.current_level_id)
 	if is_first:
@@ -172,9 +187,11 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	LevelSystem.mark_cleared(GameState.current_level_id, stars)
 	for line in _unlock_feedback(GameState.current_level_id):
 		_add_row(ICON_STAR, line, "")
-	title_label.text = "首通胜利！" if is_first else "矿场完成！"
+	# L2 通关 = 变强商店揭示时刻（布局计划 §2.5）
+	if lvl != null and lvl.is_playtest and GameState.current_level_id == "ch01_s02":
+		_add_row(ICON_STAR, "新功能解锁：变强商店 · 回主菜单看看", "")
 	if lvl != null and lvl.no_stars:
-		# 试玩版教学关：无星级，改为开格分/标旗分/人机操作占比三行
+		# 试玩版教学关：无星级，账单分项行（开格/标雷/采矿/时间/操作占比）
 		stars_row.visible = false
 		star_hint_label.visible = false
 		_add_playtest_rows()
@@ -185,17 +202,19 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	final_score_label.text = str(GameState.score)
 
 
+## 固定账单：开格/标雷/采矿/时间加分/操作占比（时间加分 0 也显示——让玩家知道有这项）
 func _add_playtest_rows(include_time_bonus := true) -> void:
 	var s: Dictionary = GameState.result_stats
 	_add_row(ICON_COIN, "开格分", str(s["open_score"]))
 	_add_row(ICON_COIN, "标旗分", str(s["flag_score"]))
+	_add_row(ICON_COIN, "采矿分", str(int(s.get("mine_score", 0))))
 	var total_ops: int = int(s["player_ops"]) + int(s["robot_ops"])
 	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
 	_add_row(ICON_STAR, "你的操作",
 		"%d 次 · 机器人 %d 次（你占 %d%%）" % [s["player_ops"], s["robot_ops"], pct])
-	if include_time_bonus and int(s.get("time_bonus", 0)) > 0:
+	if include_time_bonus:
 		_add_row(ICON_CLOCK, "时间加分",
-			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s["time_bonus"])])
+			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s.get("time_bonus", 0))])
 	# L4 除害关：敌人数据行 + 探测次数（设计 §3 结算；到点/命尽分支也显示）
 	if GameState.current_level_id == "ch01_s04":
 		_add_row(ICON_STAR, "除害",
@@ -301,9 +320,10 @@ func _star_hint(stars: int) -> String:
 
 
 ## 章末通关后，追加"新章节 / 新功能解锁"提示
+## 试玩版关卡不显示（拍板 2026-09-28：s05 通关不解锁/不提示第 2 章，达标走完成页）
 func _unlock_feedback(level_id: String) -> Array:
 	var lvl := LevelSystem.get_level(level_id)
-	if lvl == null:
+	if lvl == null or lvl.is_playtest:
 		return []
 	var ch := LevelSystem.get_chapter(lvl.chapter_id)
 	if ch == null or ch.level_ids[-1] != level_id:

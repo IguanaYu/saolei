@@ -50,6 +50,12 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 30
 theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
 
+[node name="ObjectiveStatusLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.85, 0.78, 0.64, 1)
+
 [node name="RecordBadge" type="PanelContainer" parent="Center/Panel/VBox"]
 visible = false
 size_flags_horizontal = 4
@@ -119,19 +125,17 @@ theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
 alignment = 1
 theme_override_constants/separation = 12
 
-[node name="ContinueButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
+[node name="NextLevelButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
 visible = false
 custom_minimum_size = Vector2(170, 48)
-text = "继续挑战"
+text = "下一关"
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.9, 0.55, 1)
 
 [node name="RestartButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
 custom_minimum_size = Vector2(170, 48)
-text = "再来一局"
+text = "重玩本关"
 
 [node name="BackButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
 custom_minimum_size = Vector2(170, 48)
 text = "返回选关"
-
-[node name="ShareButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
-custom_minimum_size = Vector2(120, 48)
-text = "分享成绩"

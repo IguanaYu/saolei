@@ -28,6 +28,11 @@ func _ready() -> void:
 			_actions.append({"delay": float(body[0]), "kind": "click", "arg": body[1]})
 		elif item.begins_with("quit="):
 			_actions.append({"delay": float(item.substr(5)), "kind": "quit", "arg": ""})
+		elif item.begins_with("sig="):
+			# sig=delay:node_path:signal_name:arg(可省)  例 sig=4:/root/GameState:game_over:timeout
+			var parts: PackedStringArray = item.substr(4).split(":")
+			_actions.append({"delay": float(parts[0]), "kind": "sig",
+					"arg": parts.slice(1)})
 	if not _actions.is_empty():
 		_done = false
 		_actions.sort_custom(func(a, b): return a.delay < b.delay)
@@ -55,6 +60,17 @@ func _process(delta: float) -> void:
 					print("[AutoShot] clicked ", act.arg)
 				else:
 					push_warning("[AutoShot] not a Button: " + act.arg)
+			"sig":
+				var p: PackedStringArray = act.arg
+				var sig_node := get_node_or_null(p[0])
+				if sig_node != null:
+					if p.size() >= 3:
+						sig_node.emit_signal(p[1], p[2])
+					else:
+						sig_node.emit_signal(p[1])
+					print("[AutoShot] signal ", p[1], " on ", p[0])
+				else:
+					push_warning("[AutoShot] node not found: " + p[0])
 			"quit":
 				print("[AutoShot] quit")
 				get_tree().quit()
