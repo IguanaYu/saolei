@@ -47,7 +47,13 @@ func _refresh() -> void:
 		_rows[type].text = line
 		_rows[type].visible = n > 0 or _type_in_shop(type)   # 没买过的类型：本关可买才显示
 	$Margin/VBox/EventHintLabel.text = "空闲原因：%s" % idle_reason if idle_reason != "" else ""
-	visible = GameState.game_active
+	visible = GameState.game_active and not _tutorial_showing()
+
+
+## 教学引导显示期间让路（气泡可能落在侧栏区域，且此时聚焦盘面）→ TutorialGuide 隐藏后 0.5s 内自动恢复
+func _tutorial_showing() -> bool:
+	var guide := get_node_or_null("/root/Main/UILayer/TutorialGuide")
+	return guide != null and guide.visible
 
 
 func _type_in_shop(type: String) -> bool:

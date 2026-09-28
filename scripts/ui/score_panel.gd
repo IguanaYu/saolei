@@ -25,4 +25,10 @@ func _refresh() -> void:
 	open_label.text = "开格 %d" % int(s["open_score"])
 	flag_label.text = "标雷 %d" % int(s["flag_score"])
 	mine_label.text = "采矿 %d" % int(s.get("mine_score", 0))
-	visible = GameState.game_active
+	visible = GameState.game_active and not _tutorial_showing()
+
+
+## 教学引导显示期间让路（气泡可能落在侧栏区域，且此时聚焦盘面）
+func _tutorial_showing() -> bool:
+	var guide := get_node_or_null("/root/Main/UILayer/TutorialGuide")
+	return guide != null and guide.visible

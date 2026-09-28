@@ -34,6 +34,11 @@ func _ready() -> void:
 			var parts: PackedStringArray = item.substr(4).split(":")
 			_actions.append({"delay": float(parts[0]), "kind": "sig",
 					"arg": parts.slice(1)})
+		elif item.begins_with("get="):
+			# get=delay:node_path:property  例 get=4.9:/root/Main/UILayer/TeamPanel:visible
+			var parts: PackedStringArray = item.substr(4).split(":", true, 1)
+			var kv: PackedStringArray = parts[1].split(":")
+			_actions.append({"delay": float(parts[0]), "kind": "get", "arg": kv})
 	if not _actions.is_empty():
 		_done = false
 		_actions.sort_custom(func(a, b): return a.delay < b.delay)
@@ -72,6 +77,13 @@ func _process(delta: float) -> void:
 					print("[AutoShot] signal ", p[1], " on ", p[0])
 				else:
 					push_warning("[AutoShot] node not found: " + p[0])
+			"get":
+				var p: PackedStringArray = act.arg
+				var g_node := get_node_or_null(p[0])
+				if g_node != null and p.size() >= 2:
+					print("[AutoShot] ", p[0], ":", p[1], " = ", g_node.get(p[1]))
+				else:
+					push_warning("[AutoShot] get target invalid")
 			"quit":
 				print("[AutoShot] quit")
 				get_tree().quit()
