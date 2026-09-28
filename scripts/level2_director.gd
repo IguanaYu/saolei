@@ -45,7 +45,7 @@ func begin() -> void:
 			{"node": _grid, "size": board_size,
 				"text": COPY_INTRO, "event": "board_click", "tip": "right"},
 			# 点开升级面板即收引导（面板在引导压暗层下会发黑，弹出时要全亮）
-			{"node": _shop.get_node("MarginContainer/VBoxContainer/HBoxContainer/UpgradeButton"),
+			{"node": _shop.get_node("MarginContainer/VBoxContainer/BuildRow/UpgradeButton"),
 				"text": COPY_UPGRADE, "event": "upgrade_panel_opened", "tip": "below"},
 		]))
 	# 30s 仍未买任何升级 → 兜底提示（设计 §6 第 4 句）

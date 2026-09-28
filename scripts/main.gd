@@ -45,14 +45,6 @@ var _pending_confirm: String = ""
 # L4 pregen 关的开局赠机（放完基地后在基地旁落位）
 var _pending_gifts: Dictionary = {}
 
-# 岩壁风格循环（F5 调试切换）：V2 视觉包四套环境
-const WALL_STYLE_CYCLE := ["V2", "V2C", "V2M", "V2R"]
-const WALL_STYLE_NAMES := {
-	"V2": "勘探矿洞",
-	"V2C": "蓝晶矿洞",
-	"V2M": "苔藓矿洞",
-	"V2R": "砂岩遗迹",
-}
 const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 
 
@@ -524,11 +516,6 @@ func _input(event: InputEvent) -> void:
 		if _try_robot_shortcut(event.keycode):
 			get_viewport().set_input_as_handled()
 			return
-		# F5 循环切换岩壁风格（A1 → E1-E4）：原地换肤不重置局面
-		if event.keycode == KEY_F5:
-			_cycle_wall_style()
-			get_viewport().set_input_as_handled()
-			return
 	if GameState.game_phase == "placing_base":
 		if event is InputEventMouseButton and event.pressed \
 				and event.button_index == MOUSE_BUTTON_LEFT:
@@ -563,7 +550,7 @@ func _handle_escape() -> void:
 		settings_panel.hide()
 		return
 	if rules_panel.visible:
-		rules_panel.hide()
+		rules_panel.close()
 		return   # 露出下层：暂停或主菜单（只退一层）
 	if playtest_done.visible:
 		playtest_done.hide()
@@ -583,14 +570,6 @@ func _handle_escape() -> void:
 		_exit_placing_mode()
 	elif GameState.game_phase == "placing_base" or GameState.game_active:
 		_open_pause()
-
-
-## F5 循环切换岩壁风格：A1 → E1-E4 → A1
-func _cycle_wall_style() -> void:
-	var idx := WALL_STYLE_CYCLE.find(grid.wall_style)
-	var next: String = WALL_STYLE_CYCLE[(idx + 1) % WALL_STYLE_CYCLE.size()]
-	grid.set_wall_style(next)
-	hud.show_toast("岩壁风格：%s" % WALL_STYLE_NAMES.get(next, next), 2.0)
 
 
 ## 数字键 1-4 快捷放置机器人；返回 true 表示按键已处理
@@ -895,17 +874,6 @@ func _update_objective_progress() -> String:
 	var text: String = obj.build_progress_text(current, total)
 	GameState.objective_progress_updated.emit(text, current, total)
 	return text
-
-
-## 无人机技能：打开 3 个最远关闭格
-func _trigger_drone() -> void:
-	if GameState.money < 100:
-		return
-	GameState.add_money(-100)
-	var base_coord: Vector2i = GameState.bases[0] if not GameState.bases.is_empty() else Vector2i(8, 8)
-	var coords: Array = grid.get_farthest_closed_cells(3, base_coord)
-	for coord in coords:
-		grid.open_cell(coord, "drone")
 
 
 ## L4 探测机器人：3×3 强制探雷（设计 §9.5）——雷位标「确认雷」
