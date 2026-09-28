@@ -125,6 +125,10 @@ func _ready() -> void:
 	level4_director = Level4Director.new()
 	level4_director.name = "Level4Director"
 	add_child(level4_director)
+	# 音频连接器（旁听信号→AudioManager）
+	var audio_connector := AudioConnector.new()
+	audio_connector.name = "AudioConnector"
+	add_child(audio_connector)
 
 
 # ---- 闪屏 / 主菜单 ----

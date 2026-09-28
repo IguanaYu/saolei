@@ -374,6 +374,7 @@ func purchase_robot(robot_type: String) -> bool:
 		cd_duration = cd_after_purchase
 		cd_remaining = 0.0
 		cd_duration_changed.emit(cd_duration)
+	AudioManager.play_sfx("buy")
 	return true
 
 

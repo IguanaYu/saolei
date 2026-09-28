@@ -82,6 +82,25 @@ max_value = 1.0
 step = 0.05
 value = 0.7
 
+[node name="RowSfxVolume" type="PanelContainer" parent="Center/Panel/VBox"]
+
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowSfxVolume"]
+offset_right = 528.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="Center/Panel/VBox/RowSfxVolume/HBox"]
+size_flags_horizontal = 3
+text = "音效音量"
+theme_override_font_sizes/font_size = 16
+
+[node name="SfxVolumeSlider" type="HSlider" parent="Center/Panel/VBox/RowSfxVolume/HBox"]
+custom_minimum_size = Vector2(200, 24)
+size_flags_vertical = 4
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.8
+
 [node name="PictureHeader" type="Label" parent="Center/Panel/VBox"]
 text = "◆ 画面与操作"
 theme_override_font_sizes/font_size = 13
@@ -156,7 +175,7 @@ text = "返 回"
 theme_override_font_sizes/font_size = 17
 
 [node name="NoteLabel" type="Label" parent="Center/Panel/VBox"]
-text = "* 音频系统尚未接入，声音开关为占位"
+text = "* 音量设置即时生效"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.6, 0.54, 0.44, 1)

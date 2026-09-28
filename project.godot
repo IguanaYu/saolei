@@ -24,6 +24,7 @@ GameState="*res://scripts/autoload/game_state.gd"
 SaveSystem="*res://scripts/autoload/save_system.gd"
 LevelSystem="*res://scripts/autoload/level_system.gd"
 GameSettings="*res://scripts/autoload/settings_manager.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
 
 [display]
 

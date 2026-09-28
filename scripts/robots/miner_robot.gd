@@ -99,6 +99,7 @@ func _tick_to_base(grid, locked: Dictionary) -> void:
 
 
 func _tick_unloading() -> void:
+	AudioManager.play_sfx("coin")
 	GameState.add_money(cargo)
 	GameState.add_score(cargo)
 	cargo = 0

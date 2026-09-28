@@ -1,6 +1,6 @@
 extends Node
 ## 设置持久化 autoload（user://settings.json）
-## 全屏/网格线/教程状态立即生效；音频开关为占位（音频系统未接入）
+## 全屏/网格线/教程状态立即生效；音频音量经 AudioManager 监听 setting_changed 即时生效
 
 const PATH := "user://settings.json"
 
@@ -8,6 +8,7 @@ const DEFAULTS := {
 	"music_on": true,
 	"sfx_on": true,
 	"music_volume": 0.7,
+	"sfx_volume": 0.8,
 	"screen_shake": true,
 	"show_grid": false,
 	"fullscreen": false,
