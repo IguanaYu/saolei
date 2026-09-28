@@ -50,22 +50,6 @@ theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 [node name="Spacer" type="Control" parent="Center/VBox"]
 custom_minimum_size = Vector2(0, 36)
 
-[node name="BarPanel" type="Panel" parent="Center/VBox"]
-custom_minimum_size = Vector2(380, 30)
-
-[node name="BarFill" type="ColorRect" parent="Center/VBox/BarPanel"]
-offset_left = 6.0
-offset_top = 6.0
-offset_right = 6.0
-offset_bottom = 24.0
-color = Color(1, 0.82, 0.4, 1)
-
-[node name="LoadingLabel" type="Label" parent="Center/VBox"]
-text = "正在加载矿洞… 0%"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
-
 [node name="HealthLabel" type="Label" parent="."]
 anchor_left = 0.0
 anchor_top = 1.0
@@ -85,7 +69,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = -32.0
 offset_bottom = -12.0
-text = "v0.3 · Godot 4.6 · 单机开发版"
+text = "封闭试玩 v0.1"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)
