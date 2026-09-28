@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/score_panel.gd" id="1_sp"]
+
+[node name="ScorePanel" type="PanelContainer"]
+anchors_preset = 0
+offset_left = 764.0
+offset_top = 128.0
+offset_right = 1008.0
+offset_bottom = 584.0
+mouse_filter = 2
+script = ExtResource("1_sp")
+
+[node name="Margin" type="MarginContainer" parent="."]
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="ScoreTitleLabel" type="Label" parent="Margin/VBox"]
+text = "本局得分"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.6, 0.55, 0.47, 1)
+mouse_filter = 2
+
+[node name="OpenScoreLabel" type="Label" parent="Margin/VBox"]
+text = "开格 0"
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="FlagScoreLabel" type="Label" parent="Margin/VBox"]
+text = "标雷 0"
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="MineScoreLabel" type="Label" parent="Margin/VBox"]
+text = "采矿 0"
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="Spacer" type="Control" parent="Margin/VBox"]
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="EventHintLabel" type="Label" parent="Margin/VBox"]
+text = ""
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+autowrap_mode = 2
+mouse_filter = 2

@@ -102,6 +102,8 @@ func _tick_unloading() -> void:
 	AudioManager.play_sfx("coin")
 	GameState.add_money(cargo)
 	GameState.add_score(cargo)
+	# 采矿分项埋点（右栏 ScorePanel / 结算账单「采矿分」行）
+	GameState.result_stats["mine_score"] = int(GameState.result_stats.get("mine_score", 0)) + cargo
 	cargo = 0
 	miner_state = "to_mine"
 	_state = "working"

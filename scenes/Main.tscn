@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/RulesPanel.tscn" id="23_rp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PlaytestDonePanel.tscn" id="24_pdp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TeamPanel.tscn" id="25_tp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ScorePanel.tscn" id="26_scp"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -110,3 +111,5 @@ visible = false
 visible = false
 
 [node name="TeamPanel" parent="UILayer" instance=ExtResource("25_tp")]
+
+[node name="ScorePanel" parent="UILayer" instance=ExtResource("26_scp")]

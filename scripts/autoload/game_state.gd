@@ -66,7 +66,7 @@ var player_actions_used: int = 0    # 本局玩家有效动作总数（埋点口
 
 # ---- 结算统计（开格分/标旗分/人机操作占比，reset_state 清零）----
 var result_stats := {
-	"open_score": 0, "flag_score": 0, "wrong_flags": 0,
+	"open_score": 0, "flag_score": 0, "mine_score": 0, "wrong_flags": 0,
 	"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 	"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 	# L4 除害关（敌人/探测，设计 §9.10）
@@ -220,7 +220,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	cd_purchase_boosted = false
 	player_actions_used = 0
 	result_stats = {
-		"open_score": 0, "flag_score": 0, "wrong_flags": 0,
+		"open_score": 0, "flag_score": 0, "mine_score": 0, "wrong_flags": 0,
 		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 		"nest_cleared_elapsed": -1.0, "nests_destroyed": 0,
