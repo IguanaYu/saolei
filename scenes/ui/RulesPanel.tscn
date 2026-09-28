@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/rules_panel.gd" id="1_rp"]
+
+[node name="RulesPanel" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_rp")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.6)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="Panel" parent="Center"]
+custom_minimum_size = Vector2(520, 540)
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 22
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/Margin"]
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "操作与规则"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="SectionATitle" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "怎么扫雷"
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
+
+[node name="SectionABody" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "左键开格、右键插旗/撤旗；数字 = 周围雷数；已揭示数字与雷位永不变动。"
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.75, 0.7, 0.6, 1)
+
+[node name="SectionBTitle" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "四类机器人做什么"
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
+
+[node name="SectionBBody" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "开墙开安全格 / 标雷插旗 / 检测确认已插旗的雷并形成矿脉 / 矿工把矿运回基地换资金与附加分；机器人自动寻找最近确定目标；购买后需在棋盘放置。"
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.75, 0.7, 0.6, 1)
+
+[node name="SectionCTitle" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "资金 / 目标 / 积分如何区别"
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
+
+[node name="SectionCBody" type="Label" parent="Center/Panel/Margin/VBox"]
+text = "资金买设备（不扣积分）；扫雷进度是过关目标；积分来自开格/标雷/采矿/剩余时间，只用于成绩。"
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.75, 0.7, 0.6, 1)
+
+[node name="Spacer" type="Control" parent="Center/Panel/Margin/VBox"]
+size_flags_vertical = 3
+
+[node name="CloseButton" type="Button" parent="Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "返回"
+theme_override_font_sizes/font_size = 17

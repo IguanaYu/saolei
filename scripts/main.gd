@@ -20,6 +20,7 @@ extends Node
 @onready var confirm_dialog = $UILayer/ConfirmDialog
 @onready var splash = $UILayer/SplashScreen
 @onready var pre_level_card = $UILayer/PreLevelCard
+@onready var rules_panel = $UILayer/RulesPanel
 @onready var upgrade_panel = $UILayer/UpgradePanel
 @onready var ore_shop = $UILayer/OreShop
 
@@ -68,7 +69,7 @@ func _ready() -> void:
 	main_menu.settings_requested.connect(func(): settings_panel.open())
 	main_menu.powerup_requested.connect(func(): ore_shop.open())
 	main_menu.quit_requested.connect(_ask_quit)
-	# main_menu.rules_requested / feedback_requested：P9 接规则页 / 拍板暂不连接（反馈渠道未定）
+	main_menu.rules_requested.connect(func(): rules_panel.open())
 	level_select.powerup_requested.connect(func(): ore_shop.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
@@ -95,9 +96,9 @@ func _ready() -> void:
 	# 暂停
 	hud.pause_requested.connect(_toggle_pause)
 	pause_panel.resume_requested.connect(_resume)
-	pause_panel.restart_requested.connect(_on_pause_restart)
-	pause_panel.settings_requested.connect(func(): settings_panel.open())
-	pause_panel.abandon_requested.connect(_ask_abandon)
+	pause_panel.rules_requested.connect(func(): rules_panel.open())
+	pause_panel.restart_requested.connect(_ask_restart_run)
+	pause_panel.quit_requested.connect(_ask_quit_to_select)
 	# 设置
 	settings_panel.close_requested.connect(func(): settings_panel.hide())
 	settings_panel.clear_save_requested.connect(_ask_clear_save)
@@ -318,12 +319,12 @@ func _in_game() -> bool:
 			or level_select.visible or results_panel.visible or pause_panel.visible
 			or settings_panel.visible or stats_panel.visible or daily_panel.visible
 			or sign_in_panel.visible or confirm_dialog.visible or ore_shop.visible
-			or pre_level_card.visible)
+			or pre_level_card.visible or rules_panel.visible)
 
 
 func _open_pause() -> void:
 	_exit_placing_mode()  # 暂停时取消放置，避免恢复后状态混乱
-	pause_panel.open(_pause_context())
+	pause_panel.open(_pause_context(), hud.get_objective_text())
 	get_tree().paused = true
 
 
@@ -333,6 +334,8 @@ func _pause_context() -> String:
 	var lvl := GameState.get_current_level()
 	if lvl == null:
 		return ""
+	if lvl.is_playtest:
+		return "试玩矿区 · 第 %s 关" % lvl.display_name.substr(2)
 	var ch := LevelSystem.get_chapter(lvl.chapter_id)
 	return "%s · %s" % [ch.display_name if ch != null else "", lvl.display_name]
 
@@ -342,12 +345,23 @@ func _resume() -> void:
 	pause_panel.hide()
 
 
-func _on_pause_restart() -> void:
-	_resume()
+## 重开本关（确认框）：本局作废，已入账矿石不受影响
+func _ask_restart_run() -> void:
+	_pending_confirm = "restart_run"
+	confirm_dialog.ask("重新开始本关？",
+		"本局进度与已得积分将作废\n已结算入账的矿石不受影响",
+		"确认重开", "继续挖矿", true)
+
+
+func _do_restart_run() -> void:
+	get_tree().paused = false
+	pause_panel.hide()
+	tutorial_guide.hide()
 	_on_restart_requested()
 
 
-func _ask_abandon() -> void:
+## 返回选关（确认框，半矿放弃口径——拍板 2026-09-28）
+func _ask_quit_to_select() -> void:
 	if GameState.continue_mode:
 		# 继续挑战中离开：不走放弃流程（胜利结算已入账），文案单独一套
 		_pending_confirm = "leave_continue"
@@ -355,14 +369,15 @@ func _ask_abandon() -> void:
 			"胜利结算已入账\n继续挑战的分数将计入最高分",
 			"确认离开", "继续挖掘", true)
 		return
-	_pending_confirm = "abandon"
+	_pending_confirm = "quit_to_select"
 	var keep_ore: int = GameState.score / 20
-	confirm_dialog.ask("放弃本局？",
-		"本局积分与进度将清零\n已采集矿石按一半结算保留（+%d 矿）" % keep_ore,
-		"确认放弃", "继续挖掘", true)
+	confirm_dialog.ask("返回选关？",
+		"本局按放弃结算：积分清零，矿石按一半保留（+%d 矿）" % keep_ore,
+		"确认返回", "继续挖矿", true)
 
 
-func _do_abandon() -> void:
+## 放弃结算：半矿入账 + 局面清理（终点由调用方决定）
+func _abandon_settle() -> void:
 	get_tree().paused = false
 	pause_panel.hide()
 	tutorial_guide.hide()
@@ -377,7 +392,15 @@ func _do_abandon() -> void:
 	GameState.game_active = false
 	robot_manager.remove_all()
 	enemy_manager.clear()
-	_show_main_menu()
+
+
+func _do_quit_to_select() -> void:
+	_abandon_settle()
+	if GameState.daily_mode:
+		_show_main_menu()
+		return
+	level_select.set_chapter(_current_chapter_id)
+	level_select.show()
 
 
 # ---- 设置 / 清档 ----
@@ -395,8 +418,10 @@ func _ask_clear_save() -> void:
 
 func _on_confirm_confirmed() -> void:
 	match _pending_confirm:
-		"abandon":
-			_do_abandon()
+		"restart_run":
+			_do_restart_run()
+		"quit_to_select":
+			_do_quit_to_select()
 		"leave_continue":
 			_leave_after_continue()
 		"clear_save":
@@ -521,6 +546,9 @@ func _handle_escape() -> void:
 	if settings_panel.visible:
 		settings_panel.hide()
 		return
+	if rules_panel.visible:
+		rules_panel.hide()
+		return   # 露出下层：暂停或主菜单（只退一层）
 	if pause_panel.visible:
 		_resume()
 		return

@@ -34,29 +34,35 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
-[node name="RunStatsLabel" type="Label" parent="Center/Panel/VBox"]
+[node name="ObjectiveLabel" type="Label" parent="Center/Panel/VBox"]
 text = ""
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 15
+
+[node name="RunStatsLabel" type="Label" parent="Center/Panel/VBox"]
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
 [node name="HSeparator" type="HSeparator" parent="Center/Panel/VBox"]
 
 [node name="ResumeButton" type="Button" parent="Center/Panel/VBox"]
 custom_minimum_size = Vector2(0, 52)
-text = "继续挖掘"
+text = "继续挖矿"
 theme_override_font_sizes/font_size = 19
+
+[node name="RulesButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "操作与规则"
 
 [node name="RestartButton" type="Button" parent="Center/Panel/VBox"]
 custom_minimum_size = Vector2(0, 48)
 text = "重新开始"
 
-[node name="SettingsButton" type="Button" parent="Center/Panel/VBox"]
+[node name="QuitButton" type="Button" parent="Center/Panel/VBox"]
 custom_minimum_size = Vector2(0, 48)
-text = "设置"
-
-[node name="AbandonButton" type="Button" parent="Center/Panel/VBox"]
-custom_minimum_size = Vector2(0, 48)
-text = "放弃本局"
+text = "返回选关"
 modulate = Color(1, 0.6, 0.55, 1)
 
 [node name="HintLabel" type="Label" parent="Center/Panel/VBox"]

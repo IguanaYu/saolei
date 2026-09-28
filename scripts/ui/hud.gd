@@ -44,6 +44,11 @@ func set_idle_warning(show: bool) -> void:
 	idle_hint_label.visible = show
 
 
+## 暂停面板头部目标行的来源（P5 重排后路径变，接口不变）
+func get_objective_text() -> String:
+	return objective_label.text
+
+
 func _on_game_phase_changed(phase: String) -> void:
 	match phase:
 		"placing_base":
