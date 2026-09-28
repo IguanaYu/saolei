@@ -50,11 +50,14 @@ const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 
 func _ready() -> void:
 	# 不立即 reset，等玩家选关进入
+	_register_custom_cursors()
 	grid.all_safe_opened.connect(_on_all_safe_opened)
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
+	grid.cell_hovered.connect(_on_grid_cell_hovered)
+	grid.cell_unhovered.connect(_on_grid_cell_unhovered)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
 	main_menu.continue_requested.connect(_on_continue_play)
@@ -339,6 +342,7 @@ func _in_game() -> bool:
 
 func _open_pause() -> void:
 	_exit_placing_mode()  # 暂停时取消放置，避免恢复后状态混乱
+	grid.set_hover_overlay(Vector2i.ZERO, "hide")
 	pause_panel.open(_pause_context(), hud.get_objective_text())
 	get_tree().paused = true
 
@@ -358,6 +362,7 @@ func _pause_context() -> String:
 func _resume() -> void:
 	get_tree().paused = false
 	pause_panel.hide()
+	grid.set_hover_overlay(Vector2i.ZERO, "hide")  # 暂停前悬停的残影清掉
 
 
 ## 重开本关（确认框）：本局作废，已入账矿石不受影响
@@ -656,45 +661,53 @@ func _enter_placing_mode(mode: String) -> void:
 func _exit_placing_mode() -> void:
 	placing_mode = ""
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	grid.set_hover_overlay(Vector2i.ZERO, "hide")
 	shop.set_placing_hint(false)
+
+
+## 无副作用的放置判定：悬停预览与 _try_place_at 共用同一套规则（盘点 v1 §约束 2：
+## 禁止另写近似规则）。钱判定与 purchase_robot / get_base_price 的实际扣费口径一致。
+func can_place_at(coord: Vector2i) -> bool:
+	if not _in_bounds(coord):
+		return false
+	var cell = grid.get_cell(coord)
+
+	if placing_mode == "base":
+		# 后续基地：必须在已开格上、不是基地/坍塌格
+		return cell != null and cell.is_opened and not cell.is_base \
+			and not cell.is_collapsed and GameState.money >= GameState.get_base_price()
+
+	# L4 探测机器人：目标格任意（开/关均可，已确认格除外）
+	if placing_mode == "probe":
+		return cell != null and not cell.is_confirmed_mine and GameState.money >= 100
+
+	# 机器人放置（opener / marker / detector / miner / guard 等）：可走格 + 一格一机 + 买得起
+	if not grid.is_walkable(coord):
+		return false
+	if robot_manager.get_robot_positions().has(coord):
+		return false
+	return GameState.money >= GameState.get_robot_price(placing_mode)
 
 
 func _try_place_at(world_pos: Vector2) -> bool:
 	var coord := grid.world_to_coord(world_pos)
-	if not _in_bounds(coord):
+	if not can_place_at(coord):
 		return false
 
 	if placing_mode == "base":
-		# 后续基地：必须在已开格上、不是基地
-		var cell = grid.get_cell(coord)
-		if cell == null or not cell.is_opened or cell.is_base or cell.is_collapsed:
-			return false
 		var price: int = GameState.get_base_price()
-		if GameState.money < price:
-			return false
 		_exit_placing_mode()
 		GameState.add_money(-price)
 		grid.place_base(coord)
 		return true
 
-	# L4 探测机器人：一次性瞬发，目标格任意（开/关均可，已确认格除外）；
-	# 3×3 雷位标「确认雷」（机器人视同旗/不计分/穿锁）；不吃 CD（Q3：放置类口径）
+	# L4 探测机器人：一次性瞬发；3×3 雷位标「确认雷」（机器人视同旗/不计分/穿锁）；
+	# 不吃 CD（Q3：放置类口径）
 	if placing_mode == "probe":
-		var target_cell = grid.get_cell(coord)
-		if target_cell == null or target_cell.is_confirmed_mine:
-			return false
-		if GameState.money < 100:
-			return false
 		_exit_placing_mode()
 		GameState.add_money(-100)
 		_trigger_probe(coord)
 		return true
-
-	# 机器人放置（opener / marker / detector / miner / guard）
-	if not grid.is_walkable(coord):
-		return false
-	if robot_manager.get_robot_positions().has(coord):
-		return false  # 一格一机
 
 	var type := placing_mode
 	_exit_placing_mode()
@@ -712,6 +725,49 @@ func _try_place_at(world_pos: Vector2) -> bool:
 
 func _in_bounds(coord: Vector2i) -> bool:
 	return coord.x >= 0 and coord.x < grid.rows and coord.y >= 0 and coord.y < grid.cols
+
+
+# ---- 像素光标与悬停预览（素材：visual_v2/runtime/fx/，规格见盘点 v1）----
+
+## 按形状注册像素光标；形状切换仍走 set_default_cursor_shape（放置=POINTING_HAND）。
+## 热点按盘点 v1：arrow (1,1)、placing (1,1)。cursor_board 留作"准星 vs 箭头"实机 A/B 后启用。
+func _register_custom_cursors() -> void:
+	var arrow_tex: Texture2D = load("res://visual_v2/runtime/fx/cursor_arrow.png")
+	if arrow_tex != null:
+		Input.set_custom_mouse_cursor(arrow_tex, Input.CURSOR_ARROW, Vector2(1, 1))
+	var placing_tex: Texture2D = load("res://visual_v2/runtime/fx/cursor_placing.png")
+	if placing_tex != null:
+		Input.set_custom_mouse_cursor(placing_tex, Input.CURSOR_POINTING_HAND, Vector2(1, 1))
+
+
+## 退出前清掉自定光标：Input 单例活得比渲染服务器久，不清会在关窗时报
+## RID 泄漏与 RenderingServer null 噪音（不影响游戏内，只影响退出日志）
+func _exit_tree() -> void:
+	Input.set_custom_mouse_cursor(null, Input.CURSOR_ARROW)
+	Input.set_custom_mouse_cursor(null, Input.CURSOR_POINTING_HAND)
+
+
+## 悬停状态机：首基地阶段/放置模式给合法性与真实判定同源的角框；
+## 普通模式只在未开岩壁上给低亮四角（已开格读数字，不加干扰）；覆盖层打开时清预览
+func _on_grid_cell_hovered(cell: Cell) -> void:
+	if GameState.game_phase == "placing_base":
+		grid.set_hover_overlay(cell.coord,
+			"valid" if grid.can_place_first_base(cell.coord) else "invalid")
+		return
+	if not _in_game():
+		grid.set_hover_overlay(cell.coord, "hide")
+		return
+	if placing_mode != "":
+		grid.set_hover_overlay(cell.coord,
+			"valid" if can_place_at(cell.coord) else "invalid")
+	elif not cell.is_opened:
+		grid.set_hover_overlay(cell.coord, "normal")
+	else:
+		grid.set_hover_overlay(cell.coord, "hide")
+
+
+func _on_grid_cell_unhovered(_cell: Cell) -> void:
+	grid.set_hover_overlay(Vector2i.ZERO, "hide")
 
 
 ## 开局赠送机器人：基地格 + 周围已开邻格依次落位（一格一机）。gifts: {"opener":1,...}

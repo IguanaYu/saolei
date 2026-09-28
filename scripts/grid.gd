@@ -43,6 +43,9 @@ signal vein_depleted(coord: Vector2i)
 signal obstacle_cleared(cell, kind: String, by_actor: String)  # L4 障碍清除（埋点/剧本转发）
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
+## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
+signal cell_hovered(cell)
+signal cell_unhovered(cell)
 
 # 已发过正确旗奖励的格子（coord→true）：同一格奖励仅首次发放、撤旗不退分（设计 §5，防刷）
 var rewarded_flags: Dictionary = {}
@@ -52,9 +55,42 @@ func _ready() -> void:
 	_lines = GridLines.new()
 	_lines.visible = bool(GameSettings.get_value("show_grid"))
 	add_child(_lines)
+	_make_hover_overlay()
 	GameSettings.setting_changed.connect(_on_setting_changed)
 	_center_grid()
 	init_empty_grid()
+
+
+## 悬停/落点预览覆盖层：单精灵复用，z_index 压过格子与网格线
+## 贴图规格见 docs/active/局内交互视觉资产盘点-v1.md（tile_hover / place_valid / place_invalid）
+var _hover_overlay: Sprite2D = null
+var _hover_tex: Dictionary = {}
+
+
+func _make_hover_overlay() -> void:
+	_hover_tex = {
+		"normal": load("res://visual_v2/runtime/fx/tile_hover.png"),
+		"valid": load("res://visual_v2/runtime/fx/tile_place_valid.png"),
+		"invalid": load("res://visual_v2/runtime/fx/tile_place_invalid.png"),
+	}
+	_hover_overlay = Sprite2D.new()
+	_hover_overlay.name = "HoverOverlay"  # 显式命名，避免遍历误匹配
+	_hover_overlay.z_index = 40
+	_hover_overlay.centered = true
+	_hover_overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_hover_overlay.visible = false
+	add_child(_hover_overlay)
+
+
+## state: "hide" / "normal"(普通悬停) / "valid" / "invalid"(放置落点合法性)
+func set_hover_overlay(coord: Vector2i, state: String) -> void:
+	if state == "hide" or not cells.has(coord) or not _hover_tex.has(state):
+		if _hover_overlay != null:
+			_hover_overlay.visible = false
+		return
+	_hover_overlay.texture = _hover_tex[state]
+	_hover_overlay.position = cells[coord].position
+	_hover_overlay.visible = true
 
 
 func _on_setting_changed(key: String, value: Variant) -> void:
@@ -100,13 +136,25 @@ func init_empty_grid() -> void:
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
 			cell.cell_obstacle_cleared.connect(_on_cell_obstacle_cleared)
+			cell.mouse_entered.connect(_on_cell_mouse_entered.bind(cell))
+			cell.mouse_exited.connect(_on_cell_mouse_exited.bind(cell))
 			cells[coord] = cell
-	# 网格线覆盖层挪到最后，保证画在格子之上
+	# 网格线覆盖层挪到最后，保证画在格子之上；重开新盘时清掉悬停预览
 	if _lines != null:
 		_lines.grid_size = Vector2i(rows, cols)
 		_lines.cell_px = cell_size
 		move_child(_lines, get_child_count() - 1)
 		_lines.queue_redraw()
+	if _hover_overlay != null:
+		_hover_overlay.visible = false
+
+
+func _on_cell_mouse_entered(cell: Cell) -> void:
+	cell_hovered.emit(cell)
+
+
+func _on_cell_mouse_exited(cell: Cell) -> void:
+	cell_unhovered.emit(cell)
 
 
 ## 原地切换岩壁风格（不重置局面）：调试键 F5 / 章节主题用
@@ -121,13 +169,19 @@ func set_wall_style(style: String) -> void:
 ## pregen_random 关（L4）：盘面已由 apply_random_board 预生成，只校验+落基地
 var board_generated := false
 
-func place_first_base(coord: Vector2i) -> bool:
+## 首基地放置判定（无副作用）：悬停预览与 place_first_base 共用
+## 普通随机盘任意关闭格可放；L4 预生成盘只能放已开格
+func can_place_first_base(coord: Vector2i) -> bool:
 	if not cells.has(coord):
+		return false
+	return not board_generated or cells[coord].is_opened
+
+
+func place_first_base(coord: Vector2i) -> bool:
+	if not can_place_first_base(coord):
 		return false
 	if board_generated:
 		# L4 随机盘路径：不放雷、不预开安全区；基地只能落在已开格（设计 §3「玩家自放」）
-		if not cells[coord].is_opened:
-			return false
 		cells[coord].become_base()
 		GameState.register_base(coord)
 		GameState.set_game_phase("playing")
