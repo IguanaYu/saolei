@@ -53,6 +53,8 @@ var current_level_override: LevelData = null  # 每日挑战等动态关卡（�
 var daily_mode: bool = false                  # 本局是每日挑战
 
 # ---- 玩家操作 CD（教学关：玩家点击=一次性机器人，次数有限）----
+## 耗尽后为「充能银行」：cd_charges 可囤至 cd_max_charges 层（默认 7，关卡可配），
+## 不满仓持续回充（每 cd_duration 攒 1 层）；花存款不打断回充计时
 var cd_phase: String = "off"        # off / free(免费阶段) / cooldown(次数耗尽)
 var cd_free_clicks_left: int = 0    # 免费动作余量
 var cd_flag_limit: int = 0          # 免费阶段正确旗上限（0 = 不按旗计）
@@ -60,7 +62,9 @@ var cd_correct_flags: int = 0       # 免费阶段已插正确旗数
 var cd_sec: float = 0.0             # 耗尽后单次 CD 时长
 var cd_after_purchase: float = -1.0 # >=0：首台机器人购买后 CD 改为此值
 var cd_duration: float = 0.0        # 当前生效的单次 CD（首购后变短）
-var cd_remaining: float = 0.0       # 距下次可用
+var cd_remaining: float = 0.0       # 距下一层充能
+var cd_charges: int = 0             # 已囤可花层数
+var cd_max_charges: int = 7         # 囤层上限（LevelData 可配）
 var cd_purchase_boosted: bool = false
 var player_actions_used: int = 0    # 本局玩家有效动作总数（埋点口径，动作级）
 
@@ -102,6 +106,7 @@ signal robot_spawned(robot_type: String)
 signal cd_exhausted()                          # 免费阶段 → 耗尽瞬间
 signal cd_blocked()                            # CD 中点击被拦（UI 反馈）
 signal cd_tick(remaining: float, duration: float)
+signal cd_charges_changed(charges: int, max_charges: int)  # 囤层数变化（UI）
 signal cd_duration_changed(new_duration: float)  # 首购后 CD 变短
 signal player_action_performed                 # 每次有效玩家动作（剧本推进用）
 
@@ -131,9 +136,9 @@ func lose_life() -> void:
 
 # ---- 玩家操作 CD ----
 
-## CD 中点击是否被拦（免费阶段/off 永远放行）
+## CD 中点击是否被拦（免费阶段/off 永远放行；有囤层即可花）
 func is_player_blocked() -> bool:
-	return cd_phase == "cooldown" and cd_remaining > 0.0
+	return cd_phase == "cooldown" and cd_charges <= 0
 
 
 ## 有效玩家动作执行后计数（开格/翻旗/和弦/踩雷各 1 次，洪水整片算 1）
@@ -146,8 +151,11 @@ func consume_player_action() -> void:
 		if cd_free_clicks_left <= 0:
 			_enter_cooldown()
 	elif cd_phase == "cooldown":
-		# 恢复好的次数被本次动作用掉，重新计时
-		cd_remaining = cd_duration
+		# 花一层存款；回充计时若在跑不动它（囤层不打断），满仓闲置则重新开攒
+		cd_charges = maxi(0, cd_charges - 1)
+		cd_charges_changed.emit(cd_charges, cd_max_charges)
+		if cd_remaining <= 0.0:
+			cd_remaining = cd_duration
 		cd_tick.emit(cd_remaining, cd_duration)
 
 
@@ -166,15 +174,25 @@ func _enter_cooldown() -> void:
 		cd_duration = cd_after_purchase
 	else:
 		cd_duration = cd_sec
+	cd_charges = 0
+	cd_charges_changed.emit(cd_charges, cd_max_charges)
 	cd_remaining = cd_duration
 	cd_exhausted.emit()
 
 
 ## 每帧推进 CD（main._process 调用；暂停时由 get_tree().paused 天然停摆）
+## 不满仓持续回充：cd_remaining 归零 → 囤 1 层并继续攒下一层；满仓则闲置
 func tick_cd(delta: float) -> void:
-	if cd_phase == "cooldown" and cd_remaining > 0.0:
+	if cd_phase != "cooldown" or cd_charges >= cd_max_charges:
+		return
+	if cd_remaining > 0.0:
 		cd_remaining = maxf(0.0, cd_remaining - delta)
 		cd_tick.emit(cd_remaining, cd_duration)
+	if cd_remaining <= 0.0:
+		cd_charges = mini(cd_charges + 1, cd_max_charges)
+		cd_charges_changed.emit(cd_charges, cd_max_charges)
+		if cd_charges < cd_max_charges:
+			cd_remaining = cd_duration  # 继续攒下一层
 
 
 ## 重置本局状态。level_id 为空串时走旧自由模式（兼容旧调用）
@@ -215,8 +233,10 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	cd_correct_flags = 0
 	cd_sec = lvl.cooldown_sec if lvl != null else 0.0
 	cd_after_purchase = lvl.cooldown_after_purchase if lvl != null else -1.0
+	cd_max_charges = lvl.cd_max_charges if lvl != null and lvl.cd_max_charges > 0 else 7
 	cd_duration = 0.0
 	cd_remaining = 0.0
+	cd_charges = 0
 	cd_purchase_boosted = false
 	player_actions_used = 0
 	result_stats = {

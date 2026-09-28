@@ -29,6 +29,7 @@ var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 
 var free_correct_flags: int = 0     # >0：第 N 面正确旗触发耗尽（与上条先到为准）
 var cooldown_sec: float = 0.0       # 耗尽后单次 CD 时长；0 = 本关无 CD
 var cooldown_after_purchase: float = -1.0  # >=0：首台机器人购买后 CD 改为此值
+var cd_max_charges: int = 7         # 耗尽后可囤层数上限（<=0 视为默认 7）
 
 # ---- 商店限制 ----
 var shop_limits: Dictionary = {}    # 如 {"opener":1, "marker":1}；空 = 不限购
