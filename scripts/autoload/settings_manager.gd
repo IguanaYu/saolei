@@ -13,6 +13,8 @@ const DEFAULTS := {
 	"show_grid": false,
 	"fullscreen": false,
 	"tutorial_done": false,
+	"skip_pre_level": false,   # 重玩时跳过关前卡（首次通关前强制显示）
+	"feedback_url": "",        # 试玩反馈地址（空 = 反馈按钮隐藏，渠道定后配置启用）
 }
 
 var values: Dictionary = DEFAULTS.duplicate()

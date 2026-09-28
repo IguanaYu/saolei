@@ -19,6 +19,7 @@ extends Node
 @onready var sign_in_panel = $UILayer/SignInPanel
 @onready var confirm_dialog = $UILayer/ConfirmDialog
 @onready var splash = $UILayer/SplashScreen
+@onready var pre_level_card = $UILayer/PreLevelCard
 @onready var upgrade_panel = $UILayer/UpgradePanel
 @onready var ore_shop = $UILayer/OreShop
 
@@ -71,8 +72,9 @@ func _ready() -> void:
 	level_select.powerup_requested.connect(func(): ore_shop.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
-	level_select.start_requested.connect(_on_start_game)
+	level_select.start_requested.connect(_open_pre_level)
 	level_select.back_requested.connect(_on_level_select_back)
+	pre_level_card.start_confirmed.connect(_start_level)
 	results_panel.restart_requested.connect(_on_restart_requested)
 	results_panel.back_to_level_select_requested.connect(_on_back_to_level_select)
 	results_panel.back_to_menu_requested.connect(_show_main_menu)
@@ -148,14 +150,14 @@ func _show_main_menu() -> void:
 # ---- 关卡流程 ----
 
 func _on_continue_play() -> void:
-	# 主按钮直进当前进度关（P4 起经关前卡）
+	# 主按钮直进当前进度关：弹关前卡（首关教学在局内，见 director）
 	main_menu.hide()
 	var idx := 0
 	for i in 5:
 		if not SaveSystem.is_level_cleared("ch01_s%02d" % (i + 1)):
 			idx = i
 			break
-	_start_level("ch01_s%02d" % (idx + 1))
+	_open_pre_level("ch01_s%02d" % (idx + 1))
 
 
 func _on_select_level() -> void:
@@ -189,6 +191,22 @@ func _on_level_select_back() -> void:
 
 func _on_start_game(level_id: String) -> void:
 	_start_level(level_id)
+
+
+## 关前卡片入口：重玩且玩家勾了跳过 → 直进；否则弹卡片（数字全部读关卡真实配置）
+func _open_pre_level(level_id: String) -> void:
+	var lvl := LevelSystem.get_level(level_id)
+	if lvl == null:
+		return
+	if SaveSystem.is_level_cleared(level_id) \
+			and bool(GameSettings.get_value("skip_pre_level")):
+		level_select.hide()
+		main_menu.hide()
+		_start_level(level_id)
+		return
+	level_select.hide()
+	main_menu.hide()
+	pre_level_card.open(lvl)
 
 
 func _on_restart_requested() -> void:
@@ -299,7 +317,8 @@ func _in_game() -> bool:
 	return not (splash.visible or main_menu.visible or chapter_select.visible
 			or level_select.visible or results_panel.visible or pause_panel.visible
 			or settings_panel.visible or stats_panel.visible or daily_panel.visible
-			or sign_in_panel.visible or confirm_dialog.visible or ore_shop.visible)
+			or sign_in_panel.visible or confirm_dialog.visible or ore_shop.visible
+			or pre_level_card.visible)
 
 
 func _open_pause() -> void:
@@ -504,6 +523,10 @@ func _handle_escape() -> void:
 		return
 	if pause_panel.visible:
 		_resume()
+		return
+	if pre_level_card.visible:
+		pre_level_card.hide()
+		level_select.show()   # ESC 只退一层：回选关
 		return
 	if tutorial_guide.visible:
 		return  # 引导层自行处理（跳过）

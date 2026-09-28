@@ -21,6 +21,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/SplashScreen.tscn" id="19_ss"]
 [ext_resource type="PackedScene" path="res://scenes/ui/OreShop.tscn" id="20_os"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_manager.gd" id="21_em"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PreLevelCard.tscn" id="22_plc"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -95,3 +96,6 @@ visible = false
 visible = false
 
 [node name="SplashScreen" parent="UILayer" instance=ExtResource("19_ss")]
+
+[node name="PreLevelCard" parent="UILayer" instance=ExtResource("22_plc")]
+visible = false
