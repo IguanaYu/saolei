@@ -25,6 +25,7 @@ SaveSystem="*res://scripts/autoload/save_system.gd"
 LevelSystem="*res://scripts/autoload/level_system.gd"
 GameSettings="*res://scripts/autoload/settings_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
+AutoShot="*res://scripts/debug/auto_shot.gd"
 
 [display]
 

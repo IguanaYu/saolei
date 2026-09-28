@@ -62,12 +62,12 @@ func _ready() -> void:
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
 	robot_manager.robot_removed.connect(_on_robot_removed)
-	main_menu.start_requested.connect(_on_start_adventure)
-	main_menu.stats_requested.connect(func(): stats_panel.open())
-	main_menu.daily_requested.connect(func(): daily_panel.open())
-	main_menu.signin_requested.connect(func(): sign_in_panel.open())
+	main_menu.continue_requested.connect(_on_continue_play)
+	main_menu.select_level_requested.connect(_on_select_level)
 	main_menu.settings_requested.connect(func(): settings_panel.open())
 	main_menu.powerup_requested.connect(func(): ore_shop.open())
+	main_menu.quit_requested.connect(_ask_quit)
+	# main_menu.rules_requested / feedback_requested：P9 接规则页 / 拍板暂不连接（反馈渠道未定）
 	level_select.powerup_requested.connect(func(): ore_shop.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
@@ -135,25 +135,38 @@ func _ready() -> void:
 
 func _on_splash_finished() -> void:
 	main_menu.show()
-	if not SaveSystem.can_sign_today():
-		return
-	var tw := create_tween()
-	tw.tween_interval(0.3)
-	tw.tween_callback(func(): sign_in_panel.open())
+	main_menu.refresh()
 
 
 func _show_main_menu() -> void:
 	results_panel.hide()
 	pause_panel.hide()
 	main_menu.show()
+	main_menu.refresh()
 
 
 # ---- 关卡流程 ----
 
-func _on_start_adventure() -> void:
+func _on_continue_play() -> void:
+	# 主按钮直进当前进度关（P4 起经关前卡）
 	main_menu.hide()
-	chapter_select.show()
-	chapter_select.refresh()
+	var idx := 0
+	for i in 5:
+		if not SaveSystem.is_level_cleared("ch01_s%02d" % (i + 1)):
+			idx = i
+			break
+	_start_level("ch01_s%02d" % (idx + 1))
+
+
+func _on_select_level() -> void:
+	main_menu.hide()
+	level_select.set_chapter("ch01")   # 绕过章节页；ChapterSelect 场景保留不用
+	level_select.show()
+
+
+func _ask_quit() -> void:
+	_pending_confirm = "quit_game"
+	confirm_dialog.ask("退出游戏？", "", "退出", "取消", false)
 
 
 func _on_chapter_selected(ch_id: String) -> void:
@@ -170,8 +183,8 @@ func _on_chapter_select_back() -> void:
 
 func _on_level_select_back() -> void:
 	level_select.hide()
-	chapter_select.show()
-	chapter_select.refresh()
+	main_menu.show()
+	main_menu.refresh()
 
 
 func _on_start_game(level_id: String) -> void:
@@ -371,6 +384,8 @@ func _on_confirm_confirmed() -> void:
 			SaveSystem.reset_all()
 			get_tree().paused = false
 			get_tree().reload_current_scene()
+		"quit_game":
+			get_tree().quit()
 	_pending_confirm = ""
 
 

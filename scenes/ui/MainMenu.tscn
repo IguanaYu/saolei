@@ -10,6 +10,7 @@ anchor_bottom = 1.0
 script = ExtResource("1_mm")
 
 [node name="MineBackground" type="TextureRect" parent="."]
+modulate = Color(0.55, 0.55, 0.55, 1)
 anchor_right = 1.0
 anchor_bottom = 1.0
 texture = ExtResource("2_bg")
@@ -18,28 +19,41 @@ stretch_mode = 6
 texture_filter = 1
 mouse_filter = 2
 
+[node name="OreTag" type="HBoxContainer" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 56.0
+grow_horizontal = 0
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="OreLabel" type="Label" parent="OreTag"]
+theme_override_font_sizes/font_size = 18
+vertical_alignment = 1
+
+[node name="PowerUpButton" type="Button" parent="OreTag"]
+custom_minimum_size = Vector2(96, 40)
+text = "变强"
+
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 0
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_bottom = 0
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 24
 
 [node name="CenterContainer" type="CenterContainer" parent="MarginContainer"]
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/CenterContainer"]
-custom_minimum_size = Vector2(520, 0)
+custom_minimum_size = Vector2(440, 0)
 theme_override_constants/separation = 12
 
 [node name="Emblem" type="TextureRect" parent="MarginContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(64, 64)
 size_flags_horizontal = 4
 texture = ExtResource("3_emblem")
 expand_mode = 1
@@ -54,51 +68,50 @@ theme_override_font_sizes/font_size = 44
 theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
 
 [node name="TaglineLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = "—— 指挥机器人，挖穿雷区矿洞 ——"
+text = "投资机器人，推进雷区"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
-[node name="OreLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = "总矿石: 0"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 22
-
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/CenterContainer/VBoxContainer"]
-
-[node name="SubtitleLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = "局外变强"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
-
-[node name="PowerUpButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(180, 40)
-text = "变强商店"
-
-[node name="SpacerLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer"]
-text = ""
-
-[node name="StartButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
+[node name="ContinueButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 56)
-text = "开始冒险"
+text = "开始试玩"
 theme_override_font_sizes/font_size = 22
+
+[node name="SelectLevelButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 48)
+text = "选择关卡"
+theme_override_font_sizes/font_size = 18
 
 [node name="MenuRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
 alignment = 1
 theme_override_constants/separation = 10
 
-[node name="StatsButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
-custom_minimum_size = Vector2(118, 42)
-text = "挖矿档案"
-
-[node name="DailyButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
-custom_minimum_size = Vector2(118, 42)
-text = "每日挑战"
-
-[node name="SignInButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
-custom_minimum_size = Vector2(118, 42)
-text = "矿工签到"
+[node name="RulesButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
+custom_minimum_size = Vector2(210, 42)
+text = "操作与规则"
 
 [node name="SettingsButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/MenuRow"]
-custom_minimum_size = Vector2(118, 42)
+custom_minimum_size = Vector2(210, 42)
 text = "设置"
+
+[node name="BottomRow" type="HBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer"]
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="VersionLabel" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer/BottomRow"]
+text = "封闭试玩 v0.1"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)
+vertical_alignment = 1
+
+[node name="FeedbackButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/BottomRow"]
+visible = false
+custom_minimum_size = Vector2(72, 32)
+text = "反馈"
+theme_override_font_sizes/font_size = 13
+
+[node name="QuitButton" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(96, 32)
+text = "退出游戏"
+theme_override_font_sizes/font_size = 13
