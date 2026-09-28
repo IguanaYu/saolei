@@ -1,9 +1,10 @@
 extends Control
-## 暂停面板：局内 ESC / HUD 暂停按钮呼出；继续 / 规则 / 重开 / 返回选关
+## 暂停面板：局内 ESC / HUD 暂停按钮呼出；继续 / 规则 / 设置 / 重开 / 返回选关
 
 signal resume_requested
 signal restart_requested
 signal rules_requested
+signal settings_requested
 signal quit_requested
 
 @onready var context_label: Label = $Center/Panel/VBox/ContextLabel
@@ -16,6 +17,7 @@ func _ready() -> void:
 	hide()
 	resume_button.pressed.connect(func(): resume_requested.emit())
 	$Center/Panel/VBox/RulesButton.pressed.connect(func(): rules_requested.emit())
+	$Center/Panel/VBox/SettingsButton.pressed.connect(func(): settings_requested.emit())
 	$Center/Panel/VBox/RestartButton.pressed.connect(func(): restart_requested.emit())
 	$Center/Panel/VBox/QuitButton.pressed.connect(func(): quit_requested.emit())
 

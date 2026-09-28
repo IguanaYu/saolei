@@ -91,6 +91,7 @@ func _ready() -> void:
 	hud.pause_requested.connect(_toggle_pause)
 	pause_panel.resume_requested.connect(_resume)
 	pause_panel.rules_requested.connect(func(): rules_panel.open())
+	pause_panel.settings_requested.connect(func(): settings_panel.open())
 	pause_panel.restart_requested.connect(_ask_restart_run)
 	pause_panel.quit_requested.connect(_ask_quit_to_select)
 	# 设置
