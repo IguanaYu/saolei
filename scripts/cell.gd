@@ -243,7 +243,6 @@ func open(by_actor: String) -> bool:
 		return false  # 基地格不可被开
 	is_opened = true
 	refresh_visual()
-	_play_open_pulse()
 	return true
 
 
@@ -275,8 +274,21 @@ func toggle_flag() -> bool:
 	is_flagged = not is_flagged
 	refresh_visual()
 	if is_flagged:
-		_play_open_pulse()
+		play_flag_plant()  # 旗面落地动画（灰尘由 Grid→EffectsLayer 出）
 	return true
+
+
+## 插旗落地：图标层下落约 8px + 小幅回弹（约 170ms），不动整格岩壁（设计稿 §3）
+func play_flag_plant() -> void:
+	var icon: TextureRect = $SpecialIcon
+	var base_y: float = icon.position.y
+	icon.pivot_offset = icon.size / 2.0
+	icon.position.y = base_y - 8.0
+	icon.scale = Vector2(1.0, 0.82)  # 压缩形态（sheet 帧序：压缩→回弹→静止）
+	var t := icon.create_tween()
+	t.tween_property(icon, "position:y", base_y, 0.10)
+	t.tween_property(icon, "scale", Vector2(1.0, 1.1), 0.04)
+	t.tween_property(icon, "scale", Vector2.ONE, 0.03)
 
 
 # ---- L4 虫害障碍：apply 幂等（已有同类状态返回 false），clear 是玩家/保安共用入口 ----
@@ -357,12 +369,6 @@ func collapse() -> void:
 
 
 # ---- 动效 ----
-
-func _play_open_pulse() -> void:
-	var tween := create_tween()
-	tween.tween_property(self, "scale", Vector2(1.18, 1.18), 0.08)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.10)
-
 
 func _play_collapse_flicker() -> void:
 	var bg: ColorRect = $Background

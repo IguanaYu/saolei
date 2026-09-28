@@ -34,7 +34,7 @@ func do_tick(grid, locked: Dictionary) -> void:
 		"to_base":
 			_tick_to_base(grid, locked)
 		"unloading":
-			_tick_unloading()
+			_tick_unloading(grid)
 
 
 func _tick_to_mine(grid, locked: Dictionary) -> void:
@@ -98,8 +98,9 @@ func _tick_to_base(grid, locked: Dictionary) -> void:
 		_play_action_pulse()
 
 
-func _tick_unloading() -> void:
+func _tick_unloading(grid) -> void:
 	AudioManager.play_sfx("coin")
+	grid.cargo_unloaded.emit(global_position, cargo)  # 确认动效（金光/跳字/飞币）
 	GameState.add_money(cargo)
 	GameState.add_score(cargo)
 	# 采矿分项埋点（右栏 ScorePanel / 结算账单「采矿分」行）

@@ -26,6 +26,7 @@ var _last_money: int = -1
 
 
 func _ready() -> void:
+	money_label.add_to_group("hud_money")  # 卸货飞币动效的落点（EffectsLayer 查组取位置）
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.score_changed.connect(_on_score_changed)
 	GameState.lives_changed.connect(_on_lives_changed)

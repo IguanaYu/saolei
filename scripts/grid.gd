@@ -36,6 +36,13 @@ var _lines: GridLines = null
 
 signal cell_opened(cell, by_actor: String)
 signal cell_flagged(cell, by_actor: String, correct: bool, first_time: bool)
+## 撤旗状态变化（拔旗动画用；正确/错误信息不给，保持推理口径）
+signal cell_unflagged(cell, by_actor: String)
+## 一次开格/和弦的批次结束事件（起点格、执行者、实际开成的格列表）：
+## 动效层据此区分单格/连锁（设计稿 §接入点 1），奖励仍按 cell_opened 逐格结算
+signal cell_open_batch(start_cell, by_actor: String, opened_cells: Array)
+## 矿工卸货（全局坐标+货量；钱已由矿工入账，此事件只驱动确认动效）
+signal cargo_unloaded(world_pos: Vector2, amount: int)
 signal mine_stepped(cell, by_actor: String)
 signal all_safe_opened()
 signal vein_created(coord: Vector2i)
@@ -56,9 +63,25 @@ func _ready() -> void:
 	_lines.visible = bool(GameSettings.get_value("show_grid"))
 	add_child(_lines)
 	_make_hover_overlay()
+	_make_effects_layer()
 	GameSettings.setting_changed.connect(_on_setting_changed)
 	_center_grid()
 	init_empty_grid()
+
+
+var _fx: EffectsLayer = null
+
+
+func _make_effects_layer() -> void:
+	_fx = EffectsLayer.new()
+	_fx.name = "EffectsLayer"  # 显式命名，避免遍历误匹配
+	_fx.z_index = 45
+	_fx.wall_style = wall_style
+	add_child(_fx)
+	cell_open_batch.connect(_fx.on_open_batch)
+	cell_flagged.connect(func(cell, _a, _c, _f): _fx.fx_flag_dust(cell))
+	cell_unflagged.connect(func(cell, _a): _fx.fx_flag_pull(cell))
+	cargo_unloaded.connect(func(pos, amt): _fx.fx_unload(pos, amt))
 
 
 ## 悬停/落点预览覆盖层：单精灵复用，z_index 压过格子与网格线
@@ -147,6 +170,8 @@ func init_empty_grid() -> void:
 		_lines.queue_redraw()
 	if _hover_overlay != null:
 		_hover_overlay.visible = false
+	if _fx != null:
+		_fx.clear_all()  # 重开新盘清空岩屑/跳字/飞币等临时动效
 
 
 func _on_cell_mouse_entered(cell: Cell) -> void:
@@ -160,6 +185,8 @@ func _on_cell_mouse_exited(cell: Cell) -> void:
 ## 原地切换岩壁风格（不重置局面）：调试键 F5 / 章节主题用
 func set_wall_style(style: String) -> void:
 	wall_style = style
+	if _fx != null:
+		_fx.wall_style = style  # 岩屑跟主题换色
 	for c in cells.values():
 		c.apply_wall_style(style)
 
@@ -377,12 +404,16 @@ func open_cell(coord: Vector2i, by_actor: String) -> void:
 
 	cell_opened.emit(cell, by_actor)
 
+	var chain: Array = [cell]
 	if cell.adjacent_mines == 0:
-		_flood_open(coord, by_actor)
+		chain.append_array(_flood_open(coord, by_actor))
 
 	# 胜利检测：在所有连锁展开之后
 	if count_safe_remaining() == 0:
 		all_safe_opened.emit()
+
+	# 批次结束事件：动效层据此区分单格/连锁（奖励已按 cell_opened 逐格结算）
+	cell_open_batch.emit(cell, by_actor, chain)
 
 
 func toggle_flag(coord: Vector2i, by_actor: String) -> void:
@@ -401,6 +432,8 @@ func toggle_flag(coord: Vector2i, by_actor: String) -> void:
 		if cell.is_mine and first_time:
 			rewarded_flags[coord] = true
 		cell_flagged.emit(cell, by_actor, cell.is_mine, first_time)
+	elif was_flagged and not cell.is_flagged:
+		cell_unflagged.emit(cell, by_actor)
 
 
 func chord(coord: Vector2i, by_actor: String) -> void:
@@ -465,10 +498,12 @@ func world_to_coord(world_pos: Vector2) -> Vector2i:
 	return Vector2i(int(local.x / cell_size), int(local.y / cell_size))
 
 
-func _flood_open(start: Vector2i, by_actor: String) -> void:
+## 连锁展开，返回本次实际开成的格列表（供批次事件汇总动效用）
+func _flood_open(start: Vector2i, by_actor: String) -> Array:
 	var start_cell: Cell = cells.get(start)
 	if start_cell == null or start_cell.adjacent_mines != 0:
-		return
+		return []
+	var opened: Array = []
 	var queue: Array[Vector2i] = [start]
 	var visited: Dictionary = {start: true}
 	while not queue.is_empty():
@@ -481,10 +516,13 @@ func _flood_open(start: Vector2i, by_actor: String) -> void:
 			var n_cell: Cell = cells[n]
 			if n_cell.is_opened or n_cell.is_flagged:
 				continue
-			n_cell.open(by_actor)
+			if not n_cell.open(by_actor):
+				continue  # 锁格等开格失败：不发事件（否则虚假收益/动效）
 			cell_opened.emit(n_cell, by_actor)
+			opened.append(n_cell)
 			if n_cell.adjacent_mines == 0 and not n_cell.is_mine:
 				queue.append(n)
+	return opened
 
 
 ## 障碍清除统一入口（优先级 锁>网>黏液，同保安索敌序）：返回清除的 kind，""=无可清
