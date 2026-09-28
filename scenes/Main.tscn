@@ -60,6 +60,11 @@ script = ExtResource("21_em")
 [node name="UILayer" type="CanvasLayer" parent="."]
 process_mode = 3
 
+; 侧栏（队伍/分项得分）置于 UILayer 最底：所有面板与教程压暗层都盖在其上
+[node name="TeamPanel" parent="UILayer" instance=ExtResource("25_tp")]
+
+[node name="ScorePanel" parent="UILayer" instance=ExtResource("26_scp")]
+
 [node name="HUD" parent="UILayer" instance=ExtResource("4_hud")]
 
 [node name="Shop" parent="UILayer" instance=ExtResource("5_shop")]
@@ -109,7 +114,3 @@ visible = false
 
 [node name="PlaytestDonePanel" parent="UILayer" instance=ExtResource("24_pdp")]
 visible = false
-
-[node name="TeamPanel" parent="UILayer" instance=ExtResource("25_tp")]
-
-[node name="ScorePanel" parent="UILayer" instance=ExtResource("26_scp")]
