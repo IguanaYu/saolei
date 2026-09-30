@@ -17,7 +17,10 @@ const TYPE_VISUALS := {
 	"web": {"color": Color(0.72, 0.72, 0.78), "icon": "🕸"},
 	"lock": {"color": Color(0.85, 0.68, 0.22), "icon": "🔒"},
 	"slow": {"color": Color(0.42, 0.68, 0.34), "icon": "🐌"},
+	"slime": {"color": Color(0.45, 0.80, 0.40), "icon": "🟢"},  # L5 Boss 史莱姆
 }
+
+const SLIME_MOVE_SEC := 2.5  # 史莱姆步速（设计 §5.1，初值）
 
 signal died(enemy: Enemy, by_actor: String)
 
@@ -43,6 +46,7 @@ func setup(start_coord: Vector2i, type: String, grid) -> void:
 	enemy_type = type
 	position = grid.coord_to_world(start_coord)
 	_update_visual()
+	_refresh_clickable_visual(grid)
 
 
 func is_alive() -> bool:
@@ -55,7 +59,8 @@ func tick(delta: float, grid, target_base: Vector2i) -> void:
 		return
 	_move_timer += delta
 	_harm_timer += delta
-	if _move_timer >= EnemyManager.ENEMY_MOVE_SEC:
+	var move_sec: float = SLIME_MOVE_SEC if enemy_type == "slime" else EnemyManager.ENEMY_MOVE_SEC
+	if _move_timer >= move_sec:
 		_move_timer = 0.0
 		_step(grid, target_base)
 	if _harm_timer >= EnemyManager.HARM_INTERVAL:
@@ -65,6 +70,9 @@ func tick(delta: float, grid, target_base: Vector2i) -> void:
 
 func _step(grid, target_base: Vector2i) -> void:
 	var next_coord: Vector2i = coord
+	if enemy_type == "slime":
+		_slime_step(grid)
+		return
 	if _state == "to_base":
 		var next := Pathfinding.find_path_free_step(grid, coord, target_base)
 		if next == Vector2i(-9, -9):
@@ -108,6 +116,56 @@ func _harm(grid) -> void:
 			var here = grid.get_cell(coord)
 			if here != null:
 				here.apply_slime()  # 当前格直接留黏液
+
+
+## L5 史莱姆移动（设计 §5.1 / 实施计划 WP3.1）：沿未开墙随机爬、70% 偏向
+## frontier（邻 8 格含已开格的墙）；离格时当前格染黏液（Q1：每步一染，墙/开地通吃）
+func _slime_step(grid) -> void:
+	var here = grid.get_cell(coord)
+	if here != null:
+		here.apply_slime()  # Q1：每步离格时染黏液（墙/开地通吃）
+	var wall_candidates: Array = []   # 未开格（墙）
+	var ground_candidates: Array = [] # 已开格（没墙可爬时落地面继续糊）
+	for o in MapGenerator.NEIGHBOR_OFFSETS:
+		var c: Vector2i = coord + o
+		if not grid.cells.has(c) or c == coord:
+			continue
+		if not grid.cells[c].is_opened:
+			wall_candidates.append(c)
+		else:
+			ground_candidates.append(c)
+	var pick_pool: Array = wall_candidates if not wall_candidates.is_empty() else ground_candidates
+	if pick_pool.is_empty():
+		return  # 死角：原地
+	# frontier 偏好：墙候选中「邻 8 格含已开格」的优先 70%（把黏液糊到推进前沿）
+	var frontier_walls: Array = wall_candidates.filter(func(c): return _near_opened(c, grid))
+	if not frontier_walls.is_empty() and randf() < 0.7:
+		pick_pool = frontier_walls
+	pick_pool.shuffle()
+	coord = pick_pool[0]
+	var tw := create_tween()
+	tw.tween_property(self, "position", grid.coord_to_world(coord), 0.3)
+	_refresh_clickable_visual(grid)
+
+
+func _near_opened(c: Vector2i, grid) -> bool:
+	for o in MapGenerator.NEIGHBOR_OFFSETS:
+		var n: Vector2i = c + o
+		if grid.cells.has(n) and grid.cells[n].is_opened:
+			return true
+	return false
+
+
+## 史莱姆可点击条件（设计 §5.1）：本体格或邻 8 格含已开格——必须开路接近，不能隔墙点死
+func is_clickable(grid) -> bool:
+	return _near_opened(coord, grid)
+
+
+## 可点=常态 / 不可点=半透明压暗（Q2：纯视觉自解释，不占文案预算）
+func _refresh_clickable_visual(grid) -> void:
+	if enemy_type != "slime":
+		return
+	modulate = Color.WHITE if is_clickable(grid) else Color(0.55, 0.55, 0.55, 0.65)
 
 
 func _neighbor_coords() -> Array:

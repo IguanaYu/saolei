@@ -74,6 +74,19 @@ func spawn_enemy(start_coord: Vector2i, type: String, grid) -> Enemy:
 	return e
 
 
+## L5 史莱姆出厂（BossManager 调度；走统一 spawn 通道，保安/点杀链自动兼容）
+func spawn_slime(at: Vector2i, grid) -> Enemy:
+	return spawn_enemy(at, "slime", grid)
+
+
+func count_alive_type(type: String) -> int:
+	var n := 0
+	for e in enemies:
+		if e.is_alive() and e.enemy_type == type:
+			n += 1
+	return n
+
+
 ## 玩家点杀 / 保安击杀入口：由 main._try_hit_enemy_at 与 GuardRobot 调用
 func kill_enemy(e: Enemy, by_actor: String) -> void:
 	e.die(by_actor)
@@ -97,6 +110,11 @@ func _on_enemy_died(e: Enemy, by_actor: String) -> void:
 		GameState.result_stats["enemy_kills_player"] += 1
 	elif by_actor == "robot_guard":
 		GameState.result_stats["enemy_kills_guard"] += 1
+	if e.enemy_type == "slime":
+		# L5 史莱姆击杀奖励（设计 §5.1，点杀/保安同酬）；Boss 硬直由 main 接 enemy_killed 转发
+		GameState.add_money(10)
+		GameState.add_score(10)
+		GameState.result_stats["slime_kills"] += 1
 	enemy_killed.emit(e, by_actor)
 
 

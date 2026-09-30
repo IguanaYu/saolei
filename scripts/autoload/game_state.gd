@@ -85,6 +85,14 @@ var result_stats := {
 	"obstacles_cleared_guard": 0,   # 保安清障数
 	"stall_seconds": 0.0,           # 全场机器人停摆累计时长
 	"slowed_seconds": 0.0,          # 机器人在黏液 3×3 内的累计时长
+	# L5 Boss 关（互动奖励/埋点，设计 §11-10）
+	"slime_kills": 0,               # 史莱姆击杀（玩家+保安）
+	"bombs_deflected": 0,           # 炸弹反弹数
+	"fires_extinguished": 0,        # 灭火次数（整片一次）
+	"tentacles_cut": 0,             # 断触手次数
+	"phase_reached": 1,             # 到达过的最深阶段
+	"phase2_elapsed": -1.0,         # P2 转场时点（-1=未到）
+	"phase3_elapsed": -1.0,         # P3 转场时点（-1=未到）
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -248,6 +256,8 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"enemy_kills_player": 0, "enemy_kills_guard": 0,
 		"obstacles_cleared_player": 0, "obstacles_cleared_guard": 0,
 		"stall_seconds": 0.0, "slowed_seconds": 0.0,
+		"slime_kills": 0, "bombs_deflected": 0, "fires_extinguished": 0, "tentacles_cut": 0,
+		"phase_reached": 1, "phase2_elapsed": -1.0, "phase3_elapsed": -1.0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()

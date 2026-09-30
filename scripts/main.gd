@@ -58,6 +58,7 @@ func _ready() -> void:
 	grid.mine_stepped.connect(_on_mine_stepped)
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
 	grid.processed_mines_changed.connect(_on_processed_mines_changed)
+	enemy_manager.enemy_killed.connect(_on_enemy_killed_forward)
 	grid.cell_hovered.connect(_on_grid_cell_hovered)
 	grid.cell_unhovered.connect(_on_grid_cell_unhovered)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
@@ -628,8 +629,9 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 	return true
 
 
-## L4 敌害实体点击命中（几何测试：距实体中心 < 0.6 格即命中，Q9 初值）：
-## 虫 = 点杀（吃 1 CD），巢 = 受击（吃 1 CD）；CD 检查与格子点击同口径
+## L4/L5 敌害实体点击命中（几何测试：距实体中心 < 0.6 格即命中，Q9 初值）：
+## 虫/史莱姆 = 点杀（吃 1 CD），巢 = 受击（吃 1 CD）；CD 检查与格子点击同口径
+## L5 史莱姆可点条件：本体或邻 8 格含已开格（设计 §5.1 开路接近；不可点不耗 CD）
 func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	if not GameState.game_active:
 		return false
@@ -637,6 +639,8 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	# 先虫后巢（虫 z_index 更高、会压在巢上）
 	for e in enemy_manager.enemies:
 		if e.is_alive() and e.global_position.distance_to(world_pos) < hit_radius:
+			if e.enemy_type == "slime" and not e.is_clickable(grid):
+				return true  # 命中但隔墙点不死：拦截穿透、不耗 CD（Q2 视觉半透明自解释）
 			if GameState.is_player_blocked():
 				GameState.cd_blocked.emit()
 				return true
@@ -867,6 +871,12 @@ func _on_all_safe_opened() -> void:
 	var obj := GameState.current_objective
 	if obj == null or obj.type == ObjectiveData.Type.CLEAR_ALL_SAFE:
 		_end_game("win")
+
+
+## L5 敌害击杀转发：史莱姆死 → Boss 硬直 3s（奖励钱分在 enemy_manager 内发）
+func _on_enemy_killed_forward(e, _by_actor: String) -> void:
+	if boss_manager.active and e.enemy_type == "slime":
+		boss_manager.stagger(3.0)
 
 
 ## L5 牙数变化（旗/确认雷/坍塌任一来源）：刷新进度；拔完最后一颗牙 = 斩杀胜利

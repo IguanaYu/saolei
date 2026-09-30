@@ -19,8 +19,7 @@ const KILL_FALL_SEC := 3.0            # 斩杀掉落演出时长（设计 §5.4�
 static func _build_attacks() -> Dictionary:
 	return {
 		1: [
-			# M2/WP3：史莱姆——first=15 首次入场，补位逻辑在 WP3 单独处理
-			{"kind": "slime_intro", "every": 0.0, "cap": 2, "first": 15.0, "next": 0.0},
+			# P1 史莱姆不走通用表（首对 t=15/+3s + 每 30s 补位，tick 内专门调度）
 		],
 		2: [
 			# M3/WP4：定时落弹
@@ -35,6 +34,14 @@ static func _build_attacks() -> Dictionary:
 	}
 
 var _attacks := _build_attacks()
+
+## P1 史莱姆调度（设计 §5.1，初值盲测校准）：t=15 首只、+3s 第二只；此后每 30s 若场上 <2 补至 2
+const SLIME_FIRST_AT := 15.0
+const SLIME_SECOND_GAP := 3.0
+const SLIME_REFILL_EVERY := 30.0
+const SLIME_CAP := 2
+var _slime_timer := SLIME_FIRST_AT
+var _slimes_spawned := 0
 
 var phase := 1
 var active := false                  # 是否处于 Boss 局（FIND_ALL_MINES 目标关）
@@ -62,6 +69,8 @@ func setup(grid, total_teeth: int) -> void:
 	_elapsed = 0.0
 	_staggered_until = -1.0
 	_pause_until = 0.0
+	_slime_timer = SLIME_FIRST_AT
+	_slimes_spawned = 0
 	_beast = BossBeast.new()
 	_beast.name = "BossBeast"  # 显式命名防遍历误匹配
 	add_child(_beast)
@@ -105,6 +114,11 @@ func _transition_to(target: int) -> void:
 		var corner: Vector2 = _grid.coord_to_world(Vector2i(_grid.cols - 1, 0)) \
 				+ Vector2(_grid.cell_size * 1.6, -_grid.cell_size * 1.6)
 		_beast.crawl_to("right", corner, right_anchor_pos(_grid), 2.0)
+	# 转场埋点（阶段时长分布的盲测数据源，设计 §10.3）
+	GameState.result_stats["phase_reached"] = maxi(int(GameState.result_stats["phase_reached"]), target)
+	var t_key := "phase2_elapsed" if target == 2 else "phase3_elapsed"
+	if float(GameState.result_stats.get(t_key, -1.0)) < 0.0:
+		GameState.result_stats[t_key] = snappedf(GameState.elapsed, 0.1)
 	phase_changed.emit(target)
 
 
@@ -129,14 +143,53 @@ func tick(delta: float, grid) -> void:
 		return
 	_elapsed += delta
 	var frozen := _elapsed < _pause_until or _elapsed < _staggered_until
-	if frozen:
+	if not frozen:
+		if phase == 1:
+			_slime_schedule(grid)
+		for atk in _attacks.get(phase, []):
+			if atk["every"] <= 0.0:
+				continue  # 一次性/专门调度的招式不走通用表
+			if _elapsed >= float(atk["next"]):
+				atk["next"] = _elapsed + float(atk["every"])
+				_try_cast_attack(atk, grid)
+
+
+## P1 史莱姆调度：首对入场 + 阶段内补位（转场后不再补充，残兵自然带入 P2/P3）
+func _slime_schedule(grid) -> void:
+	if _elapsed < _slime_timer:
 		return
-	for atk in _attacks.get(phase, []):
-		if atk["every"] <= 0.0:
-			continue  # 一次性出招（如 slime_intro）由专门逻辑处理
-		if _elapsed >= float(atk["next"]):
-			atk["next"] = _elapsed + float(atk["every"])
-			_try_cast_attack(atk, grid)
+	if _slimes_spawned < 2:
+		_cast_slime(grid)
+		_slimes_spawned += 1
+		_slime_timer = _elapsed + (SLIME_SECOND_GAP if _slimes_spawned == 1 else SLIME_REFILL_EVERY)
+	else:
+		if _alive_slimes() < SLIME_CAP:
+			_cast_slime(grid)
+		_slime_timer = _elapsed + SLIME_REFILL_EVERY
+
+
+## 出一只史莱姆：Boss 所在侧（P1=上）盘边随机墙格入场；亮爪预告同帧（正式预告演出 WP8）
+func _cast_slime(grid) -> void:
+	var edge_walls: Array = []
+	for x in range(grid.cols):
+		var c = grid.get_cell(Vector2i(x, 0))
+		if c != null and not c.is_opened:
+			edge_walls.append(Vector2i(x, 0))
+	if edge_walls.is_empty():
+		for y in range(grid.rows):  # 上边缘全开光的兜底：左边缘找墙
+			var c = grid.get_cell(Vector2i(0, y))
+			if c != null and not c.is_opened:
+				edge_walls.append(Vector2i(0, y))
+	if edge_walls.is_empty():
+		return  # 无墙可入：本次跳过（补位计时照常推进）
+	if _beast != null:
+		_beast.play("claw", 1.5)
+	edge_walls.shuffle()
+	get_parent().enemy_manager.spawn_slime(edge_walls[0], grid)
+
+
+func _alive_slimes() -> int:
+	return get_parent().enemy_manager.count_alive_type("slime")
 
 
 ## 单次出招分发（M2-M4 实现各 kind；未知 kind 静默跳过=安静 Boss 关可玩）
@@ -170,6 +223,8 @@ func clear() -> void:
 	_elapsed = 0.0
 	_staggered_until = -1.0
 	_pause_until = 0.0
+	_slime_timer = SLIME_FIRST_AT
+	_slimes_spawned = 0
 	_grid = null
 	if _beast != null:
 		_beast.queue_free()
