@@ -5,6 +5,9 @@ extends Node2D
 
 var coord: Vector2i = Vector2i(-1, -1)
 var hp: int = 2
+const NEST_FULL := preload("res://visual_v2/runtime/enemies/nest_0.png")
+const NEST_DAMAGED := preload("res://visual_v2/runtime/enemies/nest_1.png")
+const NEST_BROKEN := preload("res://visual_v2/runtime/enemies/nest_2.png")
 
 signal damaged(nest: Nest)      # 受击未毁（剧本 #2「巢被点第一下」的触发源）
 signal destroyed(nest: Nest)    # 摧毁（埋点/波次联动）
@@ -12,6 +15,9 @@ signal destroyed(nest: Nest)    # 摧毁（埋点/波次联动）
 
 func _ready() -> void:
 	z_index = 9  # 低于虫、高于 Cell
+	$Body.visible = false
+	$IconLabel.visible = false
+	$Skin.texture = NEST_FULL
 
 
 func setup(start_coord: Vector2i, start_hp: int, grid) -> void:
@@ -31,6 +37,7 @@ func hit() -> bool:
 	hp -= 1
 	if hp <= 0:
 		destroyed.emit(self)
+		$Skin.texture = NEST_BROKEN
 		# 摧毁动效：裂缝崩碎
 		var tw := create_tween()
 		tw.tween_property(self, "scale", Vector2(1.8, 1.8), 0.12)
@@ -38,6 +45,7 @@ func hit() -> bool:
 		tw.tween_callback(queue_free)
 	else:
 		damaged.emit(self)
+		$Skin.texture = NEST_DAMAGED
 		# 受击动效：抖一下
 		var tw := create_tween()
 		tw.tween_property(self, "scale", Vector2(1.25, 1.25), 0.06)

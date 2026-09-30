@@ -12,7 +12,11 @@ var root_coord: Vector2i = Vector2i(-9, -9)
 var state := "alive"       # alive | broken | retracted
 var remaining := LIFETIME_SEC
 var _grid = null
-var _segments: Array = []  # 占位色块（显式命名防误匹配）
+const ROOT_TEX := preload("res://visual_v2/runtime/boss/tentacle_root.png")
+const MIDDLE_TEX := preload("res://visual_v2/runtime/boss/tentacle_middle.png")
+const TIP_TEX := preload("res://visual_v2/runtime/boss/tentacle_tip.png")
+const BROKEN_TEX := preload("res://visual_v2/runtime/boss/tentacle_broken.png")
+var _segments: Array = []
 
 
 func _ready() -> void:
@@ -32,21 +36,19 @@ func setup(segment: Array, grid) -> void:
 
 
 func _build_visual() -> void:
-	# 占位：从根到梢一串渐细的暗紫节肢 + 根部亮标记（正式分段贴图列美术需求，WP8）
+	# 根／中段／梢按格拼接；根部亮芯是可点击目标。
 	# 本体锚在根部世界坐标：缩回动画的缩放自然朝根（盘边）收
 	var root_pos: Vector2 = _grid.coord_to_world(root_coord)
 	position = root_pos
+	var vertical: bool = cells.size() > 1 and cells[0].x == cells[1].x
 	for i in cells.size():
-		var seg := ColorRect.new()
+		var seg := Sprite2D.new()
 		seg.name = "TentacleSeg%d" % i
-		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var w := 20.0 - float(i) * 2.0
-		seg.color = Color(0.32, 0.18, 0.40) if i > 0 else Color(0.55, 0.30, 0.62)
+		seg.texture = ROOT_TEX if i == 0 else (TIP_TEX if i == cells.size() - 1 else MIDDLE_TEX)
+		seg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var rel: Vector2 = _grid.coord_to_world(cells[i]) - root_pos
-		seg.offset_left = rel.x - w / 2.0
-		seg.offset_top = rel.y - w / 2.0
-		seg.offset_right = rel.x + w / 2.0
-		seg.offset_bottom = rel.y + w / 2.0
+		seg.position = rel
+		seg.rotation = PI / 2.0 if vertical else 0.0
 		add_child(seg)
 		_segments.append(seg)
 	# 摆动动画（占位：整组透明度呼吸）
@@ -82,7 +84,8 @@ func release(mode: String) -> void:
 		# 断裂动效：节肢两段弹开 + 渐隐
 		var tw := create_tween()
 		for i in _segments.size():
-			var seg: ColorRect = _segments[i]
+			var seg: Sprite2D = _segments[i]
+			seg.texture = BROKEN_TEX
 			var dir := 1.0 if i % 2 == 0 else -1.0
 			tw.parallel().tween_property(seg, "position:y",
 					seg.position.y + dir * 26.0, 0.25)

@@ -20,6 +20,7 @@ const SKINS := {
 	"marker": [preload("res://visual_v2/runtime/robots/robot_marker_idle.png"), preload("res://visual_v2/runtime/robots/robot_marker_move.png")],
 	"detector": [preload("res://visual_v2/runtime/robots/robot_detector_idle.png"), preload("res://visual_v2/runtime/robots/robot_detector_move.png")],
 	"miner": [preload("res://visual_v2/runtime/robots/robot_miner_idle.png"), preload("res://visual_v2/runtime/robots/robot_miner_move.png")],
+	"guard": [preload("res://visual_v2/runtime/robots/robot_guard_idle.png"), preload("res://visual_v2/runtime/robots/robot_guard_move.png")],
 }
 const SKIN_FRAME_INTERVAL := 0.18  # 移动时帧交替间隔
 

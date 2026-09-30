@@ -15,8 +15,17 @@ var coord: Vector2i = Vector2i(-1, -1)
 var state := "shadow"  # shadow | fuse | deflect | exploding
 var _timer := 0.0
 var _grid = null
-var _body: ColorRect
-var _icon: Label
+const BOMB_SHADOW := preload("res://visual_v2/runtime/boss/bomb_shadow.png")
+const BOMB_FUSE_0 := preload("res://visual_v2/runtime/boss/bomb_fuse_0.png")
+const BOMB_FUSE_1 := preload("res://visual_v2/runtime/boss/bomb_fuse_1.png")
+const BOMB_DEFLECT := preload("res://visual_v2/runtime/boss/bomb_deflect.png")
+const BOMB_EXPLOSION := [
+	preload("res://visual_v2/runtime/boss/bomb_explosion0.png"),
+	preload("res://visual_v2/runtime/boss/bomb_explosion1.png"),
+	preload("res://visual_v2/runtime/boss/bomb_explosion2.png"),
+	preload("res://visual_v2/runtime/boss/bomb_explosion3.png"),
+]
+var _sprite: Sprite2D
 
 
 func _ready() -> void:
@@ -25,25 +34,10 @@ func _ready() -> void:
 
 
 func _build_visual() -> void:
-	_body = ColorRect.new()
-	_body.name = "BombBody"
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body.color = Color(0.12, 0.12, 0.14)
-	_body.offset_left = -11
-	_body.offset_top = -11
-	_body.offset_right = 11
-	_body.offset_bottom = 11
-	add_child(_body)
-	_icon = Label.new()
-	_icon.name = "BombIconLabel"
-	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_icon.offset_left = -14
-	_icon.offset_top = -16
-	_icon.offset_right = 14
-	_icon.offset_bottom = 12
-	add_child(_icon)
+	_sprite = Sprite2D.new()
+	_sprite.name = "BombSprite"
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_sprite)
 
 
 func setup(at: Vector2i, grid) -> void:
@@ -54,24 +48,19 @@ func setup(at: Vector2i, grid) -> void:
 
 
 func _apply_shadow_visual() -> void:
-	# 阴影预告：半透明灰圈放大逼近 + ⬇ 提示
-	_body.color = Color(0.05, 0.05, 0.06, 0.55)
-	_icon.text = "⬇"
+	# 阴影预告：定制落点图从大缩小。
+	_sprite.texture = BOMB_SHADOW
 	scale = Vector2(1.6, 1.6)
 	var tw := create_tween()
 	tw.tween_property(self, "scale", Vector2(0.9, 0.9), SHADOW_SEC)
 
 
 func _apply_fuse_visual(grid) -> void:
-	_body.color = Color(0.12, 0.12, 0.14)
-	_icon.text = "💣"
+	_sprite.texture = BOMB_FUSE_0
 	var cell = grid.get_cell(coord)
 	if cell != null:
 		cell.set_bomb_masked(true)  # 数字被挡（口径同网，机器人同盲）
-	# 引信闪烁：红白交替加速紧张感
-	var tw := create_tween().set_loops(int(FUSE_SEC / 0.25))
-	tw.tween_property(_body, "color", Color(0.45, 0.10, 0.10), 0.125)
-	tw.tween_property(_body, "color", Color(0.12, 0.12, 0.14), 0.125)
+	# 引信双帧在 tick 中按游戏时间切换，暂停时同步停住。
 
 
 func is_active() -> bool:
@@ -88,6 +77,7 @@ func tick(delta: float, grid, boss: BossManager) -> void:
 				state = "fuse"
 				_apply_fuse_visual(grid)
 		"fuse":
+			_sprite.texture = BOMB_FUSE_0 if int(_timer * 8.0) % 2 == 0 else BOMB_FUSE_1
 			if _timer >= FUSE_SEC:
 				state = "exploding"
 				_explode(grid, boss)
@@ -102,8 +92,7 @@ func deflect(boss: BossManager) -> void:
 		var cell = _grid.get_cell(coord)
 		if cell != null:
 			cell.set_bomb_masked(false)
-	_icon.text = "💥"
-	_icon.modulate = Color(1.0, 0.85, 0.3)
+	_sprite.texture = BOMB_DEFLECT
 	var target: Vector2 = boss.beast_world_pos()
 	var tw := create_tween()
 	tw.tween_property(self, "position", target, DEFLECT_FLY_SEC) \
@@ -120,10 +109,17 @@ func _explode(grid, boss: BossManager) -> void:
 	if cell != null:
 		cell.set_bomb_masked(false)
 	boss.ignite_fire_cross(coord)
-	# 爆炸动效：白闪放大 + 渐隐
-	_body.color = Color(1.0, 0.75, 0.3)
-	_icon.text = "💥"
-	var tw := create_tween()
-	tw.tween_property(self, "scale", Vector2(2.2, 2.2), 0.15)
-	tw.parallel().tween_property(self, "modulate:a", 0.0, 0.30)
-	tw.tween_callback(queue_free)
+	# 爆炸动效：定制火光帧放大 + 渐隐
+	_sprite.texture = BOMB_EXPLOSION[0]
+	var scale_tween := create_tween()
+	scale_tween.tween_property(self, "scale", Vector2(2.2, 2.2), 0.24)
+	scale_tween.parallel().tween_property(self, "modulate:a", 0.0, 0.26)
+	var frames := create_tween()
+	frames.tween_interval(0.065)
+	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[1])
+	frames.tween_interval(0.065)
+	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[2])
+	frames.tween_interval(0.065)
+	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[3])
+	frames.tween_interval(0.07)
+	frames.tween_callback(queue_free)

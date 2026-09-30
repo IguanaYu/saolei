@@ -69,6 +69,14 @@ const SPECIAL_BASE := preload("res://visual_v2/runtime/tiles/special_base.png")
 const SPECIAL_FLAG := preload("res://visual_v2/runtime/tiles/special_flag.png")
 const SPECIAL_VEIN := preload("res://visual_v2/runtime/tiles/special_vein.png")
 const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/tiles/special_collapse.png")
+const OVERLAY_LOCK := preload("res://visual_v2/runtime/tiles/overlays/lock.png")
+const OVERLAY_WEB := preload("res://visual_v2/runtime/tiles/overlays/web.png")
+const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/tiles/overlays/slime_wall.png")
+const OVERLAY_SLIME_FLOOR := preload("res://visual_v2/runtime/tiles/overlays/slime_floor.png")
+const OVERLAY_CONFIRMED := preload("res://visual_v2/runtime/tiles/overlays/confirmed.png")
+const OVERLAY_FIRE := preload("res://visual_v2/runtime/tiles/overlays/fire_0.png")
+const OVERLAY_FIRE_1 := preload("res://visual_v2/runtime/tiles/overlays/fire_1.png")
+const OVERLAY_FIRE_LOW := preload("res://visual_v2/runtime/tiles/overlays/fire_low.png")
 
 # 洞壁生态装饰（E 系主题套）：有 deco_<风格>_sheet 的风格在未开岩壁随机点缀
 const DECO_GRID := 4          # sheet 4x2
@@ -77,7 +85,9 @@ const DECO_DENSITY := 0.10
 
 var _floor_atlas: AtlasTexture
 var _deco_tex: TextureRect = null
-var _obstacle_mark: Label = null  # L4 障碍覆盖（网/锁/确认雷占位图标，显式命名防误匹配）
+var _obstacle_mark: TextureRect = null
+var _slime_overlay: TextureRect = null
+var _fire_frame := 0
 
 # 双击检测
 var _last_click_time: float = 0.0
@@ -96,18 +106,37 @@ func _ready() -> void:
 	input_event.connect(_on_input_event)
 
 
-## L4 障碍覆盖层：网/锁/确认雷的占位图标（正式素材列美术需求，Q5）
+## L4/L5 障碍覆盖层：28px 透明贴片，与棋盘原生格像素对齐。
 func _setup_obstacle_mark() -> void:
-	_obstacle_mark = Label.new()
-	_obstacle_mark.name = "ObstacleMark"  # 显式命名：避免 get_children 遍历误匹配
-	_obstacle_mark.offset_left = -14
-	_obstacle_mark.offset_top = -14
-	_obstacle_mark.offset_right = 14
-	_obstacle_mark.offset_bottom = 14
-	_obstacle_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_obstacle_mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_obstacle_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_obstacle_mark)
+	_slime_overlay = TextureRect.new()
+	_slime_overlay.name = "SlimeOverlay"
+	_configure_overlay(_slime_overlay)
+	_obstacle_mark = TextureRect.new()
+	_obstacle_mark.name = "ObstacleMark"
+	_configure_overlay(_obstacle_mark)
+
+
+func _configure_overlay(node: TextureRect) -> void:
+	node.offset_left = -14
+	node.offset_top = -14
+	node.offset_right = 14
+	node.offset_bottom = 14
+	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(node)
+
+
+func set_fire_frame(frame: int) -> void:
+	if not is_on_fire or _fire_frame == frame:
+		return
+	_fire_frame = frame
+	if _obstacle_mark != null:
+		_obstacle_mark.texture = _fire_texture()
+
+
+func _fire_texture() -> Texture2D:
+	return OVERLAY_FIRE_LOW if _fire_frame == 2 else (OVERLAY_FIRE_1 if _fire_frame == 1 else OVERLAY_FIRE)
 
 
 func _setup_wall() -> void:
@@ -364,6 +393,7 @@ func ignite_fire() -> void:
 	if is_on_fire:
 		return
 	is_on_fire = true
+	_fire_frame = 0
 	path_blockers += 1
 	if is_slimed:
 		clear_slime("fire")
@@ -469,21 +499,19 @@ func refresh_visual() -> void:
 		lbl.text = ""
 	if _obstacle_mark != null:
 		if is_locked:
-			_obstacle_mark.text = "🔒"
-			_obstacle_mark.modulate = Color.WHITE
+			_obstacle_mark.texture = OVERLAY_LOCK
 		elif is_on_fire:
-			_obstacle_mark.text = "🔥"  # L5 火区占位（正式贴片列美术需求）
-			_obstacle_mark.modulate = Color.WHITE
+			_obstacle_mark.texture = _fire_texture()
 		elif is_webbed:
-			_obstacle_mark.text = "🕸"
-			_obstacle_mark.modulate = Color(0.85, 0.9, 1.0)
+			_obstacle_mark.texture = OVERLAY_WEB
 		elif is_confirmed_mine and not is_opened:
-			_obstacle_mark.text = "◆"  # 确认雷占位：橙色菱形（与旗区分）
-			_obstacle_mark.modulate = Color(1.0, 0.6, 0.15)
+			_obstacle_mark.texture = OVERLAY_CONFIRMED
 		else:
-			_obstacle_mark.text = ""
+			_obstacle_mark.texture = null
 	if is_slimed:
-		bg.color = bg.color.lerp(Color(0.25, 0.65, 0.2), 0.45)  # 黏液：绿色浸染，不改变开/旗表现
+		_slime_overlay.texture = OVERLAY_SLIME_FLOOR if is_opened else OVERLAY_SLIME_WALL
+	else:
+		_slime_overlay.texture = null
 	if is_on_fire:
 		bg.color = bg.color.lerp(Color(0.85, 0.30, 0.10), 0.55)  # 火：橙红炙烤
 	cell_state_changed.emit(self)

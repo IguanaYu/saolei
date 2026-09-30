@@ -12,13 +12,13 @@ var _move_timer := 0.0
 var _harm_timer := 0.0
 var _alive := true
 
-# 占位视觉（Q5：代码色块+emoji，正式素材列美术生产需求）
-const TYPE_VISUALS := {
-	"web": {"color": Color(0.72, 0.72, 0.78), "icon": "🕸"},
-	"lock": {"color": Color(0.85, 0.68, 0.22), "icon": "🔒"},
-	"slow": {"color": Color(0.42, 0.68, 0.34), "icon": "🐌"},
-	"slime": {"color": Color(0.45, 0.80, 0.40), "icon": "🟢"},  # L5 Boss 史莱姆
+const SPRITES := {
+	"web": [preload("res://visual_v2/runtime/enemies/web_0.png"), preload("res://visual_v2/runtime/enemies/web_1.png")],
+	"lock": [preload("res://visual_v2/runtime/enemies/lock_0.png"), preload("res://visual_v2/runtime/enemies/lock_1.png")],
+	"slow": [preload("res://visual_v2/runtime/enemies/slow_0.png"), preload("res://visual_v2/runtime/enemies/slow_1.png")],
+	"slime": [preload("res://visual_v2/runtime/enemies/slime_0.png"), preload("res://visual_v2/runtime/enemies/slime_1.png")],
 }
+var _anim_time := 0.0
 
 const SLIME_MOVE_SEC := 2.5  # 史莱姆步速（设计 §5.1，初值）
 
@@ -35,10 +35,17 @@ func _ready() -> void:
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
+func _process(delta: float) -> void:
+	if not _alive:
+		return
+	_anim_time += delta
+	$Skin.texture = SPRITES.get(enemy_type, SPRITES["web"])[int(_anim_time * 3.0) % 2]
+
+
 func _update_visual() -> void:
-	var cfg: Dictionary = TYPE_VISUALS.get(enemy_type, TYPE_VISUALS["web"])
-	$Body.color = cfg.color
-	$IconLabel.text = cfg.icon
+	$Body.visible = false
+	$IconLabel.visible = false
+	$Skin.texture = SPRITES.get(enemy_type, SPRITES["web"])[0]
 
 
 func setup(start_coord: Vector2i, type: String, grid) -> void:
