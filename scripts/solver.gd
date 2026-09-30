@@ -10,7 +10,9 @@ static func find_certain_actions(grid) -> Array:
 	for coord in grid.cells:
 		var cell = grid.cells[coord]
 		# L4 网失明：被网盖住的数字格不再提供推理依据（机器人失明停摆，设计 §5）
-		if not cell.is_opened or cell.is_collapsed or cell.is_webbed or cell.adjacent_mines == 0:
+		# L5 炸弹压格同口径（bomb_masked，设计 §5.2）：数字被挡 = 同盲
+		if not cell.is_opened or cell.is_collapsed or cell.is_webbed \
+				or cell.bomb_masked or cell.adjacent_mines == 0:
 			continue
 		var neighbors: Array = grid.get_neighbors(coord)
 		var flagged_count: int = 0

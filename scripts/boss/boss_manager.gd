@@ -43,6 +43,15 @@ const SLIME_CAP := 2
 var _slime_timer := SLIME_FIRST_AT
 var _slimes_spawned := 0
 
+## L5 P2 落弹/火区（设计 §5.2，初值盲测校准）
+const FIRE_SEC := 8.0            # 火区持续
+const BOMB_NUMBER_PREF := 0.7    # 落点 70% 优先数字格（§9.5 升级件）
+const BOMB_MIN_OPENED := 8       # 已开格不足顺延（设计 §7 边界）
+const BOMB_DEFER_SEC := 10.0     # 顺延时长
+
+var bombs: Array = []                    # Array[Bomb]（active 的）
+var fire_cells: Dictionary = {}          # Vector2i -> 剩余秒
+
 var phase := 1
 var active := false                  # 是否处于 Boss 局（FIND_ALL_MINES 目标关）
 var _teeth := 0
@@ -142,6 +151,21 @@ func tick(delta: float, grid) -> void:
 	if not active:
 		return
 	_elapsed += delta
+	# 引信/火区倒计时：不吃出招暂停/硬直（已在场上的威胁照常走；斩杀冻结由 game_active 兜底）
+	for b in bombs.duplicate():
+		if is_instance_valid(b):
+			b.tick(delta, grid, self)
+	bombs = bombs.filter(func(b): return is_instance_valid(b) and b.is_active())
+	var expired: Array = []
+	for coord in fire_cells:
+		fire_cells[coord] = float(fire_cells[coord]) - delta
+		if float(fire_cells[coord]) <= 0.0:
+			expired.append(coord)
+	for coord in expired:
+		fire_cells.erase(coord)
+		var c = grid.get_cell(coord)
+		if c != null:
+			c.fire_out()
 	var frozen := _elapsed < _pause_until or _elapsed < _staggered_until
 	if not frozen:
 		if phase == 1:
@@ -195,14 +219,121 @@ func _alive_slimes() -> int:
 ## 单次出招分发（M2-M4 实现各 kind；未知 kind 静默跳过=安静 Boss 关可玩）
 func _try_cast_attack(atk: Dictionary, grid) -> void:
 	match atk["kind"]:
-		"slime_intro":
-			pass  # WP3
 		"bomb":
-			pass  # WP4
+			if not _cast_bomb(atk, grid):
+				# 落点不足（已开格 <8 等）：本次顺延 10s（设计 §7 边界——永有招可出）
+				for a in _attacks.get(phase, []):
+					if a["kind"] == "bomb":
+						a["next"] = _elapsed + BOMB_DEFER_SEC
 		"lock":
 			pass  # WP5
 		"tentacle":
 			pass  # WP5
+
+
+## 落弹（设计 §5.2）：落点选择器 + 出弹。false = 本次顺延
+func _cast_bomb(atk: Dictionary, grid) -> bool:
+	var on_field := bombs.filter(func(b): return is_instance_valid(b)).size()
+	if on_field >= int(atk["cap"]):
+		return true  # 到场上限：不算失败，按正常周期等下一轮
+	var opened: Array = []
+	for coord in grid.cells:
+		var c: Cell = grid.cells[coord]
+		if c.is_opened and not c.is_base and not c.is_on_fire and not c.bomb_masked:
+			opened.append(coord)
+	if opened.size() < BOMB_MIN_OPENED:
+		return false
+	var robot_coords: Dictionary = {}
+	for r in get_parent().robot_manager.robots:
+		robot_coords[r.coord] = true
+	var pool: Array = opened.filter(func(c): return not robot_coords.has(c))
+	if pool.is_empty():
+		return false
+	# 70% 优先数字格（§9.5：数字被压 = 信息剥夺压力，同网口径）
+	var target: Vector2i
+	var digits: Array = pool.filter(func(c): return grid.cells[c].adjacent_mines > 0)
+	if not digits.is_empty() and randf() < BOMB_NUMBER_PREF:
+		target = digits.pick_random()
+	else:
+		target = pool.pick_random()
+	if _beast != null:
+		_beast.play("inhale", 1.5)  # 吸气预告（阴影预告随弹体自带）
+	var bomb := Bomb.new()
+	bomb.name = "BossBomb"  # 显式命名防遍历误匹配
+	add_child(bomb)
+	bomb.setup(target, grid)
+	bombs.append(bomb)
+	return true
+
+
+## 反弹结算（Bomb.deflect 飞抵后回调）：奖励 + 硬直 + 下次落弹顺延（设计 §5.2）
+func on_bomb_deflected() -> void:
+	GameState.add_money(15)
+	GameState.add_score(15)
+	GameState.result_stats["bombs_deflected"] += 1
+	stagger(2.0)
+	delay_attack("bomb", 7.0)
+
+
+## 爆炸点火：以落点为中心十字 5 格（只烧已开格、不烧基地格——机器人出生点不阻断；
+## 越界裁剪；烧掉覆盖黏液——cell.ignite_fire 内）
+func ignite_fire_cross(center: Vector2i) -> void:
+	if _grid == null:
+		return
+	var ignited: Array = []
+	for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var c: Vector2i = center + o
+		var cell = _grid.get_cell(c)
+		if cell == null or not cell.is_opened or cell.is_base or cell.is_on_fire:
+			continue
+		cell.ignite_fire()
+		fire_cells[c] = FIRE_SEC
+		ignited.append(c)
+	if not ignited.is_empty():
+		get_parent().robot_manager.displace_robots_in(ignited, _grid)
+
+
+## 灭火（grid.fire_extinguish_requested → main 转发）：点击格所在 4 向连通组整片熄灭
+## 成功 = 有火被灭（吃 CD 与奖励在 main 侧）
+func extinguish_fire_group(coord: Vector2i) -> bool:
+	if not fire_cells.has(coord):
+		return false
+	var group: Array = [coord]
+	var seen: Dictionary = {coord: true}
+	var i := 0
+	while i < group.size():
+		var c: Vector2i = group[i]
+		i += 1
+		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + o
+			if not seen.has(n) and fire_cells.has(n):
+				seen[n] = true
+				group.append(n)
+	for c in group:
+		fire_cells.erase(c)
+		var cell = _grid.get_cell(c) if _grid != null else null
+		if cell != null:
+			cell.fire_out()
+	GameState.add_money(5)
+	GameState.add_score(5)
+	GameState.result_stats["fires_extinguished"] += 1
+	return true
+
+
+## 反弹飞行目标（Boss 本体当前位置；无实体时回退上侧锚点）
+func beast_world_pos() -> Vector2:
+	if _beast != null and is_instance_valid(_beast):
+		return _beast.global_position
+	return top_anchor_pos(_grid) if _grid != null else Vector2.ZERO
+
+
+## 玩家点击命中炸弹？（main 几何命中链最优先调用）
+func hit_bomb_at(world_pos: Vector2, radius: float) -> Bomb:
+	for b in bombs:
+		if is_instance_valid(b) and b.state == "fuse" \
+				and b.global_position.distance_to(world_pos) < radius:
+			return b
+	return null
 
 
 ## 斩杀流程（main 在第 20 颗牙时调用；调用前 main 已置 game_active=false 冻结全场）
@@ -226,6 +357,12 @@ func clear() -> void:
 	_slime_timer = SLIME_FIRST_AT
 	_slimes_spawned = 0
 	_grid = null
+	for b in bombs:
+		if is_instance_valid(b):
+			b.queue_free()
+	bombs.clear()
+	# 火区状态残留由重开新盘覆盖（cells 重建），这里只清登记表
+	fire_cells.clear()
 	if _beast != null:
 		_beast.queue_free()
 		_beast = null

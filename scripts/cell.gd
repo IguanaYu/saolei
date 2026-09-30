@@ -22,6 +22,11 @@ var is_locked: bool = false     # 锁=交互阻断：谁都开不了也标不了
 var is_slimed: bool = false     # 黏液=速度修正：3×3 内机器人间隔 ×2，不阻断开/标
 var is_confirmed_mine: bool = false  # 探测「确认雷」：机器人视同旗、不计分、穿锁
 
+# ---- L5 Boss 关状态（设计 §5.2 / 实施计划 WP4，仍不碰真值）----
+var is_on_fire: bool = false    # 火=通路阻断：机器人禁入，8s 退散，点击整片熄灭
+var bomb_masked: bool = false   # 炸弹压格=显示遮罩：数字被挡（口径同网，玩家与机器人同盲）
+var path_blockers: int = 0      # 通路阻断计数（火/触手 +1/-1）：is_walkable 判定，0=不阻断
+
 # 信号
 signal cell_left_clicked(cell: Cell)
 signal cell_right_clicked(cell: Cell)
@@ -353,6 +358,34 @@ func has_obstacle() -> bool:
 	return is_slimed
 
 
+## 火区点燃（计时/连通组在 BossManager；格子只管状态+视觉+通路计数）
+## 点燃顺带烧掉本格黏液（「火清黏液」组合，设计 §5）
+func ignite_fire() -> void:
+	if is_on_fire:
+		return
+	is_on_fire = true
+	path_blockers += 1
+	if is_slimed:
+		clear_slime("fire")
+	refresh_visual()
+
+
+func fire_out() -> void:
+	if not is_on_fire:
+		return
+	is_on_fire = false
+	path_blockers -= 1
+	refresh_visual()
+
+
+## 炸弹压格遮罩（Bomb 实体落格 set / 离格或爆炸 clear）
+func set_bomb_masked(v: bool) -> void:
+	if bomb_masked == v:
+		return
+	bomb_masked = v
+	refresh_visual()
+
+
 ## 探测「确认雷」：不 open 不 flag、绕过锁（锁只拦交互，情报可穿透，设计 §5）
 func confirm_mine() -> void:
 	if is_confirmed_mine:
@@ -431,12 +464,15 @@ func refresh_visual() -> void:
 	if not show_wall:
 		refresh_wall_edges()  # 开侧格不显示描边，直接清掉
 	# ---- L4 障碍覆盖（叠在基础视觉之上，黏液只染色不改表现）----
-	if is_webbed:
-		# 网盖数字：数字对玩家同样不可见（Q7「玩家与机器人同盲」）
+	if is_webbed or bomb_masked:
+		# 网/炸弹盖数字：数字对玩家同样不可见（Q7「玩家与机器人同盲」）
 		lbl.text = ""
 	if _obstacle_mark != null:
 		if is_locked:
 			_obstacle_mark.text = "🔒"
+			_obstacle_mark.modulate = Color.WHITE
+		elif is_on_fire:
+			_obstacle_mark.text = "🔥"  # L5 火区占位（正式贴片列美术需求）
 			_obstacle_mark.modulate = Color.WHITE
 		elif is_webbed:
 			_obstacle_mark.text = "🕸"
@@ -448,4 +484,6 @@ func refresh_visual() -> void:
 			_obstacle_mark.text = ""
 	if is_slimed:
 		bg.color = bg.color.lerp(Color(0.25, 0.65, 0.2), 0.45)  # 黏液：绿色浸染，不改变开/旗表现
+	if is_on_fire:
+		bg.color = bg.color.lerp(Color(0.85, 0.30, 0.10), 0.55)  # 火：橙红炙烤
 	cell_state_changed.emit(self)

@@ -49,6 +49,7 @@ signal vein_created(coord: Vector2i)
 signal vein_depleted(coord: Vector2i)
 signal obstacle_cleared(cell, kind: String, by_actor: String)  # L4 障碍清除（埋点/剧本转发）
 signal processed_mines_changed(current: int)  # L5 牙数变化：旗→矿脉/确认雷/坍塌任一来源
+signal fire_extinguish_requested(coord: Vector2i)  # L5 灭火：点任一火格 → 连通组熄灭（组逻辑在 BossManager）
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 ## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
@@ -462,7 +463,9 @@ func chord(coord: Vector2i, by_actor: String) -> void:
 func is_walkable(coord: Vector2i) -> bool:
 	if not cells.has(coord):
 		return false
-	return cells[coord].is_opened  # 坍塌格视为已开
+	var c: Cell = cells[coord]
+	# 坍塌格视为已开；L5 火区/触手占格 = 通路阻断（path_blockers 0 时与原判定逐字节等价）
+	return c.is_opened and c.path_blockers == 0
 
 
 ## 黏液减速判定（L4）：coord 的 3×3 内任一格有黏液 → 机器人间隔 ×2（布尔判定天然不叠乘）
@@ -568,6 +571,11 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
+		return
+	# L5 灭火优先（设计 §5.2 + Q8：火 > 其他障碍）：点任一火格 = 整片连通火熄灭，吃 1 CD
+	# （连通组与奖励在 BossManager；本击只灭火，不做开格）
+	if cell.is_on_fire:
+		fire_extinguish_requested.emit(cell.coord)
 		return
 	# L4 障碍清除分流（设计 §9.9）：点击命中障碍 → 本击只清障不开格，吃 1 次 CD
 	# （黏液不阻断开/标，但点击命中的是障碍：先清后开，第二击再开格）

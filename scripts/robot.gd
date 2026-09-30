@@ -12,6 +12,7 @@ var tick_interval: float = 2.0
 var _tick_timer: float = 0.0
 var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
+var _move_tween: Tween = null  # 当前移动动画（snap_to 震退时取消）
 
 # 皮肤帧（4 型 × 待机/移动；与商店/HUD 图标同设计语言）
 const SKINS := {
@@ -171,8 +172,18 @@ func _play_action_pulse() -> void:
 
 func _move_to(target_coord: Vector2i, grid) -> void:
 	var world_pos: Vector2 = grid.coord_to_world(target_coord)
-	var tween := create_tween()
-	tween.tween_property(self, "position", world_pos, 0.3)
+	if _move_tween != null and _move_tween.is_valid():
+		_move_tween.kill()
+	_move_tween = create_tween()
+	_move_tween.tween_property(self, "position", world_pos, 0.3)
+
+
+## L5 火区震退（WP4）：瞬移到安全格并重置作业状态（爆炸冲击语义，不走移动步）
+func snap_to(target_coord: Vector2i, grid) -> void:
+	coord = target_coord
+	position = grid.coord_to_world(target_coord)
+	_state = "idle"
+	_play_action_pulse()
 
 
 ## 寻路并移动一步，返回 true 表示已到达目标邻接格（可作业）

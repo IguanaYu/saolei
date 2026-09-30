@@ -49,6 +49,38 @@ func remove_all() -> void:
 	_reset_idle_warning()
 
 
+## L5 火区点燃震退（WP4）：区内机器人瞬移到 BFS 最近的无阻断已开格（Q3：不做飞行轨迹，
+## 靠爆炸动效顺序读「被震退」）
+func displace_robots_in(coords: Array, grid) -> void:
+	if coords.is_empty() or grid == null:
+		return
+	var hot: Dictionary = {}
+	for c in coords:
+		hot[c] = true
+	for r in robots:
+		if not hot.has(r.coord):
+			continue
+		var dest := _nearest_free_cell(r.coord, grid, hot)
+		if dest != r.coord:
+			r.snap_to(dest, grid)
+
+
+func _nearest_free_cell(from: Vector2i, grid, hot: Dictionary) -> Vector2i:
+	# BFS：起点自身被阻断时从 4 邻展开，找最近的 is_walkable 格
+	var queue: Array = [from]
+	var visited: Dictionary = {from: true}
+	while not queue.is_empty():
+		var pos: Vector2i = queue.pop_front()
+		if pos != from and grid.is_walkable(pos) and not hot.has(pos):
+			return pos
+		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = pos + o
+			if not visited.has(n) and grid.cells.has(n):
+				visited[n] = true
+				queue.append(n)
+	return from  # 全场阻断的极端兜底：原地（火必退，不永久死锁）
+
+
 func get_robot_positions() -> Dictionary:
 	var positions: Dictionary = {}
 	for r in robots:

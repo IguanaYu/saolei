@@ -58,6 +58,7 @@ func _ready() -> void:
 	grid.mine_stepped.connect(_on_mine_stepped)
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
 	grid.processed_mines_changed.connect(_on_processed_mines_changed)
+	grid.fire_extinguish_requested.connect(_on_fire_extinguish_requested)
 	enemy_manager.enemy_killed.connect(_on_enemy_killed_forward)
 	grid.cell_hovered.connect(_on_grid_cell_hovered)
 	grid.cell_unhovered.connect(_on_grid_cell_unhovered)
@@ -630,12 +631,23 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 
 
 ## L4/L5 敌害实体点击命中（几何测试：距实体中心 < 0.6 格即命中，Q9 初值）：
-## 虫/史莱姆 = 点杀（吃 1 CD），巢 = 受击（吃 1 CD）；CD 检查与格子点击同口径
+## 炸弹 > 虫/史莱姆 > 巢（设计 §7 点击优先级链；全部吃 1 CD，CD 检查与格子点击同口径）
 ## L5 史莱姆可点条件：本体或邻 8 格含已开格（设计 §5.1 开路接近；不可点不耗 CD）
 func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	if not GameState.game_active:
 		return false
-	var hit_radius: float = grid.cell_size * 0.6
+	var hit_radius: float = grid.cell_size * 0.7
+	# L5 落弹最优先（引信期才可点：阴影期未落地、爆炸期已结束）
+	if boss_manager.active:
+		var bomb := boss_manager.hit_bomb_at(world_pos, hit_radius)
+		if bomb != null:
+			if GameState.is_player_blocked():
+				GameState.cd_blocked.emit()
+				return true
+			bomb.deflect(boss_manager)  # 奖励/硬直/顺延在 on_bomb_deflected
+			GameState.consume_player_action()
+			return true
+	hit_radius = grid.cell_size * 0.6
 	# 先虫后巢（虫 z_index 更高、会压在巢上）
 	for e in enemy_manager.enemies:
 		if e.is_alive() and e.global_position.distance_to(world_pos) < hit_radius:
@@ -877,6 +889,15 @@ func _on_all_safe_opened() -> void:
 func _on_enemy_killed_forward(e, _by_actor: String) -> void:
 	if boss_manager.active and e.enemy_type == "slime":
 		boss_manager.stagger(3.0)
+
+
+## L5 灭火（设计 §5.2）：点任一火格 → 连通组整片熄灭，吃 1 CD + 奖励
+func _on_fire_extinguish_requested(coord: Vector2i) -> void:
+	if not boss_manager.active:
+		return
+	if boss_manager.extinguish_fire_group(coord):
+		GameState.consume_player_action()
+		grid.play_player_action_visual(coord, Grid.FLY_ICON_OPEN)
 
 
 ## L5 牙数变化（旗/确认雷/坍塌任一来源）：刷新进度；拔完最后一颗牙 = 斩杀胜利
