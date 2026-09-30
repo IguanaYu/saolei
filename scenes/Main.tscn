@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -26,6 +26,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/PlaytestDonePanel.tscn" id="24_pdp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TeamPanel.tscn" id="25_tp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ScorePanel.tscn" id="26_scp"]
+[ext_resource type="Script" path="res://scripts/boss/boss_manager.gd" id="27_bm"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -56,6 +57,9 @@ script = ExtResource("3_rm")
 
 [node name="EnemyManager" type="Node2D" parent="."]
 script = ExtResource("21_em")
+
+[node name="BossManager" type="Node2D" parent="."]
+script = ExtResource("27_bm")
 
 [node name="UILayer" type="CanvasLayer" parent="."]
 process_mode = 3

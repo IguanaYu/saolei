@@ -5,6 +5,7 @@ extends Node
 @onready var grid: Grid = $Grid
 @onready var robot_manager: RobotManager = $RobotManager
 @onready var enemy_manager: EnemyManager = $EnemyManager
+@onready var boss_manager: BossManager = $BossManager
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
 @onready var main_menu = $UILayer/MainMenu
@@ -56,6 +57,7 @@ func _ready() -> void:
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
+	grid.processed_mines_changed.connect(_on_processed_mines_changed)
 	grid.cell_hovered.connect(_on_grid_cell_hovered)
 	grid.cell_unhovered.connect(_on_grid_cell_unhovered)
 	robot_manager.idle_warning_changed.connect(_on_idle_warning_changed)
@@ -261,6 +263,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	_flag_count = 0
 	robot_manager.remove_all()
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
+	boss_manager.clear()   # 上一局的 Boss 实体/阶段状态清空（非 Boss 关为空操作）
 	if lvl != null:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
@@ -274,7 +277,10 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"preopen": lvl.preopen_coords,
 				"base": lvl.fixed_base,
 			})
-			GameState.game_active = true
+			# L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
+			# 放完基地才 game_active（同 L4 口径，倒计时从放基地起算）
+			if lvl.fixed_base != Vector2i(-1, -1):
+				GameState.game_active = true
 			# 预开算分（设计 v1.2）：只计分不计钱；300 > 预开上限 115，不会开局误判过线
 			if lvl.preopen_scores:
 				GameState.add_score(lvl.preopen_coords.size())
@@ -283,6 +289,12 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		elif lvl.pregen_random:
 			grid.apply_random_board()
 			enemy_manager.setup_board(grid)
+		# L5 Boss 关（FIND_ALL_MINES 目标 = 有 Boss 的关）：实体+阶段机就位（安静 Boss 关
+		# 的招式表在 M2-M4 逐阶段填实；盘外锚点定位不依赖基地摆放）
+		var obj0 = lvl.objectives[0] if not lvl.objectives.is_empty() else null
+		if obj0 != null and obj0.type == ObjectiveData.Type.FIND_ALL_MINES:
+			boss_manager.setup(grid, lvl.mine_count)
+			enemy_manager.waves_enabled = false  # L5 不放 L4 三虫波次（实施计划 §1.2 缺口）
 	# 开局赠送机器人 = 关卡自带 + 局外 start_robot 购买（meta 关才吃局外，Q2：计入 count）
 	var gifts: Dictionary = lvl.start_robots.duplicate() if lvl != null else {}
 	if lvl != null and lvl.meta_progression:
@@ -503,6 +515,7 @@ func _process(delta: float) -> void:
 			return
 	robot_manager.tick_all(delta, grid)
 	enemy_manager.tick(delta, grid)  # L4 敌虫：与机器人同点驱动，pause/结算天然停摆
+	boss_manager.tick(delta, grid)   # L5 Boss：阶段机/出招计时（非 Boss 关 tick 内部短路）
 
 
 # ---- 初始基地放置阶段 ----
@@ -856,6 +869,34 @@ func _on_all_safe_opened() -> void:
 		_end_game("win")
 
 
+## L5 牙数变化（旗/确认雷/坍塌任一来源）：刷新进度；拔完最后一颗牙 = 斩杀胜利
+func _on_processed_mines_changed(current: int) -> void:
+	_update_objective_progress()
+	var obj := GameState.current_objective
+	if obj == null or obj.type != ObjectiveData.Type.FIND_ALL_MINES:
+		return
+	if boss_manager.active:
+		boss_manager.on_teeth_changed(current)  # 阶段门槛判定（5/11）
+	if current >= obj.target_value and GameState.game_active:
+		if boss_manager.active:
+			_start_boss_kill_sequence()
+		else:
+			_end_game("win")
+
+
+## 斩杀演出（设计 §5.4）：冻结全场（时钟停=Q6 时间加分锁定在拔牙瞬间）→
+## Boss 掉落 3s → 走标准胜利结算。game_active 短暂置回以通过 _end_game 入口守卫。
+func _start_boss_kill_sequence() -> void:
+	GameState.game_active = false
+	boss_manager.kill_sequence_done.connect(_on_boss_kill_done, CONNECT_ONE_SHOT)
+	boss_manager.begin_kill_sequence()
+
+
+func _on_boss_kill_done() -> void:
+	GameState.game_active = true
+	_end_game("win")
+
+
 func _end_game(result: String) -> void:
 	if not GameState.game_active:
 		return
@@ -928,6 +969,9 @@ func _update_objective_progress() -> String:
 			current = int(ceil(GameState.time_left))
 		ObjectiveData.Type.ACTIVATE_N_TOWER:
 			current = 0
+		ObjectiveData.Type.FIND_ALL_MINES:
+			total = grid.mine_count
+			current = grid.count_processed_mines()
 	var text: String = obj.build_progress_text(current, total)
 	GameState.objective_progress_updated.emit(text, current, total)
 	return text
@@ -947,5 +991,6 @@ func _trigger_probe(center: Vector2i) -> void:
 	var coords: String = GameState.result_stats["probe_coords"]
 	GameState.result_stats["probe_coords"] = (coords + ";" if coords != "" else "") \
 			+ "%d,%d" % [center.x, center.y]
+	grid.refresh_processed_mines()  # L5 牙数：确认雷也是拔牙（探测 3×3 内可能有多颗）
 	grid.play_player_action_visual(center, Grid.FLY_ICON_OPEN)
 	hud.show_toast("探测完成：%d 格确认雷" % confirmed, 2.5)

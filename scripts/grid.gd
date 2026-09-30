@@ -48,6 +48,7 @@ signal all_safe_opened()
 signal vein_created(coord: Vector2i)
 signal vein_depleted(coord: Vector2i)
 signal obstacle_cleared(cell, kind: String, by_actor: String)  # L4 障碍清除（埋点/剧本转发）
+signal processed_mines_changed(current: int)  # L5 牙数变化：旗→矿脉/确认雷/坍塌任一来源
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 ## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
@@ -257,12 +258,14 @@ func apply_fixed_board(data: Dictionary) -> void:
 		if cells.has(sc):
 			cells[sc].is_opened = true
 			cells[sc].refresh_visual()
-	# 预置基地
+	# 预置基地；base=(-1,-1) = 玩家自放（L5 Boss 关）：保持 placing_base 阶段，
+	# 走 place_first_base 的 board_generated 分支（仅已开格，同 L4 自放口径）
 	var base_coord: Vector2i = data.base
 	if cells.has(base_coord):
 		cells[base_coord].become_base()
 		GameState.register_base(base_coord)
-	GameState.set_game_phase("playing")
+		GameState.set_game_phase("playing")
+	board_generated = true
 
 
 ## 随机盘装载（试玩版 L4 除害关·裸随机，设计 §7）：
@@ -399,6 +402,7 @@ func open_cell(coord: Vector2i, by_actor: String) -> void:
 
 	if cell.is_mine:
 		cell.collapse()
+		refresh_processed_mines()  # L5 牙数：踩塌 = 疼着拔一颗牙
 		mine_stepped.emit(cell, by_actor)
 		return
 
@@ -431,6 +435,7 @@ func toggle_flag(coord: Vector2i, by_actor: String) -> void:
 		var first_time: bool = not rewarded_flags.has(coord)
 		if cell.is_mine and first_time:
 			rewarded_flags[coord] = true
+			refresh_processed_mines()  # L5 牙数：首次正确旗 = 拔一颗牙
 		cell_flagged.emit(cell, by_actor, cell.is_mine, first_time)
 	elif was_flagged and not cell.is_flagged:
 		cell_unflagged.emit(cell, by_actor)
@@ -485,6 +490,23 @@ func count_safe_total() -> int:
 		if not cell.is_mine:
 			count += 1
 	return count
+
+
+## 已处理雷数（L5 牙数，设计 §3）：正确旗（rewarded_flags 首次口径，撤旗不回退）
+## / 探测确认雷 / 踩塌坍塌 / 矿脉（旧版检测转换），四种格级状态天然去重
+func count_processed_mines() -> int:
+	var count: int = 0
+	for c in cells:
+		var cell: Cell = cells[c]
+		if cell.is_mine and (cell.is_vein or cell.is_confirmed_mine \
+				or cell.is_collapsed or rewarded_flags.has(c)):
+			count += 1
+	return count
+
+
+## 牙数变化出口：三处状态变更点（toggle_flag/open_cell 塌雷/probe）调用
+func refresh_processed_mines() -> void:
+	processed_mines_changed.emit(count_processed_mines())
 
 
 func coord_to_world(coord: Vector2i) -> Vector2:

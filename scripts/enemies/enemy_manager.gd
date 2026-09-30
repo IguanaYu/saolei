@@ -27,12 +27,18 @@ signal enemy_killed(enemy: Enemy, by_actor: String)  # 击杀埋点（点杀/保
 var enemies: Array = []   # Array[Enemy]
 var nests: Array = []     # Array[Nest]
 
+## 波次开关：L4 true（三虫波次表）；L5 Boss 关 false——史莱姆由 BossManager 调度
+## spawn_enemy 出虫，不走波次表（实施计划 §1.2 缺口：WAVES 是 L4 专属常量）
+var waves_enabled := true
+
 var _wave_idx := 0
 var _elapsed := 0.0
 
 
 ## 进关时调用（放基地前即可见，剧本 #0）：裂缝×2 + 预置网×3 + 预置锁×3
 func setup_board(grid) -> void:
+	if not waves_enabled:
+		return  # L5：无巢无预置虫害，纯 Boss 招式驱动
 	_spawn_nests(grid)
 	_place_preset_hazards(grid)
 
@@ -41,14 +47,15 @@ func setup_board(grid) -> void:
 func tick(delta: float, grid) -> void:
 	_elapsed += delta
 	# 波次到点 → 从随机存活巢出虫；巢已全毁 → 该波取消（index 照常推进）
-	while _wave_idx < WAVES.size() and _elapsed >= float(WAVES[_wave_idx].t):
-		var wave: Dictionary = WAVES[_wave_idx]
-		_wave_idx += 1
-		var alive := _alive_nests()
-		if alive.is_empty():
-			continue  # 双巢皆除 = 再无新虫（设计 §5）
-		alive.shuffle()
-		spawn_enemy(alive[0].coord, String(wave.type), grid)
+	if waves_enabled:
+		while _wave_idx < WAVES.size() and _elapsed >= float(WAVES[_wave_idx].t):
+			var wave: Dictionary = WAVES[_wave_idx]
+			_wave_idx += 1
+			var alive := _alive_nests()
+			if alive.is_empty():
+				continue  # 双巢皆除 = 再无新虫（设计 §5）
+			alive.shuffle()
+			spawn_enemy(alive[0].coord, String(wave.type), grid)
 	# 虫推进（每 tick 重算最近基地：玩家中途放新基地可改变虫的奔袭目标）
 	for e in enemies.duplicate():
 		var target = GameState.get_nearest_base(e.coord)
@@ -81,6 +88,7 @@ func clear() -> void:
 	nests.clear()
 	_wave_idx = 0
 	_elapsed = 0.0
+	waves_enabled = true  # 恢复默认（L4）；L5 进关时再关（实施计划 §5-2 回归点）
 
 
 func _on_enemy_died(e: Enemy, by_actor: String) -> void:

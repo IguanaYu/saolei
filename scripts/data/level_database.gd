@@ -52,6 +52,8 @@ func _build() -> void:
 				_apply_playtest_level3(lvl)
 			elif ch_idx == 0 and s_idx == 3:
 				_apply_playtest_level4(lvl)
+			elif ch_idx == 0 and s_idx == 4:
+				_apply_playtest_level5(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -184,6 +186,49 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()
 	lvl.repeat_reward.ore = 50
+
+
+## 外部试玩版第五关（Boss 关·盘外巨兽）：牙数=血量 + 三阶段招式 + 斩杀演出
+## 设计文档：docs/active/试玩版内容/第五关-设计文档.md（v1.0）
+func _apply_playtest_level5(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 20
+	var obj := ObjectiveData.new()  # s_idx==4 默认生成 SURVIVE_TIME+禁标雷模板，必须覆写
+	obj.type = ObjectiveData.Type.FIND_ALL_MINES
+	obj.target_value = 20
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 180.0    # 高潮关长局（设计 §4）
+	lvl.start_gold = 300          # 再叠局外起始金币（meta_progression=true）
+	lvl.start_lives = 3
+	lvl.free_clicks = 5           # 同 L2-L4：开局 5 次免 CD，用完 3s/次（银行默认 7 层）
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.forbidden_actions = []    # 清掉 _make_level 的 Boss 禁标雷——本关标雷是主输出口
+	lvl.shop_limits = {"guard": 1}          # 保安限购 1（L4 同款）
+	lvl.shop_hidden = ["detector", "miner", "drone", "debug"]
+	lvl.shop_extra = ["guard", "probe"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]   # L4 同款 4 轨
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.base_price_flat = 80
+	lvl.time_bonus_per_sec = 3
+	lvl.meta_progression = true   # 起始资金/命吃局外（设计 §4）
+	lvl.allowed_modules = ["opener", "marker", "guard"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.first_clear_reward = RewardData.new()
+	lvl.first_clear_reward.ore = 200
+	lvl.repeat_reward = RewardData.new()
+	lvl.repeat_reward.ore = 50
+	lvl.short_name = "Boss"
+	lvl.intro_line = "巨兽把牙埋进了墙里，拔光它们。"
+	lvl.mechanic_tags = ["开墙", "标雷", "保安", "探测"]
+	lvl.fixed_mines.assign(FixedBoards.L5.mines)
+	lvl.fixed_base = Vector2i(-1, -1)  # 玩家自放（沿用 L4 强制第一步，仅已开格）
+	lvl.preopen_coords.assign(FixedBoards.L5.preopen)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

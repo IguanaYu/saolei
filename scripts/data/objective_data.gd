@@ -8,6 +8,7 @@ enum Type {
 	FLAG_N_MINES,    # 标对 N 颗雷
 	SURVIVE_TIME,    # 生存 N 秒
 	ACTIVATE_N_TOWER,  # 激活 N 座充能塔（功能未实现，仅占位）
+	FIND_ALL_MINES,  # 处理全部雷（正确旗/探测确认/踩塌坍塌，L5 Boss 关「拔牙」）
 }
 
 var type: Type = Type.CLEAR_ALL_SAFE
@@ -40,6 +41,8 @@ func build_progress_text(current: int, total: int = 0) -> String:
 			return "目标: 生存 %d 秒 (剩余 %d)" % [target_value, max(0, current)]
 		Type.ACTIVATE_N_TOWER:
 			return "目标: 激活 %d 座充能塔" % target_value
+		Type.FIND_ALL_MINES:
+			return "目标: 拔牙 (%d/%d)" % [mini(current, target_value), target_value]
 	return ""
 
 
@@ -51,4 +54,5 @@ func short_label() -> String:
 		Type.FLAG_N_MINES: return "标 %d 雷" % target_value
 		Type.SURVIVE_TIME: return "生存 %ds" % target_value
 		Type.ACTIVATE_N_TOWER: return "激活 %d 塔" % target_value
+		Type.FIND_ALL_MINES: return "拔光 %d 牙" % target_value
 	return ""
