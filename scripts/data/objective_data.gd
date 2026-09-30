@@ -30,6 +30,8 @@ func get_type_name() -> String:
 func build_progress_text(current: int, total: int = 0) -> String:
 	match type:
 		Type.CLEAR_ALL_SAFE:
+			if target_value > 0:
+				return "目标: 开 %d 格 (%d/%d)" % [target_value, mini(current, target_value), target_value]
 			if total > 0:
 				return "目标: 清空安全格 (%d/%d)" % [mini(current, total), total]
 			return "目标: 清空全部安全格"
@@ -49,7 +51,9 @@ func build_progress_text(current: int, total: int = 0) -> String:
 ## 关卡列表按钮上的短描述
 func short_label() -> String:
 	match type:
-		Type.CLEAR_ALL_SAFE: return "清空安全格"
+		Type.CLEAR_ALL_SAFE:
+			if target_value > 0: return "开 %d 格" % target_value
+			return "清空安全格"
 		Type.REACH_SCORE: return "%d 分" % target_value
 		Type.FLAG_N_MINES: return "标 %d 雷" % target_value
 		Type.SURVIVE_TIME: return "生存 %ds" % target_value

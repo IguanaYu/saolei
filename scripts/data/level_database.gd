@@ -159,6 +159,9 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.mine_count = 40
 	var obj := ObjectiveData.new()  # s_idx==3 默认生成就是 CLEAR_ALL_SAFE，显式覆写防回归
 	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
+	# 目标打折（盲测反馈）：全清 216 格在 150s+三虫下不可达；胜利线 = 约 77%，
+	# 预开格已计入进度（HUD current 含预开），锁格不再强制清空
+	obj.target_value = 160
 	lvl.objectives = [obj]
 	lvl.time_limit_sec = 150.0
 	lvl.start_gold = 300        # 再叠局外起始金币（meta_progression=true）

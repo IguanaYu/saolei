@@ -849,6 +849,13 @@ func _on_cell_opened(_cell, by_actor: String) -> void:
 		GameState.result_stats["player_ops"] += 1
 	elif by_actor.begins_with("robot_"):
 		GameState.result_stats["robot_ops"] += 1
+	# 打折的清空目标（L4 开 N 格）：每次开格后判达标（口径 = 已开安全格，含预开）
+	var obj := GameState.current_objective
+	if obj != null and obj.type == ObjectiveData.Type.CLEAR_ALL_SAFE and obj.target_value > 0:
+		var opened_count: int = grid.count_safe_total() - grid.count_safe_remaining()
+		_update_objective_progress()
+		if opened_count >= obj.target_value and GameState.game_active:
+			_end_game("win")
 
 
 func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) -> void:
@@ -1010,6 +1017,8 @@ func _update_objective_progress() -> String:
 		ObjectiveData.Type.CLEAR_ALL_SAFE:
 			total = grid.count_safe_total()
 			current = total - grid.count_safe_remaining()   # 已完成数，不是剩余
+			if obj.target_value > 0:
+				total = obj.target_value   # 打折目标（L4）：已开口径不变，胜利线换成 target_value
 		ObjectiveData.Type.REACH_SCORE:
 			current = GameState.score
 			total = obj.target_value
