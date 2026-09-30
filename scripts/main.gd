@@ -647,6 +647,18 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 			bomb.deflect(boss_manager)  # 奖励/硬直/顺延在 on_bomb_deflected
 			GameState.consume_player_action()
 			return true
+		# L5 触手根部次之（点根 = 整条断裂；Q10 半径稍大）
+		var tentacle := boss_manager.hit_tentacle_root_at(world_pos, grid.cell_size * 0.8)
+		if tentacle != null:
+			if GameState.is_player_blocked():
+				GameState.cd_blocked.emit()
+				return true
+			tentacle.cut_by_player()
+			GameState.add_money(15)
+			GameState.add_score(15)
+			GameState.result_stats["tentacles_cut"] += 1
+			GameState.consume_player_action()
+			return true
 	hit_radius = grid.cell_size * 0.6
 	# 先虫后巢（虫 z_index 更高、会压在巢上）
 	for e in enemy_manager.enemies:

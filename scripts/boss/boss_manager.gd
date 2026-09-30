@@ -49,8 +49,14 @@ const BOMB_NUMBER_PREF := 0.7    # 落点 70% 优先数字格（§9.5 升级件�
 const BOMB_MIN_OPENED := 8       # 已开格不足顺延（设计 §7 边界）
 const BOMB_DEFER_SEC := 10.0     # 顺延时长
 
+## L5 P3 锁链/触手（设计 §5.3，初值盲测校准）
+const LOCK_COUNT := [3, 5]       # 每次抛锁 3-5 把
+const TENTACLE_LEN := [4, 6]     # 触手段长 4-6 格
+const TENTACLE_DEFER_SEC := 10.0 # 无合格段顺延
+
 var bombs: Array = []                    # Array[Bomb]（active 的）
 var fire_cells: Dictionary = {}          # Vector2i -> 剩余秒
+var tentacles: Array = []                # Array[Tentacle]（active 的）
 
 var phase := 1
 var active := false                  # 是否处于 Boss 局（FIND_ALL_MINES 目标关）
@@ -151,11 +157,15 @@ func tick(delta: float, grid) -> void:
 	if not active:
 		return
 	_elapsed += delta
-	# 引信/火区倒计时：不吃出招暂停/硬直（已在场上的威胁照常走；斩杀冻结由 game_active 兜底）
+	# 引信/火区/触手倒计时：不吃出招暂停/硬直（已在场上的威胁照常走；斩杀冻结由 game_active 兜底）
 	for b in bombs.duplicate():
 		if is_instance_valid(b):
 			b.tick(delta, grid, self)
 	bombs = bombs.filter(func(b): return is_instance_valid(b) and b.is_active())
+	for t in tentacles.duplicate():
+		if is_instance_valid(t):
+			t.tick(delta)
+	tentacles = tentacles.filter(func(t): return is_instance_valid(t) and t.is_active())
 	var expired: Array = []
 	for coord in fire_cells:
 		fire_cells[coord] = float(fire_cells[coord]) - delta
@@ -226,9 +236,102 @@ func _try_cast_attack(atk: Dictionary, grid) -> void:
 					if a["kind"] == "bomb":
 						a["next"] = _elapsed + BOMB_DEFER_SEC
 		"lock":
-			pass  # WP5
+			_cast_lock(grid)
 		"tentacle":
-			pass  # WP5
+			if not _cast_tentacle(atk, grid):
+				# 无 4-6 格连续已开段：顺延 10s（Q4 兜底）
+				for a in _attacks.get(phase, []):
+					if a["kind"] == "tentacle":
+						a["next"] = _elapsed + TENTACLE_DEFER_SEC
+
+
+## 锁链投射（设计 §5.3，复用 L4 锁状态）：向剩余未开墙随机抛 3-5 把，
+## 避开已锁/已旗/已确认格（L4 Q4 口径：不锁玩家已确认的成果）。
+## 无未开墙时静默跳过（残局墙清光，设计 §7——触手/落弹承接 P3）。
+func _cast_lock(grid) -> void:
+	var candidates: Array = []
+	for coord in grid.cells:
+		var c: Cell = grid.cells[coord]
+		if not c.is_opened and not c.is_locked and not c.is_flagged \
+				and not c.is_confirmed_mine and not c.is_base:
+			candidates.append(coord)
+	if candidates.is_empty():
+		return
+	candidates.shuffle()
+	var count: int = mini(randi_range(LOCK_COUNT[0], LOCK_COUNT[1]), candidates.size())
+	var locked := 0
+	for coord in candidates:
+		if locked >= count:
+			break
+		if grid.cells[coord].apply_lock():
+			locked += 1
+	if _beast != null and locked > 0:
+		_beast.play("growl", 1.5)
+
+
+## 触手（设计 §5.3）：从 Boss 当前所在盘边沿一行/一列取 4-6 格连续已开段伸入。
+## 段内排除火区（互斥）/基地格（出生点不阻断）。返回 false = 无合格段
+func _cast_tentacle(atk: Dictionary, grid) -> bool:
+	var alive := tentacles.filter(func(t): return is_instance_valid(t)).size()
+	if alive >= int(atk["cap"]):
+		return true  # 到场上上限：正常周期等下一轮
+	var side := "right" if (_beast == null or _beast.anchor == "right") else "top"
+	var want_len: int = randi_range(TENTACLE_LEN[0], TENTACLE_LEN[1])
+	var best: Array = []
+	# 候选行/列：right 侧从最右列向内；top 侧从第一行向下
+	if side == "right":
+		for y in range(1, grid.rows - 1):
+			var run: Array = []
+			for x in range(grid.cols - 1, -1, -1):
+				if not _tentacle_ok(grid, Vector2i(x, y)):
+					break
+				run.append(Vector2i(x, y))
+				if run.size() >= want_len:
+					break
+			if run.size() >= TENTACLE_LEN[0] and run.size() > best.size():
+				best = run
+	else:
+		for x in range(1, grid.cols - 1):
+			var run: Array = []
+			for y in range(0, grid.rows):
+				if not _tentacle_ok(grid, Vector2i(x, y)):
+					break
+				run.append(Vector2i(x, y))
+				if run.size() >= want_len:
+					break
+			if run.size() >= TENTACLE_LEN[0] and run.size() > best.size():
+				best = run
+	if best.is_empty():
+		return false
+	# 只取需要的长度（best 可能长于 want_len——同 run 内截断靠边一段）
+	var segment: Array = best.slice(0, mini(want_len, best.size()))
+	if _beast != null:
+		_beast.play("growl", 1.5)
+	var t := Tentacle.new()
+	t.name = "BossTentacle"  # 显式命名防遍历误匹配
+	add_child(t)
+	t.setup(segment, grid)
+	tentacles.append(t)
+	return true
+
+
+func _tentacle_ok(grid, c: Vector2i) -> bool:
+	var cell = grid.get_cell(c)
+	return cell != null and cell.is_opened and not cell.is_base \
+			and not cell.is_on_fire and cell.path_blockers == 0
+
+
+## 玩家点断触手（main 几何命中链转发）：根部命中判定 + 断裂结算（吃 1 CD 在 main 侧）
+func hit_tentacle_root_at(world_pos: Vector2, radius: float) -> Tentacle:
+	for t in tentacles:
+		if is_instance_valid(t) and t.is_active() \
+				and grid_root_world_pos(t).distance_to(world_pos) < radius:
+			return t
+	return null
+
+
+func grid_root_world_pos(t: Tentacle) -> Vector2:
+	return t.global_position
 
 
 ## 落弹（设计 §5.2）：落点选择器 + 出弹。false = 本次顺延
@@ -361,6 +464,16 @@ func clear() -> void:
 		if is_instance_valid(b):
 			b.queue_free()
 	bombs.clear()
+	for t in tentacles:
+		if is_instance_valid(t):
+			t.state = "retracted"  # 直接释放，不播断裂动效（清场景路径）
+			if t._grid != null:
+				for c in t.cells:
+					var cell = t._grid.get_cell(c)
+					if cell != null:
+						cell.path_blockers -= 1
+			t.queue_free()
+	tentacles.clear()
 	# 火区状态残留由重开新盘覆盖（cells 重建），这里只清登记表
 	fire_cells.clear()
 	if _beast != null:
