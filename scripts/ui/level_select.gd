@@ -7,7 +7,7 @@ signal back_requested
 signal powerup_requested
 
 const L3_ID := "ch01_s03"
-const COPY_INTERMISSION := "矿石能变强。"  # 间场教学句（设计 §6-1，全关 ≤3 句之一）
+const COPY_INTERMISSION := "矿石能升级。"  # 间场教学句（设计 §6-1，全关 ≤3 句之一）
 
 @onready var back_button: Button = $MarginContainer/VBoxContainer/TopBar/BackButton
 @onready var title_label: Label = $MarginContainer/VBoxContainer/TopBar/TitleLabel

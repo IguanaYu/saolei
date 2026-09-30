@@ -53,5 +53,5 @@ func _refresh_ore() -> void:
 	ore_tag.visible = show_ore
 	ore_label.text = "总矿石 %d" % SaveSystem.ore
 	# 揭示时刻高亮：从没进过 L3（=刚通 L2 回到菜单）时"变强"带"新"
-	powerup_button.text = "变强 · 新" if show_ore and not SaveSystem.has_entered_level("ch01_s03") \
-			else "变强"
+	powerup_button.text = "升级 · 新" if show_ore and not SaveSystem.has_entered_level("ch01_s03") \
+			else "升级"

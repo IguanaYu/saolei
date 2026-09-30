@@ -20,7 +20,8 @@ signal pause_requested
 @onready var objective_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveProgressBar
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
-@onready var toast_label: Label = $MarginContainer/VBoxContainer/ToastLabel
+@onready var toast_panel: PanelContainer = $ToastPanel
+@onready var toast_label: Label = $ToastPanel/ToastLabel
 
 var _last_money: int = -1
 
@@ -119,9 +120,9 @@ func _on_objective_progress_updated(text: String, current: int, total: int) -> v
 
 func show_toast(text: String, duration: float = 3.0) -> void:
 	toast_label.text = text
-	toast_label.visible = true
-	toast_label.modulate.a = 1.0
+	toast_panel.visible = true
+	toast_panel.modulate.a = 1.0
 	var t := create_tween()
 	t.tween_interval(duration)
-	t.tween_property(toast_label, "modulate:a", 0.0, 0.5)
-	t.tween_callback(func(): toast_label.visible = false)
+	t.tween_property(toast_panel, "modulate:a", 0.0, 0.5)
+	t.tween_callback(func(): toast_panel.visible = false)

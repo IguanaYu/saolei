@@ -27,18 +27,20 @@ func is_chapter_unlocked(ch_id: String) -> bool:
 
 
 ## 章节已解锁 + (首关 OR 上一关已通关)
+## 试玩测试期：全部关卡直接解锁（作者/试玩者随时进任意关；正式版恢复下方注释的原链路）
 func is_level_unlocked(id: String) -> bool:
-	var lvl := get_level(id)
-	if lvl == null:
-		return false
-	if not is_chapter_unlocked(lvl.chapter_id):
-		return false
-	var ch := get_chapter(lvl.chapter_id)
-	var ids := ch.level_ids
-	if ids[0] == id:
-		return true
-	var prev_id: String = ids[ids.find(id) - 1]
-	return SaveSystem.is_level_cleared(prev_id)
+	return get_level(id) != null
+#	var lvl := get_level(id)
+#	if lvl == null:
+#		return false
+#	if not is_chapter_unlocked(lvl.chapter_id):
+#		return false
+#	var ch := get_chapter(lvl.chapter_id)
+#	var ids := ch.level_ids
+#	if ids[0] == id:
+#		return true
+#	var prev_id: String = ids[ids.find(id) - 1]
+#	return SaveSystem.is_level_cleared(prev_id)
 
 
 ## 领取首通奖励（矿石入账），返回奖励数据用于展示

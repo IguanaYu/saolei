@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Texture2D" path="res://visual_v2/runtime/ui/icons/icon_coin.png" id="2_coin"]
@@ -6,6 +6,22 @@
 [ext_resource type="Texture2D" path="res://visual_v2/runtime/ui/icons/icon_heart.png" id="5_heart"]
 [ext_resource type="Texture2D" path="res://visual_v2/runtime/ui/icons/icon_heart_empty.png" id="6_heart_e"]
 [ext_resource type="Texture2D" path="res://visual_v2/runtime/ui/icons/icon_clock.png" id="7_clock"]
+
+[sub_resource type="StyleBoxFlat" id="sb_toast"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.04, 0.04, 0.07, 0.78)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.82, 0.35, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="HUD" type="Control"]
 anchor_right = 1.0
@@ -144,9 +160,21 @@ horizontal_alignment = 1
 text = "请放置第一个基地"
 mouse_filter = 2
 
-[node name="ToastLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+; toast 悬浮盘面左上区（不再挤顶部信息行与 Boss 之间的缝隙；带半透明底保证可读）
+[node name="ToastPanel" type="PanelContainer" parent="."]
 visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -290.0
+offset_right = 290.0
+offset_top = 205.0
+offset_bottom = 250.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("sb_toast")
+
+[node name="ToastLabel" type="Label" parent="ToastPanel"]
 horizontal_alignment = 1
 vertical_alignment = 1
+theme_override_font_sizes/font_size = 19
 text = ""
 mouse_filter = 2

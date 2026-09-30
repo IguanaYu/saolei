@@ -73,8 +73,6 @@ process_mode = 3
 
 [node name="Shop" parent="UILayer" instance=ExtResource("5_shop")]
 
-[node name="OreShop" parent="UILayer" instance=ExtResource("20_os")]
-
 [node name="UpgradePanel" parent="UILayer" instance=ExtResource("6_up")]
 
 [node name="TutorialGuide" parent="UILayer" instance=ExtResource("12_tg")]
@@ -95,6 +93,10 @@ visible = false
 
 [node name="SettingsPanel" parent="UILayer" instance=ExtResource("14_sp")]
 visible = false
+
+; 变强商店置于主菜单/选关页之后（同名面板互斥，无叠层冲突）：
+; 原位置在 MainMenu 树序之前，open 后被主菜单整层盖住，表现为点击无反应
+[node name="OreShop" parent="UILayer" instance=ExtResource("20_os")]
 
 [node name="StatsPanel" parent="UILayer" instance=ExtResource("15_stat")]
 visible = false

@@ -191,7 +191,7 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		_add_row(ICON_STAR, line, "")
 	# L2 通关 = 变强商店揭示时刻（布局计划 §2.5）
 	if lvl != null and lvl.is_playtest and GameState.current_level_id == "ch01_s02":
-		_add_row(ICON_STAR, "新功能解锁：变强商店 · 回主菜单看看", "")
+		_add_row(ICON_STAR, "新功能解锁：升级商店 · 回主菜单看看", "")
 	if lvl != null and lvl.no_stars:
 		# 试玩版教学关：无星级，账单分项行（开格/标雷/采矿/时间/操作占比）
 		stars_row.visible = false

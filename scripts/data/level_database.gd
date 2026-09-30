@@ -88,7 +88,7 @@ func _apply_playtest_level2(lvl: LevelData) -> void:
 	var obj := ObjectiveData.new()  # s_idx==1 默认生成 FLAG_N_MINES，必须覆写回清空
 	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
 	lvl.objectives = [obj]
-	lvl.time_limit_sec = 90.0
+	lvl.time_limit_sec = 120.0
 	lvl.start_gold = 100        # = 双轨 Lv1（50+50）；一对机器人开局赠送（升级引导优先）
 	lvl.start_lives = 3
 	lvl.start_robots = {"opener": 1, "marker": 1}
@@ -121,7 +121,7 @@ func _apply_playtest_level3(lvl: LevelData) -> void:
 	obj.type = ObjectiveData.Type.REACH_SCORE
 	obj.target_value = 300
 	lvl.objectives = [obj]
-	lvl.time_limit_sec = 120.0
+	lvl.time_limit_sec = 150.0
 	lvl.start_gold = 300        # 再叠局外起始金币（meta_progression=true）
 	lvl.start_lives = 3
 	lvl.free_clicks = 5         # 同 L2：开局 5 次免 CD，用完 3s/次
@@ -163,7 +163,7 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	# 预开格已计入进度（HUD current 含预开），锁格不再强制清空
 	obj.target_value = 160
 	lvl.objectives = [obj]
-	lvl.time_limit_sec = 150.0
+	lvl.time_limit_sec = 180.0
 	lvl.start_gold = 300        # 再叠局外起始金币（meta_progression=true）
 	lvl.start_lives = 3
 	lvl.free_clicks = 5         # 同 L2/L3：开局 5 次免 CD，用完 3s/次
@@ -200,7 +200,7 @@ func _apply_playtest_level5(lvl: LevelData) -> void:
 	obj.type = ObjectiveData.Type.FIND_ALL_MINES
 	obj.target_value = 20
 	lvl.objectives = [obj]
-	lvl.time_limit_sec = 180.0    # 高潮关长局（设计 §4）
+	lvl.time_limit_sec = 210.0    # 高潮关长局（设计 §4）
 	lvl.start_gold = 300          # 再叠局外起始金币（meta_progression=true）
 	lvl.start_lives = 3
 	lvl.free_clicks = 5           # 同 L2-L4：开局 5 次免 CD，用完 3s/次（银行默认 7 层）

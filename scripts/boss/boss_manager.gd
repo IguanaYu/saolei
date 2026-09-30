@@ -53,6 +53,7 @@ const BOMB_DEFER_SEC := 10.0     # 顺延时长
 const LOCK_COUNT := [3, 5]       # 每次抛锁 3-5 把
 const TENTACLE_LEN := [4, 6]     # 触手段长 4-6 格
 const TENTACLE_DEFER_SEC := 10.0 # 无合格段顺延
+const CHAIN_LINK_TEX := preload("res://visual_v2/runtime/fx/chain_link.png")
 
 var bombs: Array = []                    # Array[Bomb]（active 的）
 var fire_cells: Dictionary = {}          # Vector2i -> 剩余秒
@@ -91,6 +92,8 @@ func setup(grid, total_teeth: int) -> void:
 	add_child(_beast)
 	_beast.layout(grid.cell_size)
 	_beast.teleport_to("top", top_anchor_pos(grid))
+	_beast.setup_hp_ticks(_total_teeth, PHASE_TEETH)
+	_beast.set_hp(0, _total_teeth)
 	_beast.play("claw", 1.5)  # 入场亮爪（与放基地并行的开场演出）
 	_grid_home = grid.position
 
@@ -109,6 +112,8 @@ func right_anchor_pos(grid) -> Vector2:
 ## 由 main 转发 grid.processed_mines_changed（牙数即血量）
 func on_teeth_changed(current: int) -> void:
 	_teeth = current
+	if _beast != null:
+		_beast.set_hp(current, _total_teeth)
 	var target := 1
 	if _total_teeth >= 12:
 		target = 3 if current > PHASE_TEETH[1] else (2 if current > PHASE_TEETH[0] else 1)
@@ -171,6 +176,10 @@ func tick(delta: float, grid) -> void:
 	var expired: Array = []
 	for coord in fire_cells:
 		fire_cells[coord] = float(fire_cells[coord]) - delta
+		var burning_cell = grid.get_cell(coord)
+		if burning_cell != null:
+			var remaining: float = float(fire_cells[coord])
+			burning_cell.set_fire_frame(2 if remaining < 2.0 else int(remaining * 4.0) % 2)
 		if float(fire_cells[coord]) <= 0.0:
 			expired.append(coord)
 	for coord in expired:
@@ -267,8 +276,26 @@ func _cast_lock(grid) -> void:
 			break
 		if grid.cells[coord].apply_lock():
 			locked += 1
+			_fx_lock_cast(grid.coord_to_world(coord))
 	if _beast != null and locked > 0:
 		_beast.play("growl", 1.5)
+
+
+func _fx_lock_cast(target_pos: Vector2) -> void:
+	if _beast == null:
+		return
+	var link := Sprite2D.new()
+	link.name = "LockCastLink"
+	link.texture = CHAIN_LINK_TEX
+	link.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	link.z_index = 14
+	link.position = _beast.position
+	add_child(link)
+	var tw := link.create_tween()
+	tw.tween_property(link, "position", target_pos, 0.24) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(link, "modulate:a", 0.0, 0.28)
+	tw.tween_callback(link.queue_free)
 
 
 ## 触手（设计 §5.3）：从 Boss 当前所在盘边沿一行/一列取 4-6 格连续已开段伸入。
