@@ -23,6 +23,7 @@ var marker_work_level: int = 0
 var detector_speed_level: int = 0
 var miner_speed_level: int = 0
 var discount_level: int = 0
+var recharge_level: int = 0   # 点击恢复轨（玩家 CD 回充加速）
 
 # 继续挑战模式（胜利结算后回盘面：倒计时冻结/加分锁定/免命/分数累加）
 var continue_mode: bool = false
@@ -31,6 +32,9 @@ var continue_mode: bool = false
 const DEFAULT_SPEED_PRICES := [50, 70, 100]
 const DEFAULT_SPEED_LEVELS := [2.0, 1.6, 1.3, 1.0]
 const DISCOUNT_PRICES := [200, 500]
+# 点击恢复轨（玩家操作 CD 回充加速）：cd_duration 乘数表 + 价格表
+const RECHARGE_LEVELS := [1.0, 0.8, 0.65, 0.5]
+const RECHARGE_PRICES := [40, 80, 140]
 
 # 已购买机器人计数（用于价格递增）
 var opener_count: int = 0
@@ -177,15 +181,34 @@ func notify_player_correct_flag() -> void:
 
 func _enter_cooldown() -> void:
 	cd_phase = "cooldown"
-	# 免费阶段就已首购过 → 耗尽后直接用短 CD（boost 不能被 30s 覆盖）
-	if cd_purchase_boosted and cd_after_purchase >= 0.0:
-		cd_duration = cd_after_purchase
-	else:
-		cd_duration = cd_sec
+	cd_duration = get_base_cd_duration() * get_recharge_mult()
 	cd_charges = 0
 	cd_charges_changed.emit(cd_charges, cd_max_charges)
 	cd_remaining = cd_duration
 	cd_exhausted.emit()
+
+
+## 充能基础时长（未乘恢复轨）：免费阶段就已首购 → 永远用短 CD（boost 不能被 30s 覆盖）
+func get_base_cd_duration() -> float:
+	if cd_purchase_boosted and cd_after_purchase >= 0.0:
+		return cd_after_purchase
+	return cd_sec
+
+
+## 点击恢复轨当前乘数（越买越小；越界钳制到末档）
+func get_recharge_mult() -> float:
+	return float(RECHARGE_LEVELS[mini(recharge_level, RECHARGE_LEVELS.size() - 1)])
+
+
+## 重算生效 CD（购买恢复轨后调用）：进行中的回充按比例缩放，已囤层数不受影响
+func refresh_cd_duration() -> void:
+	var old_dur := cd_duration
+	var new_dur := get_base_cd_duration() * get_recharge_mult()
+	if cd_phase == "cooldown" and old_dur > 0.0:
+		cd_remaining = minf(cd_remaining * new_dur / old_dur, new_dur)
+	cd_duration = new_dur
+	cd_tick.emit(cd_remaining, cd_duration)
+	cd_duration_changed.emit(cd_duration)
 
 
 ## 每帧推进 CD（main._process 调用；暂停时由 get_tree().paused 天然停摆）
@@ -275,6 +298,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	detector_speed_level = gs_move
 	miner_speed_level = gs_move
 	discount_level = 0
+	recharge_level = 0
 	opener_count = 0
 	marker_count = 0
 	detector_count = 0
@@ -401,7 +425,7 @@ func purchase_robot(robot_type: String) -> bool:
 	# 首购恢复 CD（教学关：30s → 3s，立刻恢复一次次数）
 	if cd_phase != "off" and cd_after_purchase >= 0.0 and not cd_purchase_boosted:
 		cd_purchase_boosted = true
-		cd_duration = cd_after_purchase
+		cd_duration = cd_after_purchase * get_recharge_mult()
 		cd_remaining = 0.0
 		cd_duration_changed.emit(cd_duration)
 	AudioManager.play_sfx("buy")
@@ -477,6 +501,8 @@ func get_speed_prices() -> Array:
 func get_upgrade_prices(upgrade_id: String) -> Array:
 	if upgrade_id == "discount":
 		return DISCOUNT_PRICES
+	if upgrade_id == "recharge":
+		return RECHARGE_PRICES
 	return get_speed_prices()
 
 
@@ -489,6 +515,7 @@ func get_upgrade_level(upgrade_id: String) -> int:
 		"marker_move": return marker_move_level
 		"marker_work": return marker_work_level
 		"discount": return discount_level
+		"recharge": return recharge_level
 	return 0
 
 
@@ -506,6 +533,7 @@ func set_upgrade_level(upgrade_id: String, lvl: int) -> void:
 		"marker_move": marker_move_level = lvl
 		"marker_work": marker_work_level = lvl
 		"discount": discount_level = lvl
+		"recharge": recharge_level = lvl
 
 
 ## 购买一档升级（面板只调用此入口；价格/满级由关卡配置决定）
@@ -519,6 +547,8 @@ func purchase_upgrade(upgrade_id: String) -> bool:
 		return false
 	add_money(-price)
 	set_upgrade_level(upgrade_id, cur + 1)
+	if upgrade_id == "recharge":
+		refresh_cd_duration()  # 立即生效：进行中的回充按比例缩短
 	if float(result_stats.get("first_upgrade_elapsed", -1.0)) < 0.0:
 		result_stats["first_upgrade_elapsed"] = snappedf(elapsed, 0.1)
 	upgrade_changed.emit(upgrade_id, cur + 1)

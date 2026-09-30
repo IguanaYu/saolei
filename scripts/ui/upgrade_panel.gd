@@ -13,6 +13,7 @@ const TRACK_NAMES := {
 	"opener_work": "开墙·工作",
 	"marker_move": "标雷·移动",
 	"marker_work": "标雷·工作",
+	"recharge": "点击恢复",
 	"discount": "购买折扣",
 }
 
@@ -32,7 +33,7 @@ func _ready() -> void:
 	_refresh_all()
 
 
-## 当前关应显示的轨列表（upgrade_tracks + 折扣尾行，hidden 过滤）
+## 当前关应显示的轨列表（upgrade_tracks + 点击恢复 + 折扣尾行，hidden 过滤）
 func _visible_tracks() -> Array:
 	var lvl: LevelData = GameState.get_current_level()
 	var hidden: Array = lvl.upgrades_hidden if lvl != null else []
@@ -42,6 +43,9 @@ func _visible_tracks() -> Array:
 	for t in tracks:
 		if not hidden.has(t):
 			out.append(t)
+	# 有玩家操作 CD 的关追加点击恢复轨（无 CD 的关买了无效，不显示）
+	if lvl != null and lvl.cooldown_sec > 0.0 and not hidden.has("recharge"):
+		out.append("recharge")
 	if not hidden.has("discount"):
 		out.append("discount")
 	return out
@@ -97,13 +101,21 @@ func _refresh_all() -> void:
 func _refresh_row(row: HBoxContainer, upgrade_id: String) -> void:
 	var lvl: int = GameState.get_upgrade_level(upgrade_id)
 	var prices: Array = GameState.get_upgrade_prices(upgrade_id)
-	var tiers: Array = DISCOUNT_LEVELS if upgrade_id == "discount" \
-			else GameState.get_upgrade_levels_table(upgrade_id)
+	var tiers: Array
+	if upgrade_id == "discount":
+		tiers = DISCOUNT_LEVELS
+	elif upgrade_id == "recharge":
+		tiers = GameState.RECHARGE_LEVELS  # 乘数表；显示层换算成实际回充秒数
+	else:
+		tiers = GameState.get_upgrade_levels_table(upgrade_id)
 	var level_label: Label = row.get_node("LevelLabel")
 	var buy_button: Button = row.get_node("BuyButton")
 
 	if upgrade_id == "discount":
 		level_label.text = "Lv%d (-%d%%)" % [lvl, tiers[mini(lvl, tiers.size() - 1)]]
+	elif upgrade_id == "recharge":
+		var base_dur: float = GameState.get_base_cd_duration()
+		level_label.text = "Lv%d (%.1fs)" % [lvl, base_dur * tiers[mini(lvl, tiers.size() - 1)]]
 	else:
 		level_label.text = "Lv%d (%.1fs)" % [lvl, tiers[mini(lvl, tiers.size() - 1)]]
 
@@ -114,6 +126,9 @@ func _refresh_row(row: HBoxContainer, upgrade_id: String) -> void:
 	var next_price: int = prices[lvl]
 	if upgrade_id == "discount":
 		buy_button.text = "→Lv%d (-%d%%) ¥%d" % [lvl + 1, tiers[lvl + 1], next_price]
+	elif upgrade_id == "recharge":
+		var base_dur: float = GameState.get_base_cd_duration()
+		buy_button.text = "→Lv%d (%.1fs) ¥%d" % [lvl + 1, base_dur * tiers[lvl + 1], next_price]
 	else:
 		buy_button.text = "→Lv%d (%.1fs) ¥%d" % [lvl + 1, tiers[lvl + 1], next_price]
 	buy_button.disabled = GameState.money < next_price

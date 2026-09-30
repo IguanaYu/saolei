@@ -451,14 +451,17 @@ func chord(coord: Vector2i, by_actor: String) -> void:
 	if not cell.is_opened or cell.adjacent_mines == 0:
 		return
 	var neighbors: Array = get_neighbors(coord)
+	# 已处理雷计入数字（口径同 Solver）：旗/矿脉/坍塌(已引爆)/确认雷都等价于旗——
+	# 例：数字1旁已有1颗踩塌的雷，无需再插旗，双击即可开周围安全格
 	var flagged_count: int = 0
 	for n in neighbors:
-		if n.is_flagged:
+		if n.is_flagged or n.is_vein or n.is_collapsed or n.is_confirmed_mine:
 			flagged_count += 1
 	if flagged_count != cell.adjacent_mines:
 		return
 	for n in neighbors:
-		if not n.is_opened and not n.is_flagged:
+		# 确认雷与旗一样不参与开格（是已知的雷，开了必炸）
+		if not n.is_opened and not n.is_flagged and not n.is_confirmed_mine:
 			open_cell(n.coord, by_actor)
 
 
@@ -638,14 +641,14 @@ func _on_cell_double_clicked(cell: Cell) -> void:
 		play_player_action_visual(cell.coord, FLY_ICON_OPEN)
 
 
-## 和弦预判：数字格、旗数匹配、且至少有一个可开邻格（与 chord() 判定一致）
+## 和弦预判：数字格、已处理雷数匹配（口径同 chord）、且至少有一个可开邻格
 func _chord_would_open(cell: Cell) -> bool:
 	if not cell.is_opened or cell.adjacent_mines == 0:
 		return false
 	var flagged := 0
 	var openable := 0
 	for n in get_neighbors(cell.coord):
-		if n.is_flagged:
+		if n.is_flagged or n.is_vein or n.is_collapsed or n.is_confirmed_mine:
 			flagged += 1
 		elif not n.is_opened:
 			openable += 1
