@@ -5,6 +5,8 @@ extends Control
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
 @onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyDetectorButton
 @onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMinerButton
+@onready var buy_guard_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyGuardButton
+@onready var buy_probe_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyProbeButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BuildRow/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton
@@ -16,9 +18,13 @@ const BUTTON_ICONS := {
 	"marker": preload("res://visual_v2/runtime/ui/icons/icon_robot_marker.png"),
 	"detector": preload("res://visual_v2/runtime/ui/icons/icon_robot_detector.png"),
 	"miner": preload("res://visual_v2/runtime/ui/icons/icon_robot_miner.png"),
+	"guard": preload("res://visual_v2/runtime/ui/icons/icon_robot_guard.png"),
+	"probe": preload("res://visual_v2/runtime/ui/icons/icon_probe.png"),
 	"base": preload("res://visual_v2/runtime/ui/icons/icon_base.png"),
 	"upgrade": preload("res://visual_v2/runtime/ui/icons/icon_upgrade.png"),
 }
+
+const PROBE_PRICE := 100  # 与 main._enter_placing_mode/can_place_at 的探测价格同源口径
 
 
 func set_placing_hint(show: bool) -> void:
@@ -30,12 +36,16 @@ func _ready() -> void:
 	buy_marker_button.icon = BUTTON_ICONS.marker
 	buy_detector_button.icon = BUTTON_ICONS.detector
 	buy_miner_button.icon = BUTTON_ICONS.miner
+	buy_guard_button.icon = BUTTON_ICONS.guard
+	buy_probe_button.icon = BUTTON_ICONS.probe
 	upgrade_button.icon = BUTTON_ICONS.upgrade
 	build_base_button.icon = BUTTON_ICONS.base
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
 	buy_detector_button.pressed.connect(_on_buy_detector)
 	buy_miner_button.pressed.connect(_on_buy_miner)
+	buy_guard_button.pressed.connect(_on_buy_guard)
+	buy_probe_button.pressed.connect(_on_buy_probe)
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
 	rules_button.pressed.connect(func():
@@ -62,6 +72,18 @@ func _on_buy_detector() -> void:
 
 func _on_buy_miner() -> void:
 	_buy("miner")
+
+
+func _on_buy_guard() -> void:
+	_buy("guard")
+
+
+## 探测不是实体机器人：不进 purchase_robot 价格阶梯，直接进放置模式（瞬发 100/次）
+func _on_buy_probe() -> void:
+	if GameState.money < PROBE_PRICE:
+		return
+	var main := get_node("/root/Main")
+	main.call("_enter_placing_mode", "probe")
 
 
 func _buy(robot_type: String) -> void:
@@ -127,6 +149,9 @@ func _refresh_prices() -> void:
 	_refresh_one(buy_marker_button, "marker", "标雷型")
 	_refresh_one(buy_detector_button, "detector", "检测型")
 	_refresh_one(buy_miner_button, "miner", "矿工型")
+	_refresh_one(buy_guard_button, "guard", "保安")
+	if buy_probe_button.visible:
+		buy_probe_button.disabled = GameState.money < PROBE_PRICE
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
@@ -149,11 +174,15 @@ func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void
 	btn.disabled = GameState.money < price
 
 
-## 关卡级商店配置：隐藏本关不出现的按钮（教学关只留 opener/marker，钱不可能花错）
+## 关卡级商店配置：隐藏本关不出现的按钮（教学关只留 opener/marker，钱不可能花错）；
+## shop_extra 反向开闸：guard/probe 默认隐藏，L4/L5 声明后可见（level_data.gd 口径）
 func _apply_level_shop_config() -> void:
 	var lvl: LevelData = GameState.get_current_level()
 	var hidden: Array = lvl.shop_hidden if lvl != null else []
+	var extra: Array = lvl.shop_extra if lvl != null else []
 	build_base_button.visible = not hidden.has("base")
 	upgrade_button.visible = not hidden.has("upgrade")
 	buy_detector_button.visible = not hidden.has("detector")
 	buy_miner_button.visible = not hidden.has("miner")
+	buy_guard_button.visible = extra.has("guard") and not hidden.has("guard")
+	buy_probe_button.visible = extra.has("probe") and not hidden.has("probe")

@@ -118,6 +118,15 @@ func _ready() -> void:
 		check(t2.is_active() and not g.is_walkable(seg[0]), "第二段触手占格")
 		await pump(13, main)
 		check(not t2.is_active(), "12s 自然缩回")
+		# 泵的过程中 Boss 落弹可能把火烧到测试行（火也是通路阻断，8s 退散）——
+		# 等火退散后再验通路，把「触手释放」与「火区干扰」两个断言解耦
+		var diag_cell = g.get_cell(seg[0])
+		var wait := 0
+		while diag_cell.is_on_fire and wait < 10:
+			await pump(1, main)
+			wait += 1
+		print("  [diag] seg[0]=%s fire=%s blockers=%d tent_state=%s waited=%d" % [
+			seg[0], diag_cell.is_on_fire, diag_cell.path_blockers, t2.state, wait])
 		check(g.is_walkable(seg[0]), "缩回后通路释放")
 	else:
 		# 中间行没连续开段（盘面状态不同）——退化为 boss 出的触手自然缩回验证

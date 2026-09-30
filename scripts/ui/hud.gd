@@ -16,7 +16,8 @@ signal pause_requested
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart2,
 	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/Heart3,
 ]
-@onready var objective_label: Label = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveLabel
+@onready var objective_label: Label = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveRow/ObjectiveLabel
+@onready var objective_tooth_icon: TextureRect = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveRow/ObjectiveToothIcon
 @onready var objective_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveProgressBar
 @onready var idle_hint_label: Label = $MarginContainer/VBoxContainer/IdleHintLabel
 @onready var phase_hint_label: Label = $MarginContainer/VBoxContainer/PhaseHintLabel
@@ -109,6 +110,8 @@ func _on_time_changed(t: float) -> void:
 func _on_objective_progress_updated(text: String, current: int, total: int) -> void:
 	objective_label.text = text
 	objective_label.visible = text != ""
+	# L5 拔牙关目标文字配牙图标（FIND_ALL_MINES；其他目标类型不显示）
+	objective_tooth_icon.visible = text != "" and _objective_is_teeth()
 	# total>0 的目标类型画细进度条（过线后满格置金）
 	objective_progress_bar.visible = total > 0
 	if total > 0:
@@ -116,6 +119,12 @@ func _on_objective_progress_updated(text: String, current: int, total: int) -> v
 		objective_progress_bar.value = mini(current, total)
 		var crossed: bool = current >= total
 		objective_progress_bar.modulate = Color(1.0, 0.82, 0.35) if crossed else Color.WHITE
+
+
+func _objective_is_teeth() -> bool:
+	var lvl: LevelData = GameState.get_current_level()
+	return lvl != null and not lvl.objectives.is_empty() \
+			and lvl.objectives[0].type == ObjectiveData.Type.FIND_ALL_MINES
 
 
 func show_toast(text: String, duration: float = 3.0) -> void:

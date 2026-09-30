@@ -46,6 +46,16 @@ text = "检测型 ¥80"
 custom_minimum_size = Vector2(160, 56)
 text = "矿工型 ¥60"
 
+[node name="BuyGuardButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(160, 56)
+text = "保安 ¥80"
+
+[node name="BuyProbeButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(160, 56)
+text = "探测 ¥100"
+
 [node name="BuildRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 theme_override_constants/separation = 16
 alignment = 1
