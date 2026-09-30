@@ -162,7 +162,9 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	var lvl := GameState.get_current_level()
 	if result != "win":
 		# 到点/命尽 = 强行停止并结算（非失败态，设计 v1.2）：正常给矿、不算过关、可重玩
-		title_label.text = "本次挖矿结束 · 目标未达成"
+		# L5 Boss 关到点专属文案（设计 §4）：Boss 撤了，不是矿工收工
+		title_label.text = "它退回了黑暗里 · 牙没拔完" \
+				if GameState.current_level_id == "ch01_s05" else "本次挖矿结束 · 目标未达成"
 		stars_row.visible = false
 		star_hint_label.visible = false
 		var ore_earned: int = GameState.score / FORCED_STOP_ORE_DIVISOR
@@ -223,6 +225,14 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 				int(s.get("enemy_kills_player", 0)) + int(s.get("enemy_kills_guard", 0)),
 				int(s.get("obstacles_cleared_player", 0)) + int(s.get("obstacles_cleared_guard", 0))])
 		_add_row(ICON_STAR, "探测", "%d 次" % int(s.get("probe_used", 0)))
+	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
+	if GameState.current_level_id == "ch01_s05":
+		_add_row(ICON_STAR, "Boss战",
+			"史莱姆 %d · 反弹 %d · 灭火 %d · 断触手 %d" % [
+				int(s.get("slime_kills", 0)),
+				int(s.get("bombs_deflected", 0)),
+				int(s.get("fires_extinguished", 0)),
+				int(s.get("tentacles_cut", 0))])
 
 
 func _handle_daily(result: String) -> void:

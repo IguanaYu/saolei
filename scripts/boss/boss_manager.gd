@@ -92,6 +92,7 @@ func setup(grid, total_teeth: int) -> void:
 	_beast.layout(grid.cell_size)
 	_beast.teleport_to("top", top_anchor_pos(grid))
 	_beast.play("claw", 1.5)  # 入场亮爪（与放基地并行的开场演出）
+	_grid_home = grid.position
 
 
 func top_anchor_pos(grid) -> Vector2:
@@ -122,6 +123,7 @@ func _transition_to(target: int) -> void:
 	_beast.set_phase(target)
 	_staggered_until = _elapsed + 1.0   # 转场硬直感
 	_pause_until = _elapsed + TRANSITION_PAUSE_SEC
+	shake_board(0.35)  # 转场震屏（WP8 占位震感）
 	for atk in _attacks.get(target, []):
 		atk["next"] = _elapsed + float(atk["first"])
 	if target == 3:
@@ -383,6 +385,7 @@ func on_bomb_deflected() -> void:
 func ignite_fire_cross(center: Vector2i) -> void:
 	if _grid == null:
 		return
+	shake_board(0.4)
 	var ignited: Array = []
 	for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 		var c: Vector2i = center + o
@@ -441,12 +444,32 @@ func hit_bomb_at(world_pos: Vector2, radius: float) -> Bomb:
 
 ## 斩杀流程（main 在第 20 颗牙时调用；调用前 main 已置 game_active=false 冻结全场）
 func begin_kill_sequence() -> void:
+	shake_board(0.5)
 	if _beast == null:
 		kill_sequence_done.emit()
 		return
 	_beast.pose_finished.connect(
 			func(_p): kill_sequence_done.emit(), CONNECT_ONE_SHOT)
 	_beast.play("fall", KILL_FALL_SEC)
+
+
+## 震屏（WP8 占位震感）：棋盘短促抖动；以 setup 时的原位为锚，重复调用先杀旧 tween 防漂移
+var _grid_home: Vector2 = Vector2.ZERO
+var _shake_tween: Tween = null
+
+func shake_board(strength_sec: float) -> void:
+	if _grid == null:
+		return
+	if _shake_tween != null and _shake_tween.is_valid():
+		_shake_tween.kill()
+		_grid.position = _grid_home
+	var amp: float = _grid.cell_size * 0.18
+	_shake_tween = create_tween()
+	for i in 4:
+		var off := Vector2(randf_range(-amp, amp), randf_range(-amp, amp)) \
+				if i < 3 else Vector2.ZERO
+		_shake_tween.tween_property(_grid, "position", _grid_home + off, strength_sec / 4.0)
+	_shake_tween.tween_property(_grid, "position", _grid_home, 0.05)
 
 
 ## 局末/重开清理（main._start_level_with 与结算路径调用）

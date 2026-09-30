@@ -144,6 +144,28 @@ func clear_all() -> void:
 	_jump_texts.clear()
 
 
+# ---- L5 Boss 关 ----
+
+## 拔牙跳字：🦷 从处理格升起（牙数上涨的持续正反馈，设计 §5.3「进度感始终可见」）
+func fx_tooth_pulled(world_pos: Vector2) -> void:
+	var node := Node2D.new()
+	node.name = _name("Tooth")
+	var lbl := Label.new()
+	lbl.text = "🦷"
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	lbl.add_theme_constant_override("outline_size", 3)
+	lbl.position = Vector2(-9, -10)
+	node.add_child(lbl)
+	node.position = world_pos
+	add_child(node)
+	var t := node.create_tween()
+	t.set_parallel(true)
+	t.tween_property(node, "position:y", world_pos.y - 16.0, 0.5)
+	t.tween_property(node, "modulate:a", 0.0, 0.5)
+	t.chain().tween_callback(node.queue_free)
+
+
 # ---- 内部 ----
 
 func _fx_shards(cell: Cell, count: int) -> void:

@@ -57,6 +57,9 @@ func _run() -> void:
 	check(any_slimed, "史莱姆沿途已染黏液")
 
 	print("== 接近才可点杀（设计 §5.1） ==")
+	# 清掉 Boss 出的游走史莱姆（随机漂移可能贴近测试点位，先隔离变量）
+	for e in main.enemy_manager.enemies.duplicate():
+		main.enemy_manager.kill_enemy(e, "robot_marker")
 	# 手工放一只贴近预开区的史莱姆（frontier 墙格）
 	var frontier_wall: Vector2i = Vector2i(-9, -9)
 	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
@@ -77,14 +80,15 @@ func _run() -> void:
 	check(main._try_hit_enemy_at(g.coord_to_world(far_wall)), "点远处史莱姆：命中被拦截（不穿透）")
 	check(s_far.is_alive(), "远处史莱姆未死")
 	check(GameState.result_stats["player_actions"] == acts0, "拦截不耗 CD 次数")
-	# 击杀近处：钱分 + 埋点 + Boss 硬直
+	# 击杀近处：钱分 + 埋点 + Boss 硬直（基线在预清之后取）
 	var money0: int = GameState.money
+	var kills0: int = GameState.result_stats["slime_kills"]
 	var stagger_fired := {"v": false}
 	main.boss_manager.boss_staggered.connect(func(_d): stagger_fired["v"] = true, CONNECT_ONE_SHOT)
 	check(main._try_hit_enemy_at(g.coord_to_world(frontier_wall)), "点击近处史莱姆命中")
 	check(not s_near.is_alive(), "近处史莱姆被点杀")
 	check(GameState.money == money0 + 10, "击杀 +10 钱")
-	check(GameState.result_stats["slime_kills"] == 1, "击杀埋点 slime_kills=1")
+	check(GameState.result_stats["slime_kills"] == kills0 + 1, "击杀埋点 slime_kills +1")
 	check(stagger_fired["v"], "Boss 硬直信号已发")
 
 	print("== 补位：杀到 <2 后 30s 补 ==")

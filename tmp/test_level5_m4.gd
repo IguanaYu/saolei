@@ -134,7 +134,11 @@ func _ready() -> void:
 			check(false, "无触手可验证缩回")
 
 	print("== 无墙时锁自动跳过 ==")
-	# 把剩余未开格全部直接开掉（安全格）+ 旗掉剩余雷 = 无未开墙
+	# 把剩余未开格全部直接开掉（安全格）+ 旗掉剩余雷 = 无未开墙（先清锁：锁可能盖住雷格）
+	for coord in g.cells:
+		var cl = g.cells[coord]
+		if cl.is_locked:
+			cl.clear_lock("player")
 	for coord in g.cells:
 		var c = g.cells[coord]
 		if not c.is_opened and not c.is_locked and not c.is_flagged:

@@ -34,6 +34,7 @@ var level1_director: Level1Director = null
 var level2_director: Level2Director = null
 var level3_director: Level3Director = null
 var level4_director: Level4Director = null
+var level5_director: Level5Director = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -130,6 +131,9 @@ func _ready() -> void:
 	level4_director = Level4Director.new()
 	level4_director.name = "Level4Director"
 	add_child(level4_director)
+	level5_director = Level5Director.new()
+	level5_director.name = "Level5Director"
+	add_child(level5_director)
 	# 音频连接器（旁听信号→AudioManager）
 	var audio_connector := AudioConnector.new()
 	audio_connector.name = "AudioConnector"
@@ -334,6 +338,8 @@ func _maybe_start_tutorial() -> void:
 		level3_director.begin()
 	elif GameState.current_level_id == "ch01_s04" and level4_director != null:
 		level4_director.begin()
+	elif GameState.current_level_id == "ch01_s05" and level5_director != null:
+		level5_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -931,6 +937,7 @@ func _on_processed_mines_changed(current: int) -> void:
 ## Boss 掉落 3s → 走标准胜利结算。game_active 短暂置回以通过 _end_game 入口守卫。
 func _start_boss_kill_sequence() -> void:
 	GameState.game_active = false
+	hud.show_toast("最后一颗牙。", 4.0)  # 斩杀大字（设计 §8-6，掉落演出期间压屏）
 	boss_manager.kill_sequence_done.connect(_on_boss_kill_done, CONNECT_ONE_SHOT)
 	boss_manager.begin_kill_sequence()
 
@@ -1024,16 +1031,21 @@ func _update_objective_progress() -> String:
 ## 机器人视同旗（Solver 计雷）、不计标旗分、情报穿锁（锁只拦交互）；零分零钱纯情报
 func _trigger_probe(center: Vector2i) -> void:
 	var confirmed: int = 0
+	var new_teeth: Array = []  # 本次探测新处理的牙（已旗/已塌的不重复跳字）
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			var c = grid.get_cell(center + Vector2i(dx, dy))
 			if c != null and c.is_mine and not c.is_confirmed_mine:
 				c.confirm_mine()
 				confirmed += 1
+				if not c.is_collapsed and not grid.rewarded_flags.has(center + Vector2i(dx, dy)):
+					new_teeth.append(center + Vector2i(dx, dy))
 	GameState.result_stats["probe_used"] += 1
 	var coords: String = GameState.result_stats["probe_coords"]
 	GameState.result_stats["probe_coords"] = (coords + ";" if coords != "" else "") \
 			+ "%d,%d" % [center.x, center.y]
 	grid.refresh_processed_mines()  # L5 牙数：确认雷也是拔牙（探测 3×3 内可能有多颗）
+	for t_coord in new_teeth:
+		grid.fx_tooth_at(t_coord)
 	grid.play_player_action_visual(center, Grid.FLY_ICON_OPEN)
 	hud.show_toast("探测完成：%d 格确认雷" % confirmed, 2.5)

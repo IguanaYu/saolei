@@ -404,6 +404,7 @@ func open_cell(coord: Vector2i, by_actor: String) -> void:
 	if cell.is_mine:
 		cell.collapse()
 		refresh_processed_mines()  # L5 牙数：踩塌 = 疼着拔一颗牙
+		fx_tooth_at(coord)
 		mine_stepped.emit(cell, by_actor)
 		return
 
@@ -437,6 +438,7 @@ func toggle_flag(coord: Vector2i, by_actor: String) -> void:
 		if cell.is_mine and first_time:
 			rewarded_flags[coord] = true
 			refresh_processed_mines()  # L5 牙数：首次正确旗 = 拔一颗牙
+			fx_tooth_at(coord)
 		cell_flagged.emit(cell, by_actor, cell.is_mine, first_time)
 	elif was_flagged and not cell.is_flagged:
 		cell_unflagged.emit(cell, by_actor)
@@ -510,6 +512,15 @@ func count_processed_mines() -> int:
 ## 牙数变化出口：三处状态变更点（toggle_flag/open_cell 塌雷/probe）调用
 func refresh_processed_mines() -> void:
 	processed_mines_changed.emit(count_processed_mines())
+
+
+## L5 拔牙跳字公开入口（EffectsLayer.fx_tooth_pulled 的坐标封装；仅拔牙关生效）
+func fx_tooth_at(coord: Vector2i) -> void:
+	var obj = GameState.current_objective
+	if obj == null or obj.type != ObjectiveData.Type.FIND_ALL_MINES:
+		return
+	if _fx != null:
+		_fx.fx_tooth_pulled(coord_to_world(coord))
 
 
 func coord_to_world(coord: Vector2i) -> Vector2:
