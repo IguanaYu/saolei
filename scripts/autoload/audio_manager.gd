@@ -82,6 +82,19 @@ func play_bgm() -> void:
 
 # ---- 内部 ----
 
+func _exit_tree() -> void:
+	# 显式结束播放并释放流，避免退出时循环 BGM 的 Ogg 播放器仍持有资源。
+	if is_instance_valid(_bgm):
+		_bgm.stop()
+		_bgm.stream = null
+	for player in _players:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
+	_players.clear()
+	_streams.clear()
+
+
 func _play_now(stream: AudioStream, pitch: float) -> void:
 	if not bool(GameSettings.get_value("sfx_on")):
 		return
