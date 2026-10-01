@@ -25,3 +25,6 @@ tmp/kenney_*
 
 # secrets
 .env
+
+# Windows 试玩包与导出验证产物
+build/
