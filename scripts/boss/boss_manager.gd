@@ -484,6 +484,25 @@ func begin_kill_sequence() -> void:
 var _grid_home: Vector2 = Vector2.ZERO
 var _shake_tween: Tween = null
 
+
+## 棋盘重排（F11/改分辨率，P1-04 配套）后重投影：更新震屏锚点、本体回当前锚点、
+## 触手/炸弹归位。落弹反弹(deflect)飞行中的目标取 beast 实时位置，不在此处理
+func on_grid_relaid(grid) -> void:
+	if not active or _grid == null:
+		return
+	_grid_home = grid.position
+	if _beast != null and is_instance_valid(_beast):
+		# 爬行换场(2s)途中重排的极端窗口：teleport 后残余 tween 可能拉回旧位，
+		# 下一姿态/换场会重新定位，接受该亚秒级误差
+		var anchor_pos := right_anchor_pos(grid) if _beast.anchor == "right" else top_anchor_pos(grid)
+		_beast.teleport_to(_beast.anchor, anchor_pos)
+	for t in tentacles:
+		if is_instance_valid(t):
+			t.position = grid.coord_to_world(t.root_coord)
+	for b in bombs:
+		if is_instance_valid(b) and b.state != "exploding":
+			b.position = grid.coord_to_world(b.coord)
+
 func shake_board(strength_sec: float) -> void:
 	if _grid == null:
 		return

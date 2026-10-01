@@ -49,6 +49,14 @@ func remove_all() -> void:
 	_reset_idle_warning()
 
 
+## 棋盘重排（F11/改分辨率，P1-04 配套）后按缓存 coord 重写世界坐标；
+## 移动途中的 tween 目标是旧坐标，由下一次移动 tick 自然校正（亚秒级视觉差，可接受）
+func reproject_all(grid) -> void:
+	for r in robots:
+		if is_instance_valid(r):
+			r.position = grid.coord_to_world(r.coord)
+
+
 ## L5 火区点燃震退（WP4）：区内机器人瞬移到 BFS 最近的无阻断已开格（Q3：不做飞行轨迹，
 ## 靠爆炸动效顺序读「被震退」）
 func displace_robots_in(coords: Array, grid) -> void:

@@ -34,8 +34,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	next_button.pressed.connect(_advance)
 	skip_button.pressed.connect(_finish)
-	# 切分辨率/全屏后视口与目标节点位置变化，重排当前步骤的聚光框与气泡
-	get_viewport().size_changed.connect(_relayout_current)
+	# 窗口变化的聚光重摆由 main._relayout_play_area 在棋盘重定位之后统一调用
+	# （本层若自订阅会先于 main 读到旧棋盘 transform，聚光洞错位一帧）
 
 
 ## 视口尺寸变化时仅重排几何（不动文案与超时计时，避免重置升级提示）

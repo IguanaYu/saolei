@@ -104,6 +104,17 @@ func clear() -> void:
 	waves_enabled = true  # 恢复默认（L4）；L5 进关时再关（实施计划 §5-2 回归点）
 
 
+## 棋盘重排（F11/改分辨率，P1-04 配套）后按缓存 coord 重写虫/巢世界坐标；
+## 移动途中的 tween 由下一次 tick 校正
+func reproject_all(grid) -> void:
+	for e in enemies:
+		if is_instance_valid(e):
+			e.position = grid.coord_to_world(e.coord)
+	for n in nests:
+		if is_instance_valid(n):
+			n.position = grid.coord_to_world(n.coord)
+
+
 func _on_enemy_died(e: Enemy, by_actor: String) -> void:
 	enemies.erase(e)
 	if by_actor == "player":

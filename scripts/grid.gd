@@ -67,8 +67,8 @@ func _ready() -> void:
 	_make_hover_overlay()
 	_make_effects_layer()
 	GameSettings.setting_changed.connect(_on_setting_changed)
-	# keep_height 拉伸下视口宽度随窗口变化（切全屏/调分辨率），需重新居中
-	get_viewport().size_changed.connect(_center_grid)
+	# 窗口变化的重居中由 main._relayout_play_area 统一驱动（需要扣除 HUD/商店后的可用区），
+	# 本节点只在初始时按全视口兜底居中（main 尚未设置 play_area）
 	_center_grid()
 	init_empty_grid()
 
@@ -137,12 +137,23 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 	init_empty_grid()
 
 
+## 棋盘可用区域（扣除 HUD 顶栏与底部商店后的矩形）；零尺寸 = 未设置，回退全视口。
+## 由 main._relayout_play_area 在进关与窗口变化时下发（P1-04：棋盘不再压商店）
+var _play_area: Rect2 = Rect2()
+
+
+func set_play_area(area: Rect2) -> void:
+	_play_area = area
+	_center_grid()
+
+
 func _center_grid() -> void:
 	# 非正方形棋盘（每日挑战等）：宽=cols、高=rows 分别居中
 	var w := cols * cell_size
 	var h := rows * cell_size
-	var viewport: Vector2 = get_viewport_rect().size
-	position = (viewport - Vector2(w, h)) / 2.0
+	var area: Rect2 = _play_area if _play_area.size.x > 0.0 and _play_area.size.y > 0.0 \
+			else Rect2(Vector2.ZERO, get_viewport_rect().size)
+	position = area.position + (area.size - Vector2(w, h)) / 2.0
 
 
 ## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成

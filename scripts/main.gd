@@ -93,6 +93,9 @@ func _ready() -> void:
 	upgrade_panel.visibility_changed.connect(func():
 		if upgrade_panel.visible:
 			tutorial_guide.notify_event("upgrade_panel_opened"))
+	# 窗口/F11 变化：统一重算棋盘可用区并联动重排（P1-04，本节点最后连接 =
+	# grid/cave_env/tutorial 的即时处理器之后运行，读到的是最新 UI 边界）
+	get_viewport().size_changed.connect(_relayout_play_area)
 	# 闪屏 → 主菜单（+ 每日首启签到弹窗）
 	splash.finished.connect(_on_splash_finished)
 	main_menu.hide()  # 闪屏期间藏住主菜单
@@ -277,7 +280,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
 		grid.wall_style = wall_style if wall_style != "" else chapter_style
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
-		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具
+		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
+		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具（读的是已更新的棋盘位）
 		# 固定盘面：直接装载雷位/预开区/预置基地，跳过放基地阶段
 		if lvl.has_fixed_board():
 			grid.apply_fixed_board({
@@ -367,6 +371,21 @@ func _in_game() -> bool:
 func _close_level_overlays() -> void:
 	upgrade_panel.close()
 	_exit_placing_mode()
+
+
+## 棋盘可用区域 = 视口 − HUD 顶栏 − 底部商店（P1-04：棋盘/洞窟框/教学高亮不再压商店）。
+## 进关与窗口变化时重算；联动 grid 居中 → 场上实体按缓存 coord 重投影 → 教学聚光重摆。
+## CaveEnv 自订阅 viewport 变化（deferred），此时读到的已是更新后的 grid 位置
+func _relayout_play_area() -> void:
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var top: float = hud.get_global_rect().end.y
+	var shop_top: float = shop.get_global_rect().position.y
+	grid.set_play_area(Rect2(0.0, top, vp.x, maxf(0.0, shop_top - top)))
+	robot_manager.reproject_all(grid)
+	enemy_manager.reproject_all(grid)
+	boss_manager.on_grid_relaid(grid)
+	if tutorial_guide.visible:
+		tutorial_guide._relayout_current()
 
 
 func _open_pause() -> void:

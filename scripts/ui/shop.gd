@@ -3,12 +3,12 @@ extends Control
 
 signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（不再硬路径取面板）
 
-@onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyOpenerButton
-@onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
-@onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyDetectorButton
-@onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMinerButton
-@onready var buy_guard_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyGuardButton
-@onready var buy_probe_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyProbeButton
+@onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton
+@onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton
+@onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyDetectorButton
+@onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyMinerButton
+@onready var buy_guard_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyGuardButton
+@onready var buy_probe_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyProbeButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BuildRow/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton

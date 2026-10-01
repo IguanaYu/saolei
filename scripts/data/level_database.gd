@@ -72,7 +72,8 @@ func _apply_playtest_level1(lvl: LevelData) -> void:
 	lvl.cooldown_sec = 30.0
 	lvl.cooldown_after_purchase = 3.0
 	lvl.shop_limits = {"opener": 1, "marker": 1}
-	lvl.shop_hidden = ["base", "drone", "upgrade", "debug"]
+	# 试玩五关均不可解锁 detector/miner（通2-5/3-5 在试玩范围外），教学关一并收起
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "upgrade", "debug"]
 	lvl.no_stars = true
 	lvl.is_playtest = true
 	lvl.short_name = "教学"

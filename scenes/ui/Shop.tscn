@@ -25,36 +25,48 @@ mouse_filter = 2
 theme_override_constants/separation = 6
 mouse_filter = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="DeviceFlow" type="HFlowContainer" parent="MarginContainer/VBoxContainer"]
 theme_override_constants/separation = 16
 alignment = 1
 mouse_filter = 2
 
-[node name="BuyOpenerButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(160, 56)
+[node name="BuyOpenerButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "开墙型 ¥50"
+theme_override_font_sizes/font_size = 16
 
-[node name="BuyMarkerButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(160, 56)
+[node name="BuyMarkerButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "标雷型 ¥50"
+theme_override_font_sizes/font_size = 16
 
-[node name="BuyDetectorButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(160, 56)
+[node name="BuyDetectorButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "检测型 ¥80"
+theme_override_font_sizes/font_size = 16
 
-[node name="BuyMinerButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(160, 56)
+[node name="BuyMinerButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "矿工型 ¥60"
+theme_override_font_sizes/font_size = 16
 
-[node name="BuyGuardButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="BuyGuardButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 visible = false
-custom_minimum_size = Vector2(160, 56)
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "保安 ¥80"
+theme_override_font_sizes/font_size = 16
 
-[node name="BuyProbeButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="BuyProbeButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 visible = false
-custom_minimum_size = Vector2(160, 56)
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
 text = "探测 ¥100"
+theme_override_font_sizes/font_size = 16
 
 [node name="BuildRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 theme_override_constants/separation = 16
