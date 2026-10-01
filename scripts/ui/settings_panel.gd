@@ -7,18 +7,24 @@ signal tutorial_rewatch_requested
 
 const WINDOW_SIZE_LABELS := ["1024 × 768", "1280 × 960", "1536 × 1152", "跟随屏幕"]
 
-@onready var music_check: CheckButton = $Center/Panel/VBox/RowMusic/HBox/MusicCheck
-@onready var sfx_check: CheckButton = $Center/Panel/VBox/RowSfx/HBox/SfxCheck
-@onready var volume_slider: HSlider = $Center/Panel/VBox/RowVolume/HBox/VolumeSlider
-@onready var sfx_volume_slider: HSlider = $Center/Panel/VBox/RowSfxVolume/HBox/SfxVolumeSlider
-@onready var shake_check: CheckButton = $Center/Panel/VBox/RowShake/HBox/ShakeCheck
-@onready var grid_check: CheckButton = $Center/Panel/VBox/RowGrid/HBox/GridCheck
-@onready var fullscreen_check: CheckButton = $Center/Panel/VBox/RowFullscreen/HBox/FullscreenCheck
-@onready var window_size_option: OptionButton = $Center/Panel/VBox/RowWindowSize/HBox/WindowSizeOption
+const _LIST := "Center/Panel/VBox/SettingsScroll/SettingsList"
+
+@onready var music_check: CheckButton = get_node(_LIST + "/RowMusic/HBox/MusicCheck")
+@onready var sfx_check: CheckButton = get_node(_LIST + "/RowSfx/HBox/SfxCheck")
+@onready var volume_slider: HSlider = get_node(_LIST + "/RowVolume/HBox/VolumeSlider")
+@onready var sfx_volume_slider: HSlider = get_node(_LIST + "/RowSfxVolume/HBox/SfxVolumeSlider")
+@onready var shake_check: CheckButton = get_node(_LIST + "/RowShake/HBox/ShakeCheck")
+@onready var grid_check: CheckButton = get_node(_LIST + "/RowGrid/HBox/GridCheck")
+@onready var fullscreen_check: CheckButton = get_node(_LIST + "/RowFullscreen/HBox/FullscreenCheck")
+@onready var window_size_option: OptionButton = get_node(_LIST + "/RowWindowSize/HBox/WindowSizeOption")
+@onready var _settings_scroll: ScrollContainer = $Center/Panel/VBox/SettingsScroll
 
 
 func _ready() -> void:
 	hide()
+	# 滚动区高度随视口钳制（keep_height 下视口高恒定，仍防基线变更后内容顶出屏幕）
+	_settings_scroll.custom_minimum_size.y = clampi(
+		int(get_viewport_rect().size.y) - 240, 320, 560)
 	music_check.toggled.connect(func(v): GameSettings.set_value("music_on", v))
 	sfx_check.toggled.connect(func(v): GameSettings.set_value("sfx_on", v))
 	volume_slider.value_changed.connect(func(v): GameSettings.set_value("music_volume", v))
@@ -32,9 +38,9 @@ func _ready() -> void:
 		func(i): GameSettings.set_value("window_size", GameSettings.WINDOW_SIZES[i]))
 	# F11 游戏内切换全屏时，同步面板勾选与下拉禁用态
 	GameSettings.setting_changed.connect(_on_setting_changed)
-	$Center/Panel/VBox/BtnRow/TutorialButton.pressed.connect(
+	get_node(_LIST + "/BtnRow/TutorialButton").pressed.connect(
 		func(): tutorial_rewatch_requested.emit())
-	$Center/Panel/VBox/BtnRow/ClearButton.pressed.connect(
+	get_node(_LIST + "/BtnRow/ClearButton").pressed.connect(
 		func(): clear_save_requested.emit())
 	$Center/Panel/VBox/CloseButton.pressed.connect(func(): close_requested.emit())
 

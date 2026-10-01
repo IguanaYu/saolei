@@ -72,6 +72,7 @@ func _ready() -> void:
 	main_menu.quit_requested.connect(_ask_quit)
 	main_menu.rules_requested.connect(func(): rules_panel.open())
 	level_select.powerup_requested.connect(func(): ore_shop.open())
+	shop.upgrade_open_requested.connect(func(): upgrade_panel.open())
 	chapter_select.chapter_selected.connect(_on_chapter_selected)
 	chapter_select.back_requested.connect(_on_chapter_select_back)
 	level_select.start_requested.connect(_open_pre_level)
@@ -262,6 +263,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	results_panel.hide()
 	pause_panel.hide()
 	tutorial_guide.hide()  # 中断上一局的引导
+	_close_level_overlays()  # 上一局的升级面板/放置预览/光标不带到新关（P1-03）
 	get_tree().paused = false
 	var id := lvl.id if lvl != null else ""
 	SaveSystem.mark_level_entered(id)  # 间场「变强」高亮依据（进关即记）
@@ -360,6 +362,13 @@ func _in_game() -> bool:
 			or pre_level_card.visible or rules_panel.visible or playtest_done.visible)
 
 
+## 收起局内浮层与放置预览（幂等）：结算/退出/重玩/新局开始统一调用，
+## 顺带复位光标形状与商店提示行（_exit_placing_mode 全覆盖这三件）
+func _close_level_overlays() -> void:
+	upgrade_panel.close()
+	_exit_placing_mode()
+
+
 func _open_pause() -> void:
 	_exit_placing_mode()  # 暂停时取消放置，避免恢复后状态混乱
 	grid.set_hover_overlay(Vector2i.ZERO, "hide")
@@ -421,6 +430,7 @@ func _abandon_settle() -> void:
 	get_tree().paused = false
 	pause_panel.hide()
 	tutorial_guide.hide()
+	_close_level_overlays()  # 放弃离开：放置预览/光标/提示行一并复位
 	var lvl := GameState.get_current_level()
 	var total: float = lvl.time_limit_sec if lvl != null else 90.0
 	var duration: float = GameState.elapsed if not GameState.has_time_limit() \
@@ -481,6 +491,7 @@ func _leave_after_continue() -> void:
 	get_tree().paused = false
 	pause_panel.hide()
 	tutorial_guide.hide()
+	_close_level_overlays()  # 离开路径与放弃同口径：浮层/预览不残留
 	GameState.game_active = false
 	var win_score: int = int(GameState.result_stats.get("win_score", 0))
 	SaveSystem.refresh_best_score(GameState.score)
@@ -596,6 +607,9 @@ func _handle_escape() -> void:
 		return
 	if tutorial_guide.visible:
 		return  # 引导层自行处理（跳过）
+	if upgrade_panel.visible:
+		upgrade_panel.close()
+		return  # 局内升级浮层：ESC 先收它，再按原规则开暂停
 	if not _in_game():
 		return
 	if placing_mode != "":
@@ -964,6 +978,7 @@ func _end_game(result: String) -> void:
 		return
 	GameState.game_active = false
 	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
+	_close_level_overlays()  # 结算收起升级面板/放置预览（P1-03：旧面板不再盖关前卡）
 	if result == "win":
 		var obj := GameState.current_objective
 		if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE:

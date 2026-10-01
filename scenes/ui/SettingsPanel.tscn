@@ -30,51 +30,58 @@ theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
 
 [node name="HSeparator" type="HSeparator" parent="Center/Panel/VBox"]
 
-[node name="SoundHeader" type="Label" parent="Center/Panel/VBox"]
+[node name="SettingsScroll" type="ScrollContainer" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 520)
+
+[node name="SettingsList" type="VBoxContainer" parent="Center/Panel/VBox/SettingsScroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="SoundHeader" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 text = "◆ 声音"
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
-[node name="RowMusic" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowMusic" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowMusic"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowMusic"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowMusic/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowMusic/HBox"]
 size_flags_horizontal = 3
 text = "背景音乐"
 theme_override_font_sizes/font_size = 16
 
-[node name="MusicCheck" type="CheckButton" parent="Center/Panel/VBox/RowMusic/HBox"]
+[node name="MusicCheck" type="CheckButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowMusic/HBox"]
 text = "开 / 关"
 
-[node name="RowSfx" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowSfx" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowSfx"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfx"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowSfx/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfx/HBox"]
 size_flags_horizontal = 3
 text = "音效"
 theme_override_font_sizes/font_size = 16
 
-[node name="SfxCheck" type="CheckButton" parent="Center/Panel/VBox/RowSfx/HBox"]
+[node name="SfxCheck" type="CheckButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfx/HBox"]
 text = "开 / 关"
 
-[node name="RowVolume" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowVolume" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowVolume"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowVolume"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowVolume/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowVolume/HBox"]
 size_flags_horizontal = 3
 text = "音乐音量"
 theme_override_font_sizes/font_size = 16
 
-[node name="VolumeSlider" type="HSlider" parent="Center/Panel/VBox/RowVolume/HBox"]
+[node name="VolumeSlider" type="HSlider" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowVolume/HBox"]
 custom_minimum_size = Vector2(200, 24)
 size_flags_vertical = 4
 min_value = 0.0
@@ -82,18 +89,18 @@ max_value = 1.0
 step = 0.05
 value = 0.7
 
-[node name="RowSfxVolume" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowSfxVolume" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowSfxVolume"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfxVolume"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowSfxVolume/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfxVolume/HBox"]
 size_flags_horizontal = 3
 text = "音效音量"
 theme_override_font_sizes/font_size = 16
 
-[node name="SfxVolumeSlider" type="HSlider" parent="Center/Panel/VBox/RowSfxVolume/HBox"]
+[node name="SfxVolumeSlider" type="HSlider" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowSfxVolume/HBox"]
 custom_minimum_size = Vector2(200, 24)
 size_flags_vertical = 4
 min_value = 0.0
@@ -101,83 +108,83 @@ max_value = 1.0
 step = 0.05
 value = 0.8
 
-[node name="PictureHeader" type="Label" parent="Center/Panel/VBox"]
+[node name="PictureHeader" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 text = "◆ 画面与操作"
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
-[node name="RowShake" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowShake" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 visible = false
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowShake"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowShake"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowShake/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowShake/HBox"]
 size_flags_horizontal = 3
 text = "屏幕震动"
 theme_override_font_sizes/font_size = 16
 
-[node name="ShakeCheck" type="CheckButton" parent="Center/Panel/VBox/RowShake/HBox"]
+[node name="ShakeCheck" type="CheckButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowShake/HBox"]
 text = "开 / 关"
 
-[node name="RowGrid" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowGrid" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowGrid"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowGrid"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowGrid/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowGrid/HBox"]
 size_flags_horizontal = 3
 text = "显示网格线"
 theme_override_font_sizes/font_size = 16
 
-[node name="GridCheck" type="CheckButton" parent="Center/Panel/VBox/RowGrid/HBox"]
+[node name="GridCheck" type="CheckButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowGrid/HBox"]
 text = "开 / 关"
 
-[node name="RowFullscreen" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowFullscreen" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowFullscreen"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowFullscreen"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowFullscreen/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowFullscreen/HBox"]
 size_flags_horizontal = 3
 text = "全屏窗口"
 theme_override_font_sizes/font_size = 16
 
-[node name="FullscreenCheck" type="CheckButton" parent="Center/Panel/VBox/RowFullscreen/HBox"]
+[node name="FullscreenCheck" type="CheckButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowFullscreen/HBox"]
 text = "开 / 关"
 
-[node name="RowWindowSize" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="RowWindowSize" type="PanelContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowWindowSize"]
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowWindowSize"]
 offset_right = 528.0
 offset_bottom = 40.0
 
-[node name="Label" type="Label" parent="Center/Panel/VBox/RowWindowSize/HBox"]
+[node name="Label" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowWindowSize/HBox"]
 size_flags_horizontal = 3
 text = "窗口分辨率"
 theme_override_font_sizes/font_size = 16
 
-[node name="WindowSizeOption" type="OptionButton" parent="Center/Panel/VBox/RowWindowSize/HBox"]
+[node name="WindowSizeOption" type="OptionButton" parent="Center/Panel/VBox/SettingsScroll/SettingsList/RowWindowSize/HBox"]
 
-[node name="HSeparator2" type="HSeparator" parent="Center/Panel/VBox"]
+[node name="HSeparator2" type="HSeparator" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 
-[node name="GameHeader" type="Label" parent="Center/Panel/VBox"]
+[node name="GameHeader" type="Label" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 text = "◆ 游戏"
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
 
-[node name="BtnRow" type="HBoxContainer" parent="Center/Panel/VBox"]
+[node name="BtnRow" type="HBoxContainer" parent="Center/Panel/VBox/SettingsScroll/SettingsList"]
 theme_override_constants/separation = 12
 
-[node name="TutorialButton" type="Button" parent="Center/Panel/VBox/BtnRow"]
+[node name="TutorialButton" type="Button" parent="Center/Panel/VBox/SettingsScroll/SettingsList/BtnRow"]
 custom_minimum_size = Vector2(0, 44)
 size_flags_horizontal = 3
 text = "重看新手教程"
 
-[node name="ClearButton" type="Button" parent="Center/Panel/VBox/BtnRow"]
+[node name="ClearButton" type="Button" parent="Center/Panel/VBox/SettingsScroll/SettingsList/BtnRow"]
 custom_minimum_size = Vector2(0, 44)
 size_flags_horizontal = 3
 text = "清除全部存档"

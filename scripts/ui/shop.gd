@@ -1,6 +1,8 @@
 extends Control
 ## 底部商店（封闭试玩版两行）：四设备卡（价格/差额/台数/禁买原因）+ 建基地/局内升级/操作说明
 
+signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（不再硬路径取面板）
+
 @onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyOpenerButton
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyMarkerButton
 @onready var buy_detector_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/BuyDetectorButton
@@ -135,8 +137,7 @@ func _on_build_base() -> void:
 
 
 func _on_upgrade() -> void:
-	var panel = get_node("/root/Main/UILayer/UpgradePanel")
-	panel.show()
+	upgrade_open_requested.emit()
 
 
 func _on_money_changed(_v: int) -> void:

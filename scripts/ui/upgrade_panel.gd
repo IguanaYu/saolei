@@ -17,7 +17,7 @@ const TRACK_NAMES := {
 	"discount": "购买折扣",
 }
 
-@onready var rows_box: VBoxContainer = $MarginContainer/VBoxContainer/RowsBox
+@onready var rows_box: VBoxContainer = $MarginContainer/VBoxContainer/RowsScroll/RowsBox
 @onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
 
 var _built_tracks: Array = []  # 已建行的轨 id 签名（tracks 变化时重建）
@@ -28,9 +28,19 @@ func _ready() -> void:
 	hide()
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_all())
-	close_button.pressed.connect(hide)
+	close_button.pressed.connect(close)
 	_rebuild_rows_if_needed()
 	_refresh_all()
+
+
+## 打开即按当前关刷新（避免显示陈旧等级/价格）；关闭按钮与 ESC/生命周期清理共用
+func open() -> void:
+	_refresh_all()
+	show()
+
+
+func close() -> void:
+	hide()
 
 
 ## 当前关应显示的轨列表（upgrade_tracks + 点击恢复 + 折扣尾行，hidden 过滤）
@@ -66,20 +76,22 @@ func _rebuild_rows_if_needed() -> void:
 
 
 ## 行节点显式命名（如 OpenerMoveRow），避免 get_children() 遍历误匹配
+## 列宽策略：名称列弹性占位、等级列收缩、按钮按内容收缩（旧固定 110+110+170 最小宽
+## 合计 414 > 面板内容宽，是按钮溢出右框的根因）
 func _make_row(upgrade_id: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.name = upgrade_id.to_pascal_case() + "Row"
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 10)
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
-	name_label.custom_minimum_size = Vector2(110, 0)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text = TRACK_NAMES.get(upgrade_id, upgrade_id)
 	var level_label := Label.new()
 	level_label.name = "LevelLabel"
-	level_label.custom_minimum_size = Vector2(110, 0)
 	var buy_button := Button.new()
 	buy_button.name = "BuyButton"
-	buy_button.custom_minimum_size = Vector2(170, 0)
+	buy_button.custom_minimum_size = Vector2(0, 40)
+	buy_button.add_theme_font_size_override("font_size", 16)
 	buy_button.pressed.connect(func() -> void: GameState.purchase_upgrade(upgrade_id))
 	row.add_child(name_label)
 	row.add_child(level_label)
