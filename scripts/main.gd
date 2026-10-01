@@ -505,6 +505,11 @@ func _on_robot_removed(_robot, reason: String) -> void:
 func _process(delta: float) -> void:
 	if not GameState.game_active:
 		return
+	# 引导=教学停摆：计时/CD/机器人/敌虫全冻结（todo 卡点三）。剧本步骤等的是玩家
+	# 输入事件（board_click 等，不经 _process），早退不影响推进；后续剧本若新增
+	# 「等机器人干活」类事件，需回来放开 robot_manager.tick
+	if tutorial_guide.visible:
+		return
 	GameState.elapsed += delta
 	GameState.tick_cd(delta)
 	if GameState.continue_mode:

@@ -4,7 +4,7 @@ class_name Level2Director
 ## 复用 TutorialGuide 做聚光+气泡表现层；时序由 GameState 信号驱动。
 ## 文案共 4 句（设计定稿 §6）：开局规则 / 高亮升级 / 首次升级 / 30s 未升级兜底。
 
-const COPY_INTRO := "90 秒，3 条命，清空安全格。"
+const COPY_INTRO := "120 秒，3 条命，清空安全格。"
 const COPY_UPGRADE := "机器人可以更快。"
 const COPY_FASTER := "更快了。"
 const COPY_LATE := "升级：所有机器人提速。"

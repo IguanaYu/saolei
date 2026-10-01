@@ -82,7 +82,7 @@ func _select(idx: int) -> void:
 			lvl.short_name if lvl.short_name != "" else lvl.display_name]
 	detail_intro.text = lvl.intro_line
 	detail_goal.text = "目标：%s" % _goal_line(lvl)
-	detail_new.text = ""   # 本关新增设备/规则（≤2 条）：读 mechanic_tags 差集，关卡数据定案后填
+	detail_new.text = _new_tags_line(idx, lvl)
 	var unlocked: bool = LevelSystem.is_level_unlocked(lvl.id)
 	lock_hint.visible = not unlocked
 	lock_hint.text = "通关第 %d 关解锁" % idx
@@ -105,6 +105,28 @@ func _chapter_level_id(idx: int) -> String:
 func _goal_line(lvl: LevelData) -> String:
 	var obj: ObjectiveData = lvl.objectives[0] if not lvl.objectives.is_empty() else null
 	return obj.short_label() if obj != null else "清空安全格"
+
+
+## 本关新增（mechanic_tags 对本章之前所有关并集的差集）：首关=全部算新增；
+## 空差集/无标签=空串不占行。按前一并集而非相邻前关——tags 是"本关焦点"非累积，
+## 相邻差集会把早出现过又缺席的旧标签（如 L5 的开墙/标雷 vs L4）误判成新增
+func _new_tags_line(idx: int, lvl: LevelData) -> String:
+	if lvl.mechanic_tags.is_empty():
+		return ""
+	var prev_tags: Array = []
+	for i in idx:
+		var prev: LevelData = LevelSystem.get_level(_chapter_level_id(i))
+		if prev != null:
+			for tag in prev.mechanic_tags:
+				if not prev_tags.has(tag):
+					prev_tags.append(tag)
+	var diff: Array = []
+	for tag in lvl.mechanic_tags:
+		if not prev_tags.has(tag):
+			diff.append(tag)
+	if diff.is_empty():
+		return ""
+	return "本关新增：%s" % "、".join(diff)
 
 
 ## 每关最佳成绩：从盲测记录（stats.playtest，仅 win）聚合最高分与最快用时

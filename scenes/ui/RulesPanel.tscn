@@ -48,12 +48,12 @@ theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.75, 0.7, 0.6, 1)
 
 [node name="SectionBTitle" type="Label" parent="Center/Panel/Margin/VBox"]
-text = "四类机器人做什么"
+text = "机器人和道具做什么"
 theme_override_font_sizes/font_size = 17
 theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
 
 [node name="SectionBBody" type="Label" parent="Center/Panel/Margin/VBox"]
-text = "开墙开安全格 / 标雷插旗 / 检测确认已插旗的雷并形成矿脉 / 矿工把矿运回基地换资金与附加分；机器人自动寻找最近确定目标；购买后需在棋盘放置。"
+text = "开墙机器人开安全格、标雷机器人插旗，它们自动寻找最近的目标，购买后需放置到棋盘；第 4 关起可用「探测」按钮确认可疑格、雇「保安」除虫护场。"
 autowrap_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.75, 0.7, 0.6, 1)

@@ -24,8 +24,8 @@ func open(lvl: LevelData) -> void:
 	title_label.text = "第 %s 关 · %s" % [lvl.display_name.substr(2), sname]
 	var obj: ObjectiveData = lvl.objectives[0] if not lvl.objectives.is_empty() else null
 	goal_label.text = "目标：%s" % (obj.short_label() if obj != null else "清空安全格")
-	robots_label.text = "本关设备：%s" % ("、".join(lvl.mechanic_tags) \
-			if not lvl.mechanic_tags.is_empty() else "全部四种机器人")
+	robots_label.text = "本关要素：%s" % ("、".join(lvl.mechanic_tags) \
+			if not lvl.mechanic_tags.is_empty() else "基础机器人")
 	time_label.text = _time_line(lvl)
 	skip_check.visible = SaveSystem.is_level_cleared(lvl.id)   # 首次必看
 	skip_check.button_pressed = bool(GameSettings.get_value("skip_pre_level"))

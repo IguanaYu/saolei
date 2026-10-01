@@ -75,6 +75,9 @@ func _apply_playtest_level1(lvl: LevelData) -> void:
 	lvl.shop_hidden = ["base", "drone", "upgrade", "debug"]
 	lvl.no_stars = true
 	lvl.is_playtest = true
+	lvl.short_name = "教学"
+	lvl.intro_line = "亲手扫两格，然后把活交给机器人。"
+	lvl.mechanic_tags = ["开墙", "标雷"]
 	lvl.fixed_mines.assign(FixedBoards.L1.mines)
 	lvl.fixed_base = FixedBoards.L1.base
 	lvl.preopen_coords.assign(FixedBoards.L1.preopen)
@@ -107,6 +110,9 @@ func _apply_playtest_level2(lvl: LevelData) -> void:
 	lvl.no_stars = true
 	lvl.is_playtest = true
 	lvl.meta_progression = false  # 盲测冷启动确定，不吃局外加成
+	lvl.short_name = "升级"
+	lvl.intro_line = "同一对机器人，养出四条成长线。"
+	lvl.mechanic_tags = ["开墙", "标雷", "升级"]
 	lvl.fixed_mines.assign(FixedBoards.L2.mines)
 	lvl.fixed_base = FixedBoards.L2.base
 	lvl.preopen_coords.assign(FixedBoards.L2.preopen)
@@ -147,6 +153,9 @@ func _apply_playtest_level3(lvl: LevelData) -> void:
 	lvl.allowed_modules = ["opener", "marker"]
 	lvl.no_stars = true
 	lvl.is_playtest = true
+	lvl.short_name = "积分"
+	lvl.intro_line = "过线即胜，矿石在局外让你变强。"
+	lvl.mechanic_tags = ["升级", "基地", "局外成长"]
 	lvl.fixed_mines.assign(FixedBoards.L3.mines)
 	lvl.fixed_base = FixedBoards.L3.base
 	lvl.preopen_coords.assign(FixedBoards.L3.preopen)
@@ -185,6 +194,9 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.allowed_modules = ["opener", "marker", "guard"]  # guard 走模块校验；probe 非实体不进此表
 	lvl.no_stars = true
 	lvl.is_playtest = true
+	lvl.short_name = "除虫"
+	lvl.intro_line = "虫巢孵化害虫，探测与保安随你调遣。"
+	lvl.mechanic_tags = ["探测", "保安", "随机盘"]
 	lvl.first_clear_reward = RewardData.new()
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()
@@ -228,7 +240,7 @@ func _apply_playtest_level5(lvl: LevelData) -> void:
 	lvl.repeat_reward.ore = 50
 	lvl.short_name = "Boss"
 	lvl.intro_line = "巨兽把牙埋进了墙里，拔光它们。"
-	lvl.mechanic_tags = ["开墙", "标雷", "保安", "探测"]
+	lvl.mechanic_tags = ["开墙", "标雷", "保安", "探测", "Boss"]
 	lvl.fixed_mines.assign(FixedBoards.L5.mines)
 	lvl.fixed_base = Vector2i(-1, -1)  # 玩家自放（沿用 L4 强制第一步，仅已开格）
 	lvl.preopen_coords.assign(FixedBoards.L5.preopen)
