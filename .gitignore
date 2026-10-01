@@ -28,3 +28,7 @@ tmp/kenney_*
 
 # Windows 试玩包与导出验证产物
 build/
+
+# docs/tmp 下参考图的 Godot 导入缓存（图本身未入库，.import 不得单独入库）
+tmp/**/*.import
+docs/**/*.import
