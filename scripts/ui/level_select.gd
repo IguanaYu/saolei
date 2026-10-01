@@ -6,6 +6,7 @@ signal start_requested(level_id: String)
 signal back_requested
 signal powerup_requested
 
+const L2_ID := "ch01_s02"
 const L3_ID := "ch01_s03"
 const COPY_INTERMISSION := "矿石能升级。"  # 间场教学句（设计 §6-1，全关 ≤3 句之一）
 
@@ -148,12 +149,13 @@ func _on_start_pressed() -> void:
 		start_requested.emit(id)
 
 
-## 间场高亮（设计 §4.1）：L3 已解锁且从未进过 L3 → 「变强」按钮高亮 + 教学句
+## 间场高亮（设计 §4.1）：L2 通关且从未进过 L3 → 「变强」按钮高亮 + 教学句
+## （揭示门控用通关记录：is_level_unlocked 试玩期恒真，见 main_menu 同口径注释）
 func _refresh_ore_row() -> void:
-	ore_row.visible = LevelSystem.is_level_unlocked(L3_ID)   # L2 通关前整行不可见
+	var revealed: bool = SaveSystem.is_level_cleared(L2_ID)   # L2 通关前整行不可见
+	ore_row.visible = revealed
 	ore_label.text = "总矿石: %d" % SaveSystem.ore
-	var highlight: bool = LevelSystem.is_level_unlocked(L3_ID) \
-			and not SaveSystem.has_entered_level(L3_ID)
+	var highlight: bool = revealed and not SaveSystem.has_entered_level(L3_ID)
 	hint_label.visible = highlight
 	hint_label.text = COPY_INTERMISSION
 	powerup_button.modulate = Color(1.0, 0.85, 0.35) if highlight else Color.WHITE

@@ -43,6 +43,30 @@ func is_level_unlocked(id: String) -> bool:
 #	return SaveSystem.is_level_cleared(prev_id)
 
 
+## 章节顺序表中的下一关 ID（替代逐关 substr 提取编号——后者对 "ch01_s01" 恒取 0，
+## 所有"下一关"都会跳回第 1 关，P1-06）。无后继（章末/ID 不存在）返回 ""
+func get_next_level_id(id: String) -> String:
+	var lvl := get_level(id)
+	if lvl == null:
+		return ""
+	var ids: Array = get_chapter(lvl.chapter_id).level_ids
+	var idx: int = ids.find(id)
+	if idx < 0 or idx + 1 >= ids.size():
+		return ""
+	return ids[idx + 1]
+
+
+## 章节内首个未通关关；全通返回末关（"继续试玩"与菜单文案共用此口径，P1-06/N8）
+func get_first_uncleared_level_id(ch_id: String) -> String:
+	var ch := get_chapter(ch_id)
+	if ch == null:
+		return ""
+	for id in ch.level_ids:
+		if not SaveSystem.is_level_cleared(id):
+			return String(id)
+	return String(ch.level_ids[-1])
+
+
 ## 领取首通奖励（矿石入账），返回奖励数据用于展示
 func claim_first_clear(id: String) -> RewardData:
 	var lvl := get_level(id)

@@ -154,6 +154,7 @@ func _on_splash_finished() -> void:
 func _show_main_menu() -> void:
 	results_panel.hide()
 	pause_panel.hide()
+	playtest_done.hide()  # 完成页按钮只发信号不自隐藏，接收端统一收起
 	main_menu.show()
 	main_menu.refresh()
 
@@ -162,18 +163,19 @@ func _show_main_menu() -> void:
 
 func _on_continue_play() -> void:
 	# 主按钮直进当前进度关：弹关前卡（首关教学在局内，见 director）
+	# 首个未通关关由 LevelSystem 统一给出（全通 → 末关，与菜单"第 5 关"文案一致）
 	main_menu.hide()
-	var idx := 0
-	for i in 5:
-		if not SaveSystem.is_level_cleared("ch01_s%02d" % (i + 1)):
-			idx = i
-			break
-	_open_pre_level("ch01_s%02d" % (idx + 1))
+	_open_pre_level(LevelSystem.get_first_uncleared_level_id(_current_chapter_id))
 
 
 func _on_select_level() -> void:
 	main_menu.hide()
-	level_select.set_chapter("ch01")   # 绕过章节页；ChapterSelect 场景保留不用
+	_show_level_select()   # 绕过章节页；ChapterSelect 场景保留不用
+
+
+## 统一选关页入口：先设章节并刷新再显示（P1-07：不初始化会露出空列表/陈旧详情）
+func _show_level_select() -> void:
+	level_select.set_chapter(_current_chapter_id)
 	level_select.show()
 
 
@@ -184,9 +186,8 @@ func _ask_quit() -> void:
 
 func _on_chapter_selected(ch_id: String) -> void:
 	_current_chapter_id = ch_id
-	level_select.set_chapter(ch_id)
 	chapter_select.hide()
-	level_select.show()
+	_show_level_select()
 
 
 func _on_chapter_select_back() -> void:
@@ -230,8 +231,11 @@ func _on_restart_requested() -> void:
 ## 结算「下一关」：经关前卡进下一关（首次必弹卡片）
 func _on_next_level() -> void:
 	results_panel.hide()
-	var n: int = GameState.current_level_id.substr(-1).to_int() + 1
-	_open_pre_level("ch01_s%02d" % n)
+	# 章节顺序表找后继（P1-06：substr(-1).to_int() 对 "ch01_s01" 恒得 0，任何关都会跳回第 1 关）
+	var next_id := LevelSystem.get_next_level_id(GameState.current_level_id)
+	if next_id == "":
+		return  # 章末无后继（按钮本已隐藏，防御性返回）
+	_open_pre_level(next_id)
 
 
 ## 试玩完成页（s05 达标经结算 BackButton 进入）
@@ -242,8 +246,8 @@ func _open_playtest_done() -> void:
 
 func _on_back_to_level_select() -> void:
 	results_panel.hide()
-	level_select.set_chapter(_current_chapter_id)
-	level_select.show()
+	playtest_done.hide()  # 完成页返回路径同 _show_main_menu：面板不残留
+	_show_level_select()
 
 
 func _start_level(level_id: String) -> void:
@@ -468,8 +472,7 @@ func _do_quit_to_select() -> void:
 	if GameState.daily_mode:
 		_show_main_menu()
 		return
-	level_select.set_chapter(_current_chapter_id)
-	level_select.show()
+	_show_level_select()
 
 
 # ---- 设置 / 清档 ----
@@ -615,14 +618,14 @@ func _handle_escape() -> void:
 		rules_panel.close()
 		return   # 露出下层：暂停或主菜单（只退一层）
 	if playtest_done.visible:
-		playtest_done.hide()
-		return   # 露出下层：结算面板（只退一层）
+		_on_back_to_level_select()  # 完成页 ESC 与返回按钮同路径（P1-07/N10：裸 hide 会露出未清理棋盘）
+		return
 	if pause_panel.visible:
 		_resume()
 		return
 	if pre_level_card.visible:
 		pre_level_card.hide()
-		level_select.show()   # ESC 只退一层：回选关
+		_show_level_select()   # ESC 只退一层：回选关（统一入口，先设章节再显示，P1-07）
 		return
 	if tutorial_guide.visible:
 		return  # 引导层自行处理（跳过）

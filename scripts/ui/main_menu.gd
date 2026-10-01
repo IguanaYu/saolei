@@ -1,6 +1,6 @@
 extends Panel
 ## 主菜单（封闭试玩版）：主按钮直进当前进度关，两层内见棋盘
-## 矿石/变强入口 L2 通关后才揭示（is_level_unlocked("ch01_s03")），揭示后带"新"直到进过 L3
+## 矿石/变强入口 L2 通关后揭示（is_level_cleared("ch01_s02")），揭示后带"新"直到进过 L3
 
 signal continue_requested        # 直接进当前进度关（经关前卡）
 signal select_level_requested
@@ -49,7 +49,9 @@ func _current_index() -> int:
 
 
 func _refresh_ore() -> void:
-	var show_ore: bool = LevelSystem.is_level_unlocked("ch01_s03")
+	# L2 通关后揭示（拍板口径）：is_level_unlocked 在试玩期恒真（全关解锁覆写），
+	# 必须用通关记录判断，否则新档开局就能看到矿石/变强入口
+	var show_ore: bool = SaveSystem.is_level_cleared("ch01_s02")
 	ore_tag.visible = show_ore
 	ore_label.text = "总矿石 %d" % SaveSystem.ore
 	# 揭示时刻高亮：从没进过 L3（=刚通 L2 回到菜单）时"变强"带"新"
