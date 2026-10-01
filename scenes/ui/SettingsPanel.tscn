@@ -149,6 +149,19 @@ theme_override_font_sizes/font_size = 16
 [node name="FullscreenCheck" type="CheckButton" parent="Center/Panel/VBox/RowFullscreen/HBox"]
 text = "开 / 关"
 
+[node name="RowWindowSize" type="PanelContainer" parent="Center/Panel/VBox"]
+
+[node name="HBox" type="HBoxContainer" parent="Center/Panel/VBox/RowWindowSize"]
+offset_right = 528.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="Center/Panel/VBox/RowWindowSize/HBox"]
+size_flags_horizontal = 3
+text = "窗口分辨率"
+theme_override_font_sizes/font_size = 16
+
+[node name="WindowSizeOption" type="OptionButton" parent="Center/Panel/VBox/RowWindowSize/HBox"]
+
 [node name="HSeparator2" type="HSeparator" parent="Center/Panel/VBox"]
 
 [node name="GameHeader" type="Label" parent="Center/Panel/VBox"]

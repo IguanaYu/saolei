@@ -16,6 +16,7 @@ const PROP_PX := 28
 var _bg_rect: TextureRect
 var _frame_layer: Control
 var _props_layer: Control
+var _relayout_queued := false   # 拖拽窗口时 size_changed 高频触发，防抖合并
 
 
 func _ready() -> void:
@@ -24,6 +25,20 @@ func _ready() -> void:
 	_build_static()
 	# Grid 的居中定位在它自己的 _ready 里，晚于本节点 → deferred 等布局完成后重排
 	layout_env.call_deferred()
+	# keep_height 拉伸下视口宽度随窗口变化（切全屏/调分辨率），重排边框与道具
+	get_viewport().size_changed.connect(_queue_relayout)
+
+
+func _queue_relayout() -> void:
+	if _relayout_queued:
+		return
+	_relayout_queued = true
+	_do_relayout.call_deferred()
+
+
+func _do_relayout() -> void:
+	_relayout_queued = false
+	layout_env()
 
 
 func _build_static() -> void:

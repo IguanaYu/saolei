@@ -4,6 +4,9 @@ extends Node
 
 const PATH := "user://settings.json"
 
+## 窗口分辨率可选值（"auto" = 按屏幕高度 80% 取 4:3 尺寸，上限 1536×1152）
+const WINDOW_SIZES := ["1024x768", "1280x960", "1536x1152", "auto"]
+
 const DEFAULTS := {
 	"music_on": true,
 	"sfx_on": true,
@@ -12,6 +15,7 @@ const DEFAULTS := {
 	"screen_shake": true,
 	"show_grid": false,
 	"fullscreen": false,
+	"window_size": "1024x768",
 	"tutorial_done": false,
 	"skip_pre_level": false,   # 重玩时跳过关前卡（首次通关前强制显示）
 	"feedback_url": "",        # 试玩反馈地址（空 = 反馈按钮隐藏，渠道定后配置启用）
@@ -38,6 +42,8 @@ func set_value(key: String, value: Variant) -> void:
 	save_settings()
 	if key == "fullscreen":
 		_apply_fullscreen()
+	elif key == "window_size":
+		_apply_window_size()
 	setting_changed.emit(key, value)
 
 
@@ -68,3 +74,29 @@ func _apply_fullscreen() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		_apply_window_size()  # 退出全屏时回到所选窗口尺寸
+
+
+func _apply_window_size() -> void:
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+		return
+	var key := String(values.get("window_size", "1024x768"))
+	var size := Vector2i(1024, 768)
+	if key == "auto":
+		var usable := DisplayServer.screen_get_usable_rect()
+		var h: int = mini(int(usable.size.y * 0.8), 1152)
+		size = Vector2i(int(h * 4.0 / 3.0), h)
+	elif WINDOW_SIZES.has(key):
+		var parts := key.split("x")
+		size = Vector2i(int(parts[0]), int(parts[1]))
+	DisplayServer.window_set_size(size)
+	# 改尺寸后重新居中，避免窗口偏出屏幕
+	var screen := DisplayServer.screen_get_usable_rect()
+	DisplayServer.window_set_position(screen.position + (screen.size - size) / 2)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.keycode == KEY_F11:
+		set_value("fullscreen", not bool(values.get("fullscreen", false)))
+		get_viewport().set_input_as_handled()

@@ -34,6 +34,18 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	next_button.pressed.connect(_advance)
 	skip_button.pressed.connect(_finish)
+	# 切分辨率/全屏后视口与目标节点位置变化，重排当前步骤的聚光框与气泡
+	get_viewport().size_changed.connect(_relayout_current)
+
+
+## 视口尺寸变化时仅重排几何（不动文案与超时计时，避免重置升级提示）
+func _relayout_current() -> void:
+	if not visible or _step_idx >= steps.size():
+		return
+	var step: Dictionary = steps[_step_idx]
+	var r := _spot_rect(step).grow(8.0)
+	_lay_spotlight(r)
+	_lay_tip(r, step.get("tip", "left"), _step_gen)
 
 
 func begin(step_defs: Array) -> void:

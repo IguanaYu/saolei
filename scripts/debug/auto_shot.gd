@@ -3,6 +3,7 @@ extends Node
 ## 用法（加在 Godot 启动参数后，用 "--" 分隔的用户参数区）：
 ##   -- --shot=2.5:user://shot1.png --shot=4:res://tmp/shot2.png
 ##   -- --click=1.2:/root/Main/UILayer/MainMenu/.../ContinueButton
+##   -- --call=3:/root/GameSettings:set_value:["fullscreen",true]  (args 为 JSON 数组，可省略)
 ##   -- --quit=6   （到点自动退出）
 ## release 导出（OS.is_debug_build()==false）直接跳过，零副作用。
 
@@ -27,6 +28,11 @@ func _ready() -> void:
 		elif item.begins_with("click="):
 			var body := item.substr(6).split(":", true, 1)
 			_actions.append({"delay": float(body[0]), "kind": "click", "arg": body[1]})
+		elif item.begins_with("call="):
+			# call=delay:node_path:method:json_args（json_args 可省略；打印返回值）
+			var parts: PackedStringArray = item.substr(5).split(":", true, 3)
+			_actions.append({"delay": float(parts[0]), "kind": "call",
+					"arg": [parts[1], parts[2], parts.get(3) if parts.size() > 3 else ""]})
 		elif item.begins_with("quit="):
 			_actions.append({"delay": float(item.substr(5)), "kind": "quit", "arg": ""})
 		elif item.begins_with("sig="):
@@ -66,6 +72,20 @@ func _process(delta: float) -> void:
 					print("[AutoShot] clicked ", act.arg)
 				else:
 					push_warning("[AutoShot] not a Button: " + act.arg)
+			"call":
+				var p: PackedStringArray = act.arg
+				var c_node := get_node_or_null(p[0])
+				if c_node == null:
+					push_warning("[AutoShot] call node not found: " + p[0])
+				elif not c_node.has_method(p[1]):
+					push_warning("[AutoShot] call method not found: " + p[0] + ":" + p[1])
+				else:
+					var args: Array = []
+					if p.size() > 2 and p[2] != "":
+						var parsed: Variant = JSON.parse_string(p[2])
+						if typeof(parsed) == TYPE_ARRAY:
+							args = parsed
+					print("[AutoShot] call ", p[0], ":", p[1], "(", args, ") = ", c_node.callv(p[1], args))
 			"sig":
 				var p: PackedStringArray = act.arg
 				var sig_node := get_node_or_null(p[0])

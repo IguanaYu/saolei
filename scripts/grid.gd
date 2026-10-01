@@ -67,6 +67,8 @@ func _ready() -> void:
 	_make_hover_overlay()
 	_make_effects_layer()
 	GameSettings.setting_changed.connect(_on_setting_changed)
+	# keep_height 拉伸下视口宽度随窗口变化（切全屏/调分辨率），需重新居中
+	get_viewport().size_changed.connect(_center_grid)
 	_center_grid()
 	init_empty_grid()
 

@@ -5,6 +5,8 @@ signal close_requested
 signal clear_save_requested
 signal tutorial_rewatch_requested
 
+const WINDOW_SIZE_LABELS := ["1024 × 768", "1280 × 960", "1536 × 1152", "跟随屏幕"]
+
 @onready var music_check: CheckButton = $Center/Panel/VBox/RowMusic/HBox/MusicCheck
 @onready var sfx_check: CheckButton = $Center/Panel/VBox/RowSfx/HBox/SfxCheck
 @onready var volume_slider: HSlider = $Center/Panel/VBox/RowVolume/HBox/VolumeSlider
@@ -12,6 +14,7 @@ signal tutorial_rewatch_requested
 @onready var shake_check: CheckButton = $Center/Panel/VBox/RowShake/HBox/ShakeCheck
 @onready var grid_check: CheckButton = $Center/Panel/VBox/RowGrid/HBox/GridCheck
 @onready var fullscreen_check: CheckButton = $Center/Panel/VBox/RowFullscreen/HBox/FullscreenCheck
+@onready var window_size_option: OptionButton = $Center/Panel/VBox/RowWindowSize/HBox/WindowSizeOption
 
 
 func _ready() -> void:
@@ -23,6 +26,12 @@ func _ready() -> void:
 	shake_check.toggled.connect(func(v): GameSettings.set_value("screen_shake", v))
 	grid_check.toggled.connect(func(v): GameSettings.set_value("show_grid", v))
 	fullscreen_check.toggled.connect(func(v): GameSettings.set_value("fullscreen", v))
+	for i in WINDOW_SIZE_LABELS.size():
+		window_size_option.add_item(WINDOW_SIZE_LABELS[i], i)
+	window_size_option.item_selected.connect(
+		func(i): GameSettings.set_value("window_size", GameSettings.WINDOW_SIZES[i]))
+	# F11 游戏内切换全屏时，同步面板勾选与下拉禁用态
+	GameSettings.setting_changed.connect(_on_setting_changed)
 	$Center/Panel/VBox/BtnRow/TutorialButton.pressed.connect(
 		func(): tutorial_rewatch_requested.emit())
 	$Center/Panel/VBox/BtnRow/ClearButton.pressed.connect(
@@ -35,6 +44,11 @@ func open() -> void:
 	show()
 
 
+func _on_setting_changed(key: String, value: Variant) -> void:
+	if key == "fullscreen":
+		fullscreen_check.set_pressed_no_signal(bool(value))
+		window_size_option.disabled = bool(value)
+
 func _sync() -> void:
 	music_check.set_pressed_no_signal(bool(GameSettings.get_value("music_on")))
 	sfx_check.set_pressed_no_signal(bool(GameSettings.get_value("sfx_on")))
@@ -43,3 +57,6 @@ func _sync() -> void:
 	shake_check.set_pressed_no_signal(bool(GameSettings.get_value("screen_shake")))
 	grid_check.set_pressed_no_signal(bool(GameSettings.get_value("show_grid")))
 	fullscreen_check.set_pressed_no_signal(bool(GameSettings.get_value("fullscreen")))
+	window_size_option.disabled = bool(GameSettings.get_value("fullscreen"))
+	var ws_idx: int = GameSettings.WINDOW_SIZES.find(String(GameSettings.get_value("window_size")))
+	window_size_option.select(maxi(ws_idx, 0))
