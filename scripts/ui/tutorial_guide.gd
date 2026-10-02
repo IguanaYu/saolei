@@ -70,6 +70,13 @@ func notify_event(event: String) -> void:
 		_pending_events[event] = true  # 早到事件缓存，推进到等待它的步骤时补领
 
 
+## 点击是否落在教学自身控件上（气泡/跳过）——main._input 据此放行，
+## 避免放置模式把「跳过」按钮的左键吞掉（回归 2026-10-01 P1）
+func is_point_on_chrome(p: Vector2) -> bool:
+	return tip_panel.get_global_rect().has_point(p) \
+			or skip_button.get_global_rect().has_point(p)
+
+
 func _advance() -> void:
 	_step_idx += 1
 	_step_gen += 1

@@ -93,6 +93,12 @@ func _ready() -> void:
 	upgrade_panel.visibility_changed.connect(func():
 		if upgrade_panel.visible:
 			tutorial_guide.notify_event("upgrade_panel_opened"))
+	# 教学出现时取消放置模式（回归 2026-10-01 P1：教学×放置重叠，跳过按钮被放置左键吞掉）
+	tutorial_guide.visibility_changed.connect(func():
+		if tutorial_guide.visible and placing_mode != "":
+			_exit_placing_mode())
+	# 基地阶段提示走商店提示行（回归 2026-10-01 P2：HUD 顶栏提示盖住 L5 Boss）
+	GameState.game_phase_changed.connect(_on_game_phase_changed)
 	# 窗口/F11 变化：统一重算棋盘可用区并联动重排（P1-04，本节点最后连接 =
 	# grid/cave_env/tutorial 的即时处理器之后运行，读到的是最新 UI 边界）
 	get_viewport().size_changed.connect(_relayout_play_area)
@@ -377,6 +383,18 @@ func _close_level_overlays() -> void:
 	_exit_placing_mode()
 
 
+## 基地阶段提示：走商店提示行（底部固定区），不放 HUD 顶栏——顶栏下沿与
+## L4/L5 Boss 趴框重叠（回归 2026-10-01 P2）。两个自放基地的关（L4 随机盘/L5 固定盘）
+## 都只允许已开格，文案按此口径
+func _on_game_phase_changed(phase: String) -> void:
+	match phase:
+		"placing_base":
+			shop.set_placing_hint(true, "请放置第一个基地（点击已开格）")
+		"playing":
+			if placing_mode == "":
+				shop.set_placing_hint(false)
+
+
 ## 棋盘可用区域 = 视口 − HUD 顶栏 − 底部商店（P1-04：棋盘/洞窟框/教学高亮不再压商店）。
 ## 进关与窗口变化时重算；联动 grid 居中 → 场上实体按缓存 coord 重投影 → 教学聚光重摆。
 ## CaveEnv 自订阅 viewport 变化（deferred），此时读到的已是更新后的 grid 位置
@@ -572,6 +590,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode == KEY_ESCAPE:
 		_handle_escape()
+		return
+	# 教学可见时，落在教学控件（气泡/跳过）上的点击放行给它们，不走局内输入
+	# （放置模式会 set_input_as_handled 把「跳过」的左键吞掉，回归 2026-10-01 P1）
+	if tutorial_guide.visible and event is InputEventMouseButton \
+			and tutorial_guide.is_point_on_chrome(event.position):
 		return
 	# 任一菜单覆盖层显示时不处理游戏输入
 	if not _in_game():

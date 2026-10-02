@@ -57,10 +57,11 @@ func get_objective_text() -> String:
 
 
 func _on_game_phase_changed(phase: String) -> void:
+	# 基地阶段提示挪到商店提示行（main._on_game_phase_changed 接管）：HUD 顶栏下沿
+	# 与 L5 Boss 趴框位置重叠，开局提示会盖住 Boss（回归 2026-10-01 P2）
 	match phase:
 		"placing_base":
-			phase_hint_label.text = "请放置第一个基地（点击任意格子）"
-			phase_hint_label.visible = true
+			phase_hint_label.visible = false
 		"playing":
 			phase_hint_label.visible = false
 
