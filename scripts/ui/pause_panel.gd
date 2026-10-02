@@ -1,11 +1,13 @@
 extends Control
-## 暂停面板：局内 ESC / HUD 暂停按钮呼出；继续 / 规则 / 设置 / 重开 / 返回选关
+## 暂停面板：局内 ESC / HUD 暂停按钮呼出；继续 / 规则 / 设置 / 重开 / 返回选关 / 返回主菜单 / 退出游戏
 
 signal resume_requested
 signal restart_requested
 signal rules_requested
 signal settings_requested
 signal quit_requested
+signal menu_requested
+signal exit_requested
 
 @onready var context_label: Label = $Center/Panel/VBox/ContextLabel
 @onready var objective_label: Label = $Center/Panel/VBox/ObjectiveLabel
@@ -20,6 +22,8 @@ func _ready() -> void:
 	$Center/Panel/VBox/SettingsButton.pressed.connect(func(): settings_requested.emit())
 	$Center/Panel/VBox/RestartButton.pressed.connect(func(): restart_requested.emit())
 	$Center/Panel/VBox/QuitButton.pressed.connect(func(): quit_requested.emit())
+	$Center/Panel/VBox/MenuButton.pressed.connect(func(): menu_requested.emit())
+	$Center/Panel/VBox/ExitButton.pressed.connect(func(): exit_requested.emit())
 
 
 ## context: "试玩矿区 · 第 1 关" 或 "每日挑战 · 8月15日"；objective: "扫雷目标 45/90"

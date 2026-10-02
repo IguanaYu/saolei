@@ -69,6 +69,16 @@ custom_minimum_size = Vector2(0, 48)
 text = "返回选关"
 modulate = Color(1, 0.6, 0.55, 1)
 
+[node name="MenuButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "返回主菜单"
+modulate = Color(1, 0.6, 0.55, 1)
+
+[node name="ExitButton" type="Button" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+text = "退出游戏"
+modulate = Color(1, 0.45, 0.4, 1)
+
 [node name="HintLabel" type="Label" parent="Center/Panel/VBox"]
 text = "按 ESC 继续"
 horizontal_alignment = 1

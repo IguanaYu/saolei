@@ -113,6 +113,8 @@ func _ready() -> void:
 	pause_panel.settings_requested.connect(func(): settings_panel.open())
 	pause_panel.restart_requested.connect(_ask_restart_run)
 	pause_panel.quit_requested.connect(_ask_quit_to_select)
+	pause_panel.menu_requested.connect(_ask_quit_to_menu)
+	pause_panel.exit_requested.connect(_ask_exit_game)
 	# 设置
 	settings_panel.close_requested.connect(func(): settings_panel.hide())
 	settings_panel.clear_save_requested.connect(_ask_clear_save)
@@ -476,6 +478,36 @@ func _ask_quit_to_select() -> void:
 		"确认返回", "继续挖矿", true)
 
 
+## 返回主菜单（确认框）：结算口径同返回选关，终点为主菜单
+func _ask_quit_to_menu() -> void:
+	if GameState.continue_mode:
+		_pending_confirm = "leave_continue_menu"
+		confirm_dialog.ask("离开本局？",
+			"胜利结算已入账\n继续挑战的分数将计入最高分",
+			"确认离开", "继续挖掘", true)
+		return
+	_pending_confirm = "quit_to_menu"
+	var keep_ore: int = GameState.score / 20
+	confirm_dialog.ask("返回主菜单？",
+		"本局按放弃结算：积分清零，矿石按一半保留（+%d 矿）" % keep_ore,
+		"确认返回", "继续挖矿", true)
+
+
+## 退出游戏（确认框）：先按放弃口径结算入档，再关进程（免得局内退出绕过账本）
+func _ask_exit_game() -> void:
+	if GameState.continue_mode:
+		_pending_confirm = "exit_game"
+		confirm_dialog.ask("退出游戏？",
+			"胜利结算已入账\n继续挑战的分数将计入最高分",
+			"退出", "取消", true)
+		return
+	_pending_confirm = "exit_game"
+	var keep_ore: int = GameState.score / 20
+	confirm_dialog.ask("退出游戏？",
+		"本局按放弃结算：积分清零，矿石按一半保留（+%d 矿）" % keep_ore,
+		"退出", "取消", true)
+
+
 ## 放弃结算：半矿入账 + 局面清理（终点由调用方决定）
 func _abandon_settle() -> void:
 	get_tree().paused = false
@@ -522,8 +554,20 @@ func _on_confirm_confirmed() -> void:
 			_do_restart_run()
 		"quit_to_select":
 			_do_quit_to_select()
+		"quit_to_menu":
+			_abandon_settle()
+			_show_main_menu()
 		"leave_continue":
-			_leave_after_continue()
+			_leave_after_continue(false)
+		"leave_continue_menu":
+			_leave_after_continue(true)
+		"exit_game":
+			if GameState.continue_mode:
+				# 继续挑战中退出：与离开同口径——不记 abandon，仅刷新最高分
+				SaveSystem.refresh_best_score(GameState.score)
+			else:
+				_abandon_settle()
+			get_tree().quit()
 		"clear_save":
 			SaveSystem.reset_all()
 			get_tree().paused = false
@@ -537,7 +581,8 @@ func _on_confirm_confirmed() -> void:
 
 ## 继续挑战中离开（Q3/Q4）：不走放弃流程、不二次发矿、不记 abandon；
 ## 仅当累计分更高时刷新 best_score，并给最后一条盲测记录补 continued/continue_gain
-func _leave_after_continue() -> void:
+## to_menu=true 终点为主菜单（暂停面板"返回主菜单"），否则回选关页
+func _leave_after_continue(to_menu: bool = false) -> void:
 	get_tree().paused = false
 	pause_panel.hide()
 	tutorial_guide.hide()
@@ -551,7 +596,10 @@ func _leave_after_continue() -> void:
 		"final_score": GameState.score,
 	})
 	robot_manager.remove_all()
-	_on_back_to_level_select()
+	if to_menu:
+		_show_main_menu()
+	else:
+		_on_back_to_level_select()
 
 
 func _on_idle_warning_changed(show: bool) -> void:
