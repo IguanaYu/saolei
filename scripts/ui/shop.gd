@@ -92,13 +92,12 @@ func _buy(robot_type: String) -> void:
 	try_buy(robot_type)
 
 
-## 快捷按键入口：成功进入放置模式返回 true
+## 购买入口（按钮/快捷键共用）：直购直出，成功=机器人已在基地旁出生
 func try_buy(robot_type: String) -> bool:
 	if not can_buy(robot_type):
 		return false
 	var main := get_node("/root/Main")
-	main.call("_enter_placing_mode", robot_type)
-	return true
+	return main.call("_buy_and_spawn_robot", robot_type)
 
 
 func can_buy(robot_type: String) -> bool:

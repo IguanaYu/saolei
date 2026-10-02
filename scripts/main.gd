@@ -27,7 +27,7 @@ extends Node
 @onready var ore_shop = $UILayer/OreShop
 @onready var event_log_connector = $UILayer/EventLogConnector
 
-# 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/"...")
+# 当前放置模式（"base"=建基地 / "probe"=探针；机器人已改直购直出，不走放置）
 var placing_mode: String = ""
 
 # 试玩版第一/二/三/四关剧本控制器（_ready 时创建）
@@ -814,11 +814,7 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 # ---- 放置模式（商店购买后）----
 
 func _enter_placing_mode(mode: String) -> void:
-	# mode: "opener"/"marker"/"detector"/"miner"/"guard"/"base"/"probe"/"charge_tower"/...
-	# 价格检查留给实际放置时做（基地价格递增、机器人价格递增）
-	if mode in ["opener", "marker", "detector", "miner", "guard"] \
-			and GameState.money < GameState.get_robot_price(mode):
-		return
+	# mode: "base"=建基地 / "probe"=探针（价格检查留给实际放置时做，基地价递增）
 	if mode == "base" and GameState.money < GameState.get_base_price():
 		return
 	if mode == "probe" and GameState.money < GameState.PROBE_PRICE:
@@ -845,10 +841,7 @@ func _placing_hint_text(mode: String) -> String:
 		"probe":
 			return "探测 ¥%d：点目标格，确认其周围 3×3 的雷 · 右键/ESC 取消" % GameState.PROBE_PRICE
 		_:
-			var names := {"opener": "开墙型", "marker": "标雷型", "detector": "检测型",
-				"miner": "矿工型", "guard": "保安"}
-			return "放置%s ¥%d：点已开空格（一格一机）· 右键/ESC 取消" \
-					% [names.get(mode, mode), GameState.get_robot_price(mode)]
+			return ""
 
 
 ## 非法落点短原因（P2-03）：""=可放置；can_place_at 与 _try_place_at 共用同一套规则
@@ -878,15 +871,6 @@ func place_block_reason(coord: Vector2i) -> String:
 			return "金币不够"
 		return ""
 
-	# 机器人放置（opener / marker / detector / miner / guard 等）：可走格 + 一格一机 + 买得起
-	if cell == null or not cell.is_opened:
-		return "机器人要放在已开格"
-	if cell.path_blockers > 0:
-		return "此格被触手/火焰占据"
-	if robot_manager.get_robot_positions().has(coord):
-		return "一格只能一台机器人"
-	if GameState.money < GameState.get_robot_price(placing_mode):
-		return "金币不够"
 	return ""
 
 
@@ -920,22 +904,48 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		_trigger_probe(coord)
 		return true
 
-	var type := placing_mode
-	var robot_price: int = GameState.get_robot_price(type)  # 购前取价（阶梯在购买后抬升）
-	_exit_placing_mode()
+	return true
 
-	if not GameState.purchase_robot(type):
+
+## 直购直出（2026-10-02 优化）：机器人不再手动放置，购买后自动从最新基地旁出生。
+## 找不到空位时直接拒单不扣钱。锁定/余额检查在调用方（shop.can_buy / 快捷键）
+func _buy_and_spawn_robot(robot_type: String) -> bool:
+	var spot := _find_spawn_spot_near_base()
+	if spot == Vector2i(-1, -1):
+		hud.show_toast("基地周围没有空位", 2.0)
 		return false
-
-	robot_manager.spawn_robot(coord, type, grid)
+	var robot_price: int = GameState.get_robot_price(robot_type)  # 购前取价（阶梯在购买后抬升）
+	if not GameState.purchase_robot(robot_type):
+		return false
+	robot_manager.spawn_robot(spot, robot_type, grid)
 	GameState.game_event_logged.emit("购入 %s −%d金" % [
 		{"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
-			"guard": "保安"}.get(type, type), robot_price], "player", "player")
-	GameState.robot_spawned.emit(type)
+			"guard": "保安"}.get(robot_type, robot_type), robot_price], "player", "player")
+	GameState.robot_spawned.emit(robot_type)
 	# L4 埋点：保安购买时点（-1=未买）
-	if type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
+	if robot_type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
 		GameState.result_stats["guard_bought_elapsed"] = snappedf(GameState.elapsed, 0.1)
 	return true
+
+
+## 最新基地旁 BFS 找最近可站格（已开+无阻断+一格一机，基地格自身可站——同开局赠机口径）；
+## 全场无空位返回 (-1,-1)
+func _find_spawn_spot_near_base() -> Vector2i:
+	if GameState.bases.is_empty():
+		return Vector2i(-1, -1)
+	var occupied: Dictionary = robot_manager.get_robot_positions()
+	var queue: Array = [GameState.bases.back()]
+	var visited: Dictionary = {queue[0]: true}
+	while not queue.is_empty():
+		var pos: Vector2i = queue.pop_front()
+		if grid.is_walkable(pos) and not occupied.has(pos):
+			return pos
+		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = pos + o
+			if not visited.has(n) and grid.cells.has(n):
+				visited[n] = true
+				queue.append(n)
+	return Vector2i(-1, -1)
 
 
 func _in_bounds(coord: Vector2i) -> bool:
