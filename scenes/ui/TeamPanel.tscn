@@ -7,7 +7,7 @@ anchors_preset = 0
 offset_left = 16.0
 offset_top = 128.0
 offset_right = 260.0
-offset_bottom = 584.0
+offset_bottom = 384.0
 mouse_filter = 2
 script = ExtResource("1_tp")
 

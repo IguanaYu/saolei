@@ -19,6 +19,7 @@ var _sprite: Sprite2D
 var _hp_back: ColorRect
 var _hp_fill: ColorRect
 var _hp_ticks: Array = []
+var _hp_label: Label = null  # 拔牙进度文字（P2-08：条会被误读成血条，标明语义）
 var _bar_w := 0.0
 var _hp_ratio := 0.0
 var _pose_timer: SceneTreeTimer = null
@@ -69,6 +70,16 @@ func _build_hp_bar() -> void:
 		tick.anchor_bottom = 1.0
 		_hp_back.add_child(tick)
 		_hp_ticks.append(tick)
+	# 拔牙进度文字（本体子节点而非血条子节点：不随 9px 高的条挤压；fall 时手动隐藏）
+	_hp_label = Label.new()
+	_hp_label.name = "BossHpLabel"
+	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hp_label.add_theme_font_size_override("font_size", 13)
+	_hp_label.add_theme_color_override("font_color", Color(1, 0.92, 0.7, 1))
+	_hp_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_hp_label.add_theme_constant_override("outline_size", 4)
+	add_child(_hp_label)
 
 
 func _refresh_frame() -> void:
@@ -92,6 +103,9 @@ func layout(cell_px: int) -> void:
 	_hp_fill.offset_left = 1.0
 	_hp_fill.offset_top = 1.0
 	_hp_fill.offset_bottom = -1.0
+	if _hp_label != null:
+		_hp_label.position = Vector2(-60.0, -h / 2.0 + 16.0)
+		_hp_label.size = Vector2(120.0, 18.0)
 	_apply_hp()
 
 
@@ -110,6 +124,8 @@ func setup_hp_ticks(total_teeth: int, thresholds: Array) -> void:
 
 func set_hp(current: int, total: int) -> void:
 	_hp_ratio = clampf(float(current) / float(maxi(1, total)), 0.0, 1.0)
+	if _hp_label != null:
+		_hp_label.text = "拔牙 %d/%d" % [current, total]
 	_apply_hp()
 
 
@@ -130,6 +146,13 @@ func teleport_to(anchor_id: String, world_pos: Vector2) -> void:
 	anchor = anchor_id
 	position = world_pos
 	rotation = 0.0 if anchor == "top" else -PI / 2.0  # right 锚点贴右侧竖着趴
+	_keep_label_upright()
+
+
+## 本体贴右侧竖趴时文字反向旋转保持水平（P2-08 标注可读）
+func _keep_label_upright() -> void:
+	if _hp_label != null:
+		_hp_label.rotation = -rotation
 
 
 ## 播放姿态（pose 持续 duration 后自动回 idle 并发 pose_finished）
@@ -154,9 +177,11 @@ func play(pose_id: String, duration: float = 1.5) -> void:
 		"crawl":
 			modulate = Color.WHITE
 		"fall":
-			# 斩杀掉落：失足下坠 + 旋转 + 渐隐（血条随本体退场）
+			# 斩杀掉落：失足下坠 + 旋转 + 渐隐（血条与拔牙标注随本体退场）
 			modulate = Color.WHITE
 			_hp_back.visible = false
+			if _hp_label != null:
+				_hp_label.visible = false
 			var tw := create_tween()
 			tw.set_parallel(true)
 			tw.tween_property(self, "position:y", position.y + 520.0, 2.6) \
@@ -188,6 +213,7 @@ func crawl_to(anchor_id: String, corner_pos: Vector2, target_pos: Vector2, durat
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_callback(func():
 		rotation = -PI / 2.0 if anchor_id == "right" else 0.0
+		_keep_label_upright()
 		pose = "idle"
 		_refresh_frame()
 		pose_finished.emit("crawl"))

@@ -26,10 +26,10 @@ const BUTTON_ICONS := {
 	"upgrade": preload("res://visual_v2/runtime/ui/icons/icon_upgrade.png"),
 }
 
-const PROBE_PRICE := 100  # 与 main._enter_placing_mode/can_place_at 的探测价格同源口径
-
-
-func set_placing_hint(show: bool) -> void:
+## 放置提示行：show 切显隐；text 非空则更新文案（P2-03：按放置对象给出费用与落点规则）
+func set_placing_hint(show: bool, text := "") -> void:
+	if text != "":
+		hint_label.text = text
 	hint_label.visible = show
 
 
@@ -82,7 +82,7 @@ func _on_buy_guard() -> void:
 
 ## 探测不是实体机器人：不进 purchase_robot 价格阶梯，直接进放置模式（瞬发 100/次）
 func _on_buy_probe() -> void:
-	if GameState.money < PROBE_PRICE:
+	if GameState.money < GameState.PROBE_PRICE:
 		return
 	var main := get_node("/root/Main")
 	main.call("_enter_placing_mode", "probe")
@@ -152,7 +152,7 @@ func _refresh_prices() -> void:
 	_refresh_one(buy_miner_button, "miner", "矿工型")
 	_refresh_one(buy_guard_button, "guard", "保安")
 	if buy_probe_button.visible:
-		buy_probe_button.disabled = GameState.money < PROBE_PRICE
+		buy_probe_button.disabled = GameState.money < GameState.PROBE_PRICE
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price

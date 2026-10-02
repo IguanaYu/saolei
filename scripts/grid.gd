@@ -93,6 +93,22 @@ func _make_effects_layer() -> void:
 var _hover_overlay: Sprite2D = null
 var _hover_tex: Dictionary = {}
 
+## L4 探测 3×3 范围预览（P2-03/P3-02：程序绘制，与 _trigger_probe 同口径——盘外格截断）
+class ProbePreview extends Node2D:
+	var rects: Array = []  # Rect2 列表（格子内缩 1px，避开格线）
+
+	func set_cells(list: Array) -> void:
+		rects = list
+		queue_redraw()
+
+	func _draw() -> void:
+		for r in rects:
+			draw_rect(r, Color(0.45, 0.85, 1.0, 0.16), true)
+			draw_rect(r, Color(0.45, 0.85, 1.0, 0.85), false, 1.5)
+
+
+var _probe_preview: ProbePreview = null
+
 
 func _make_hover_overlay() -> void:
 	_hover_tex = {
@@ -107,6 +123,30 @@ func _make_hover_overlay() -> void:
 	_hover_overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_hover_overlay.visible = false
 	add_child(_hover_overlay)
+	_probe_preview = ProbePreview.new()
+	_probe_preview.name = "ProbePreview"
+	_probe_preview.z_index = 39  # 压过格子，低于悬停角框
+	_probe_preview.visible = false
+	add_child(_probe_preview)
+
+
+## 探测范围预览：show_it=false 或中心不在盘内则隐藏；范围与 _trigger_probe 一致（get_cell 截断）
+func set_probe_preview(show_it: bool, center := Vector2i.ZERO) -> void:
+	if _probe_preview == null:
+		return
+	if not show_it or not cells.has(center):
+		_probe_preview.visible = false
+		return
+	var rects: Array = []
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var c := center + Vector2i(dx, dy)
+			if cells.has(c):
+				rects.append(Rect2(
+					Vector2(c.x * cell_size + 1.0, c.y * cell_size + 1.0),
+					Vector2(cell_size - 2.0, cell_size - 2.0)))
+	_probe_preview.set_cells(rects)
+	_probe_preview.visible = true
 
 
 ## state: "hide" / "normal"(普通悬停) / "valid" / "invalid"(放置落点合法性)
@@ -185,6 +225,8 @@ func init_empty_grid() -> void:
 		_lines.queue_redraw()
 	if _hover_overlay != null:
 		_hover_overlay.visible = false
+	if _probe_preview != null:
+		_probe_preview.visible = false
 	if _fx != null:
 		_fx.clear_all()  # 重开新盘清空岩屑/跳字/飞币等临时动效
 

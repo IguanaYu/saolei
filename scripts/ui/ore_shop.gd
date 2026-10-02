@@ -16,6 +16,13 @@ const TRACKS := [
 @onready var rows_box: VBoxContainer = $MarginContainer/VBoxContainer/RowsBox
 @onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
 
+## 轨道图标（P3-04 前置：现有图先上，移动/工作两类无现成图暂缺位，F 批补）
+const TRACK_ICONS := {
+	"start_money": preload("res://visual_v2/runtime/ui/icons/icon_coin.png"),
+	"start_lives": preload("res://visual_v2/runtime/ui/icons/icon_heart.png"),
+	"start_robot": preload("res://visual_v2/runtime/ui/icons/icon_robot_opener.png"),
+}
+
 var _built := false
 
 
@@ -41,6 +48,15 @@ func _build_rows() -> void:
 		# 行节点显式命名（StartMoneyRow 等），避免 get_children() 遍历误匹配
 		row.name = String(t["key"]).to_pascal_case() + "Row"
 		row.add_theme_constant_override("separation", 10)
+		var icon_path: String = String(t["key"])
+		if TRACK_ICONS.has(icon_path):
+			var icon_rect := TextureRect.new()
+			icon_rect.name = "TrackIcon"
+			icon_rect.texture = TRACK_ICONS[icon_path]
+			icon_rect.custom_minimum_size = Vector2(22, 22)
+			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+			row.add_child(icon_rect)
 		var name_label := Label.new()
 		name_label.name = "NameLabel"
 		name_label.custom_minimum_size = Vector2(110, 0)

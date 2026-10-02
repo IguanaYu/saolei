@@ -739,47 +739,86 @@ func _enter_placing_mode(mode: String) -> void:
 		return
 	if mode == "base" and GameState.money < GameState.get_base_price():
 		return
-	if mode == "probe" and GameState.money < 100:  # L4 探测：100/次一次性瞬发
+	if mode == "probe" and GameState.money < GameState.PROBE_PRICE:
 		return
 	placing_mode = mode
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
-	shop.set_placing_hint(true)
+	shop.set_placing_hint(true, _placing_hint_text(mode))
 
 
 func _exit_placing_mode() -> void:
 	placing_mode = ""
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	grid.set_hover_overlay(Vector2i.ZERO, "hide")
+	grid.set_probe_preview(false)
 	shop.set_placing_hint(false)
+
+
+## 放置提示按对象类型给出费用与落点规则（P2-03：不再全部共用"点击地图放置机器人"）
+func _placing_hint_text(mode: String) -> String:
+	match mode:
+		"base":
+			return "建基地 ¥%d：点已开格（不能是基地/坍塌格）· 右键/ESC 取消" \
+					% GameState.get_base_price()
+		"probe":
+			return "探测 ¥%d：点目标格，确认其周围 3×3 的雷 · 右键/ESC 取消" % GameState.PROBE_PRICE
+		_:
+			var names := {"opener": "开墙型", "marker": "标雷型", "detector": "检测型",
+				"miner": "矿工型", "guard": "保安"}
+			return "放置%s ¥%d：点已开空格（一格一机）· 右键/ESC 取消" \
+					% [names.get(mode, mode), GameState.get_robot_price(mode)]
+
+
+## 非法落点短原因（P2-03）：""=可放置；can_place_at 与 _try_place_at 共用同一套规则
+func place_block_reason(coord: Vector2i) -> String:
+	if not _in_bounds(coord):
+		return "盘外"
+	var cell = grid.get_cell(coord)
+
+	if placing_mode == "base":
+		if cell == null or not cell.is_opened:
+			return "基地要放在已开格"
+		if cell.is_base:
+			return "这里已是基地"
+		if cell.is_collapsed:
+			return "坍塌格不能建基地"
+		if GameState.money < GameState.get_base_price():
+			return "金币不够"
+		return ""
+
+	# L4 探测：目标格任意（开/关均可，已确认格除外）
+	if placing_mode == "probe":
+		if cell == null:
+			return "盘外"
+		if cell.is_confirmed_mine:
+			return "这格已是确认雷"
+		if GameState.money < GameState.PROBE_PRICE:
+			return "金币不够"
+		return ""
+
+	# 机器人放置（opener / marker / detector / miner / guard 等）：可走格 + 一格一机 + 买得起
+	if cell == null or not cell.is_opened:
+		return "机器人要放在已开格"
+	if cell.path_blockers > 0:
+		return "此格被触手/火焰占据"
+	if robot_manager.get_robot_positions().has(coord):
+		return "一格只能一台机器人"
+	if GameState.money < GameState.get_robot_price(placing_mode):
+		return "金币不够"
+	return ""
 
 
 ## 无副作用的放置判定：悬停预览与 _try_place_at 共用同一套规则（盘点 v1 §约束 2：
 ## 禁止另写近似规则）。钱判定与 purchase_robot / get_base_price 的实际扣费口径一致。
 func can_place_at(coord: Vector2i) -> bool:
-	if not _in_bounds(coord):
-		return false
-	var cell = grid.get_cell(coord)
-
-	if placing_mode == "base":
-		# 后续基地：必须在已开格上、不是基地/坍塌格
-		return cell != null and cell.is_opened and not cell.is_base \
-			and not cell.is_collapsed and GameState.money >= GameState.get_base_price()
-
-	# L4 探测机器人：目标格任意（开/关均可，已确认格除外）
-	if placing_mode == "probe":
-		return cell != null and not cell.is_confirmed_mine and GameState.money >= 100
-
-	# 机器人放置（opener / marker / detector / miner / guard 等）：可走格 + 一格一机 + 买得起
-	if not grid.is_walkable(coord):
-		return false
-	if robot_manager.get_robot_positions().has(coord):
-		return false
-	return GameState.money >= GameState.get_robot_price(placing_mode)
+	return place_block_reason(coord) == ""
 
 
 func _try_place_at(world_pos: Vector2) -> bool:
 	var coord := grid.world_to_coord(world_pos)
 	if not can_place_at(coord):
+		# 非法落点给短原因（P2-03：不再只有红角框静默失败）
+		hud.show_toast(place_block_reason(coord), 1.5)
 		return false
 
 	if placing_mode == "base":
@@ -793,7 +832,7 @@ func _try_place_at(world_pos: Vector2) -> bool:
 	# 不吃 CD（Q3：放置类口径）
 	if placing_mode == "probe":
 		_exit_placing_mode()
-		GameState.add_money(-100)
+		GameState.add_money(-GameState.PROBE_PRICE)
 		_trigger_probe(coord)
 		return true
 
@@ -848,6 +887,7 @@ func _on_grid_cell_hovered(cell: Cell) -> void:
 	if placing_mode != "":
 		grid.set_hover_overlay(cell.coord,
 			"valid" if can_place_at(cell.coord) else "invalid")
+		grid.set_probe_preview(placing_mode == "probe", cell.coord)
 	elif not cell.is_opened:
 		grid.set_hover_overlay(cell.coord, "normal")
 	else:
@@ -856,6 +896,7 @@ func _on_grid_cell_hovered(cell: Cell) -> void:
 
 func _on_grid_cell_unhovered(_cell: Cell) -> void:
 	grid.set_hover_overlay(Vector2i.ZERO, "hide")
+	grid.set_probe_preview(false)
 
 
 ## 开局赠送机器人：基地格 + 周围已开邻格依次落位（一格一机）。gifts: {"opener":1,...}

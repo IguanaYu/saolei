@@ -35,6 +35,8 @@ const DISCOUNT_PRICES := [200, 500]
 # 点击恢复轨（玩家操作 CD 回充加速）：cd_duration 乘数表 + 价格表
 const RECHARGE_LEVELS := [1.0, 0.8, 0.65, 0.5]
 const RECHARGE_PRICES := [40, 80, 140]
+# L4 探测价（E1：单一来源，main/shop 共用；此前三处各写 100）
+const PROBE_PRICE := 100
 
 # 已购买机器人计数（用于价格递增）
 var opener_count: int = 0
