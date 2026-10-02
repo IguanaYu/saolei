@@ -23,6 +23,7 @@ const SKINS := {
 	"guard": [preload("res://visual_v2/runtime/robots/robot_guard_idle.png"), preload("res://visual_v2/runtime/robots/robot_guard_move.png")],
 }
 const SKIN_FRAME_INTERVAL := 0.18  # 移动时帧交替间隔
+const FOOT_SHADOW_TEXTURE := preload("res://visual_v2/runtime/robots/shadow_blob.png")
 
 var _anim_timer := 0.0
 var _anim_frame := 0
@@ -32,6 +33,19 @@ signal action_performed(robot: Robot, action: String, cell_coord: Vector2i)
 
 func _ready() -> void:
 	_update_visual()
+	_add_foot_shadow()
+
+
+## 脚下接触影（两级羽化 blob，调研文档：docs/active/美术生产/调研-2D游戏脚下阴影-2026-10-02.md）
+## 独立节点而非烘进皮肤帧：move 帧自带弹跳，影子要贴地不跟跳
+func _add_foot_shadow() -> void:
+	var shadow := Sprite2D.new()
+	shadow.name = "FootShadow"
+	shadow.texture = FOOT_SHADOW_TEXTURE
+	shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	shadow.z_index = -1  # 压到 Skin 之下；随 Robot z=5 仍高于格子
+	shadow.position = Vector2(0, 9)  # 皮肤 bbox 底 ≈ +10，露下缘月牙
+	add_child(shadow)
 
 
 func _process(delta: float) -> void:
