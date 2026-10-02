@@ -138,7 +138,14 @@ func do_tick(grid, locked: Dictionary) -> void:
 		if targets.is_empty():
 			_state = "idle"
 			return
-		var found := Pathfinding.find_nearest_target(grid, coord, targets, locked, self)
+		# 同型防抱团：优先选离其他同型已锁目标 ≥radius+1 格的候选；
+		# 候选全被挤占/不可达时回退全场最近（现状口径，不停工）
+		var found := {}
+		var spaced: Array = Pathfinding.spaced_targets(targets, locked, robot_type, self)
+		if not spaced.is_empty():
+			found = Pathfinding.find_nearest_target(grid, coord, spaced, locked, self)
+		if found.is_empty():
+			found = Pathfinding.find_nearest_target(grid, coord, targets, locked, self)
 		if found.is_empty():
 			_state = "idle"
 			return

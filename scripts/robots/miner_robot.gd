@@ -40,19 +40,20 @@ func do_tick(grid, locked: Dictionary) -> void:
 func _tick_to_mine(grid, locked: Dictionary) -> void:
 	# 如果当前矿脉无效，找新矿脉
 	if _current_vein_coord == null:
-		var success := _find_new_vein(grid)
+		var success := _find_new_vein(grid, locked)
 		if not success:
 			_state = "idle"
 			return
 
-	# 检查矿脉是否还有资源
+	# 检查矿脉是否还有资源（无效则释放占用，重新找脉）
 	var v = grid.get_cell(_current_vein_coord)
 	if v == null or v.vein_resources <= 0 or not v.is_vein:
+		locked.erase(_current_vein_coord)
 		_current_vein_coord = null
 		_state = "idle"
 		return
 
-	# 矿工不用 locked_targets，传空字典
+	# 矿工路径寻路不吃目标锁（脉已被自己占用）
 	var reached: bool = _move_step(grid, [_current_vein_coord], {})
 	if reached:
 		miner_state = "mining"
@@ -63,10 +64,11 @@ func _tick_to_mine(grid, locked: Dictionary) -> void:
 func _tick_mining(grid) -> void:
 	var v = grid.get_cell(_current_vein_coord)
 	if v == null or v.vein_resources <= 0 or not v.is_vein:
-		# 矿脉耗尽
+		# 矿脉耗尽（释放占用，其他矿工可改挑这条脉的路过位）
 		if v != null and v.is_vein:
 			v.deplete_vein()
 			grid.vein_depleted.emit(v.coord)
+		GameState.locked_targets.erase(_current_vein_coord)
 		_current_vein_coord = null
 		miner_state = "to_mine"
 		_state = "idle"
@@ -109,19 +111,28 @@ func _tick_unloading(grid) -> void:
 	_play_action_pulse()
 
 
-func _find_new_vein(grid) -> bool:
+## 一脉一工（2026-10-02 防抱团）：优先挑没有其他矿工占用的脉，占用跨往返保留
+## （采矿→回基地→返回同一条脉）；脉全被占时回退共享最近脉，采完自然散开
+func _find_new_vein(grid, locked: Dictionary) -> bool:
 	var veins: Array = grid.get_all_veins()
 	if veins.is_empty():
 		return false
-	# 找最近的矿脉
-	var nearest = veins[0]
-	var best_dist: int = abs(coord.x - nearest.x) + abs(coord.y - nearest.y)
+	var free: Array = []
 	for v in veins:
+		var holder: Variant = locked.get(v, null)
+		if holder == null or holder == self:
+			free.append(v)
+	var pool: Array = free if not free.is_empty() else veins
+	# 找最近的矿脉
+	var nearest = pool[0]
+	var best_dist: int = abs(coord.x - nearest.x) + abs(coord.y - nearest.y)
+	for v in pool:
 		var d: int = abs(coord.x - v.x) + abs(coord.y - v.y)
 		if d < best_dist:
 			best_dist = d
 			nearest = v
 	_current_vein_coord = nearest
+	locked[nearest] = self
 	return true
 
 

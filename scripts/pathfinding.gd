@@ -54,6 +54,30 @@ static func _is_adjacent_8(a: Vector2i, b: Vector2i) -> bool:
 	return dx <= 1 and dy <= 1 and not (dx == 0 and dy == 0)
 
 
+## 同型防抱团过滤（2026-10-02）：剔除「距其他同型机器人已锁目标 ≤ radius 格（切比雪夫）」
+## 的候选，让同型机器人优先散开干活；返回空数组 = 全被挤占，调用方回退原始列表
+## （挤着也要干活，绝不因为分散而停工）
+static func spaced_targets(targets: Array, locked: Dictionary,
+		robot_type: String, except_robot: Variant = null, radius: int = 2) -> Array:
+	var same_locks: Array = []
+	for t in locked:
+		var holder: Variant = locked[t]
+		if holder != except_robot and holder != null and holder.robot_type == robot_type:
+			same_locks.append(t)
+	if same_locks.is_empty():
+		return targets
+	var spaced: Array = []
+	for t in targets:
+		var crowded := false
+		for l in same_locks:
+			if maxi(abs(t.x - l.x), abs(t.y - l.y)) <= radius:
+				crowded = true
+				break
+		if not crowded:
+			spaced.append(t)
+	return spaced
+
+
 ## 无限制 BFS（L4 敌虫用）：不受 walkable 限制（虫爬岩壁），全盘 4 向可走
 ## 返回从 start 走向 goal 的下一格（Vector2i），start==goal 或不可达返回 Vector2i(-9,-9)
 static func find_path_free_step(grid, start: Vector2i, goal: Vector2i) -> Vector2i:

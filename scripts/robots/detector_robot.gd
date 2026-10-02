@@ -57,8 +57,14 @@ func do_tick(grid, locked: Dictionary) -> void:
 			_state = "idle"
 			_detector_state = DetectorState.IDLE
 			return
-		var found := Pathfinding.find_nearest_target(
-			grid, coord, available, locked, self)
+		# 同型防抱团：优先离其他检测器已锁旗 ≥radius+1 格；全被挤占回退全场最近
+		var found := {}
+		var spaced: Array = Pathfinding.spaced_targets(available, locked, "detector", self)
+		if not spaced.is_empty():
+			found = Pathfinding.find_nearest_target(grid, coord, spaced, locked, self)
+		if found.is_empty():
+			found = Pathfinding.find_nearest_target(
+				grid, coord, available, locked, self)
 		if found.is_empty():
 			_state = "idle"
 			_detector_state = DetectorState.IDLE
