@@ -14,6 +14,8 @@ fallbacks = Array[Font]([ExtResource("2_font_latin")])
 
 [sub_resource type="StyleBoxTexture" id="sb_panel"]
 texture = ExtResource("3_panel")
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 texture_margin_left = 12.0
 texture_margin_top = 12.0
 texture_margin_right = 12.0
@@ -25,6 +27,8 @@ content_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxTexture" id="sb_btn_n"]
 texture = ExtResource("4_btn_n")
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 texture_margin_left = 10.0
 texture_margin_top = 10.0
 texture_margin_right = 10.0
@@ -36,6 +40,8 @@ content_margin_bottom = 8.0
 
 [sub_resource type="StyleBoxTexture" id="sb_btn_h"]
 texture = ExtResource("5_btn_h")
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 texture_margin_left = 10.0
 texture_margin_top = 10.0
 texture_margin_right = 10.0
@@ -47,6 +53,8 @@ content_margin_bottom = 8.0
 
 [sub_resource type="StyleBoxTexture" id="sb_btn_p"]
 texture = ExtResource("6_btn_p")
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 texture_margin_left = 10.0
 texture_margin_top = 10.0
 texture_margin_right = 10.0
@@ -58,6 +66,8 @@ content_margin_bottom = 6.0
 
 [sub_resource type="StyleBoxTexture" id="sb_btn_d"]
 texture = ExtResource("7_btn_d")
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 texture_margin_left = 10.0
 texture_margin_top = 10.0
 texture_margin_right = 10.0
