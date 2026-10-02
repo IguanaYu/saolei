@@ -13,6 +13,9 @@ var _step_idx := 0
 var _pending_events: Dictionary = {}
 # 步骤代数：防旧步骤的 await/timer 回调污染新步骤
 var _step_gen := 0
+# 本局已放行教学的关卡：每关教学只播一轮，但同一局内信号驱动的后续段
+# （如 L1 耗尽→商店）不因首段结束置了标记而被拦
+var _run_level := ""
 
 @onready var dim_top: ColorRect = $DimTop
 @onready var dim_bottom: ColorRect = $DimBottom
@@ -48,9 +51,16 @@ func _relayout_current() -> void:
 	_lay_tip(r, step.get("tip", "left"), _step_gen)
 
 
+## 每关教学只播一轮：该关看过一次（标记已置）则整段剧本不再启动；
+## 同局内首段已放行后，后续段直接放行（否则首段结束置标记会拦掉 L1 的耗尽段）
 func begin(step_defs: Array) -> void:
 	if step_defs.is_empty():
 		return
+	var lvl := String(GameState.current_level_id)
+	if _run_level != lvl:
+		if bool(GameSettings.get_value("tutorial_done_" + lvl)):
+			return
+		_run_level = lvl
 	steps = step_defs
 	_step_idx = 0
 	_step_gen += 1
@@ -168,10 +178,16 @@ func _lay_tip(r: Rect2, side: String, gen: int = -1) -> void:
 	tip_panel.position = pos
 
 
+## 新一局进关时由 main 调用：清局内放行，让"看过"判定重新按关卡标记来
+func reset_run() -> void:
+	_run_level = ""
+
+
 func _finish() -> void:
 	_step_gen += 1
 	_pending_events.clear()
-	GameSettings.set_value("tutorial_done", true)
+	GameSettings.set_value("tutorial_done_" + GameState.current_level_id, true)
+	GameSettings.set_value("tutorial_done", true)  # 旧全局标记，兼容存档
 	hide()
 	finished.emit()
 

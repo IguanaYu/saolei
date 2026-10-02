@@ -357,7 +357,11 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 func _maybe_start_tutorial() -> void:
 	if GameState.daily_mode:
 		return
-	# 试玩版剧本教学每次进关都触发（不看 tutorial_done，盲测者每遍都要看到）
+	tutorial_guide.reset_run()
+	# 每关教学单独记次：看过一次（含跳过）整段不再播；重看入口=设置里重置标记
+	if bool(GameSettings.get_value(
+			"tutorial_done_" + GameState.current_level_id)):
+		return
 	if GameState.current_level_id == "ch01_s01" and level1_director != null:
 		level1_director.begin()
 	elif GameState.current_level_id == "ch01_s02" and level2_director != null:
@@ -538,7 +542,9 @@ func _do_quit_to_select() -> void:
 # ---- 设置 / 清档 ----
 
 func _on_tutorial_rewatch() -> void:
-	hud.show_toast("第一关开场自带教学，进 1-1 即可", 3.0)
+	for i in range(1, 6):
+		GameSettings.set_value("tutorial_done_ch01_s0%d" % i, false)
+	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 
 func _ask_clear_save() -> void:

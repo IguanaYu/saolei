@@ -17,6 +17,13 @@ const DEFAULTS := {
 	"fullscreen": false,
 	"window_size": "1024x768",
 	"tutorial_done": false,
+	# 每关教学单独记次：看过一次（自然走完/跳过/ESC）整段剧本不再播；
+	# 设置面板"重看教学"统一重置（load_settings 只回读 DEFAULTS 内的 key，勿漏注册）
+	"tutorial_done_ch01_s01": false,
+	"tutorial_done_ch01_s02": false,
+	"tutorial_done_ch01_s03": false,
+	"tutorial_done_ch01_s04": false,
+	"tutorial_done_ch01_s05": false,
 	"skip_pre_level": false,   # 重玩时跳过关前卡（首次通关前强制显示）
 	"feedback_url": "",        # 试玩反馈地址（空 = 反馈按钮隐藏，渠道定后配置启用）
 }
