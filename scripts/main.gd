@@ -25,6 +25,7 @@ extends Node
 @onready var playtest_done = $UILayer/PlaytestDonePanel
 @onready var upgrade_panel = $UILayer/UpgradePanel
 @onready var ore_shop = $UILayer/OreShop
+@onready var event_log_connector = $UILayer/EventLogConnector
 
 # 当前放置模式（商店点击购买/建造后置为 "opener"/"marker"/"base"/"...")
 var placing_mode: String = ""
@@ -281,6 +282,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	var id := lvl.id if lvl != null else ""
 	SaveSystem.mark_level_entered(id)  # 间场「变强」高亮依据（进关即记）
 	GameState.reset_state(id, lvl)
+	event_log_connector.clear_logs()  # 侧栏事件流随新局清空（重开/换关同口径）
 	_flag_count = 0
 	robot_manager.remove_all()
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
@@ -299,10 +301,14 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"preopen": lvl.preopen_coords,
 				"base": lvl.fixed_base,
 			})
-			# L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
+			# L4/L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
 			# 放完基地才 game_active（同 L4 口径，倒计时从放基地起算）
 			if lvl.fixed_base != Vector2i(-1, -1):
 				GameState.game_active = true
+			# L4 除害关（pests）：固定盘装载后布置裂缝+预置虫害（同原随机盘口径，
+			# 放基地前即可见，剧本 #0）
+			if lvl.pests:
+				enemy_manager.setup_board(grid)
 			# 预开算分（设计 v1.2）：只计分不计钱；300 > 预开上限 115，不会开局误判过线
 			if lvl.preopen_scores:
 				GameState.add_score(lvl.preopen_coords.size(), "preopen")
@@ -325,10 +331,14 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			gifts["opener"] = int(gifts.get("opener", 0)) + 1
 		if sr >= 2:
 			gifts["marker"] = int(gifts.get("marker", 0)) + 1
-	if not gifts.is_empty() and lvl != null and lvl.has_fixed_board():
+	# 基地玩家自放（L4/L5）：赠机压到放完基地后落位（此时还没有基地）；
+	# 预置基地的关立即落位。pregen_random 为裸随机遗留路径，口径相同
+	var player_places_base: bool = lvl != null and (lvl.pregen_random \
+			or (lvl.has_fixed_board() and lvl.fixed_base == Vector2i(-1, -1)))
+	if not gifts.is_empty() and lvl != null and not player_places_base:
 		_gift_start_robots(gifts)
-	elif not gifts.is_empty() and lvl != null and lvl.pregen_random:
-		_pending_gifts = gifts  # L4：放完基地后在基地旁落位（此时还没有基地）
+	elif not gifts.is_empty() and lvl != null:
+		_pending_gifts = gifts
 	# HUD 关名（试玩关「第 N 关 · 短名」；短名未配置回退 display_name）
 	if lvl != null:
 		var n: int = lvl.display_name.substr(2).to_int() if lvl.display_name.length() > 2 else 1
@@ -724,8 +734,9 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 				GameState.cd_blocked.emit()
 				return true
 			tentacle.cut_by_player()
-			GameState.add_money(15)
+			GameState.add_money(15, "player_combat")
 			GameState.add_score(15, "combat")
+			GameState.game_event_logged.emit("你 斩断触手 +15金", "player", "player")
 			GameState.result_stats["tentacles_cut"] += 1
 			GameState.consume_player_action()
 			return true
@@ -848,6 +859,7 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		var price: int = GameState.get_base_price()
 		_exit_placing_mode()
 		GameState.add_money(-price)
+		GameState.game_event_logged.emit("建造基地 −%d金" % price, "player", "player")
 		grid.place_base(coord)
 		return true
 
@@ -856,16 +868,21 @@ func _try_place_at(world_pos: Vector2) -> bool:
 	if placing_mode == "probe":
 		_exit_placing_mode()
 		GameState.add_money(-GameState.PROBE_PRICE)
+		GameState.game_event_logged.emit("放置探针 −%d金" % GameState.PROBE_PRICE, "player", "player")
 		_trigger_probe(coord)
 		return true
 
 	var type := placing_mode
+	var robot_price: int = GameState.get_robot_price(type)  # 购前取价（阶梯在购买后抬升）
 	_exit_placing_mode()
 
 	if not GameState.purchase_robot(type):
 		return false
 
 	robot_manager.spawn_robot(coord, type, grid)
+	GameState.game_event_logged.emit("购入 %s −%d金" % [
+		{"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
+			"guard": "保安"}.get(type, type), robot_price], "player", "player")
 	GameState.robot_spawned.emit(type)
 	# L4 埋点：保安购买时点（-1=未买）
 	if type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
@@ -932,14 +949,25 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 			spots.append(n.coord)
 			if spots.size() >= 4:
 				break
+	var gifted := []
 	for robot_type in gifts:
 		for i in int(gifts[robot_type]):
 			if spots.is_empty():
-				return
+				break
 			var coord: Vector2i = spots.pop_front()
 			GameState.gift_robot(robot_type)
 			robot_manager.spawn_robot(coord, robot_type, grid)
 			GameState.robot_spawned.emit(robot_type)
+			gifted.append(robot_type)
+	if not gifted.is_empty():
+		var counts := {}
+		for t in gifted:
+			counts[t] = counts.get(t, 0) + 1
+		var parts := []
+		for t in counts:
+			parts.append("%s×%d" % [{"opener": "开墙", "marker": "标雷", "detector": "检测",
+				"miner": "矿工", "guard": "保安"}.get(t, t), counts[t]])
+		GameState.game_event_logged.emit("开局赠送 " + " ".join(parts), "player", "good")
 
 
 # ---- 奖励逻辑（玩家和机器人走同一条通道）----
@@ -947,7 +975,8 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 func _on_cell_opened(_cell, by_actor: String) -> void:
 	if by_actor == "drone":
 		return  # 无人机开的格子不给奖励
-	GameState.add_money(1)
+	GameState.add_money(1, "player_open" if by_actor == "player"
+			else "robot_open" if by_actor.begins_with("robot_") else "")
 	GameState.add_score(1, "open")
 	if by_actor == "player":
 		GameState.result_stats["player_ops"] += 1
@@ -968,7 +997,7 @@ func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) 
 	if correct and _cell.is_confirmed_mine:
 		return  # L4 探测「确认雷」格再插旗不重复给分（设计 §5 同格首次原则）
 	if correct:
-		GameState.add_money(5)
+		GameState.add_money(5, "player_flag" if by_actor == "player" else "robot_flag")
 		GameState.add_score(5, "flag")
 		if by_actor == "player":
 			GameState.result_stats["player_ops"] += 1

@@ -27,6 +27,15 @@ const L3 := {
 	"base": Vector2i(3, 5),
 }
 
+## L4 由 tmp/level4_board_finder.py 烘焙（seed=65, start=(9,9) 单起点洪水）：
+## 预开 57 格（安全格 26%，v2.3 盲测反馈"开局一小撮"→固定图保大片预开）/
+## 数字边界 32 格（预置网 x3 余量足）/ 区外零格 32（机器人连锁口袋）/ 象限雷 [9,11,9,11]，
+## 验收标准见 docs/active/试玩版内容/第四关-设计文档.md §7（v2.3）
+const L4 := {
+	"mines": [Vector2i(0, 11), Vector2i(1, 2), Vector2i(1, 12), Vector2i(1, 15), Vector2i(2, 2), Vector2i(2, 8), Vector2i(3, 2), Vector2i(3, 8), Vector2i(3, 9), Vector2i(4, 1), Vector2i(4, 3), Vector2i(4, 9), Vector2i(5, 6), Vector2i(6, 15), Vector2i(7, 1), Vector2i(7, 5), Vector2i(7, 7), Vector2i(7, 9), Vector2i(8, 3), Vector2i(8, 7), Vector2i(8, 13), Vector2i(8, 15), Vector2i(9, 15), Vector2i(10, 3), Vector2i(10, 7), Vector2i(10, 15), Vector2i(11, 1), Vector2i(11, 12), Vector2i(12, 12), Vector2i(13, 2), Vector2i(13, 3), Vector2i(13, 4), Vector2i(13, 8), Vector2i(13, 11), Vector2i(14, 2), Vector2i(14, 6), Vector2i(14, 13), Vector2i(15, 7), Vector2i(15, 9), Vector2i(15, 14)],
+	"preopen": [Vector2i(2, 10), Vector2i(2, 11), Vector2i(2, 12), Vector2i(2, 13), Vector2i(2, 14), Vector2i(2, 15), Vector2i(3, 10), Vector2i(3, 11), Vector2i(3, 12), Vector2i(3, 13), Vector2i(3, 14), Vector2i(3, 15), Vector2i(4, 10), Vector2i(4, 11), Vector2i(4, 12), Vector2i(4, 13), Vector2i(4, 14), Vector2i(4, 15), Vector2i(5, 10), Vector2i(5, 11), Vector2i(5, 12), Vector2i(5, 13), Vector2i(5, 14), Vector2i(5, 15), Vector2i(6, 10), Vector2i(6, 11), Vector2i(6, 12), Vector2i(6, 13), Vector2i(6, 14), Vector2i(7, 10), Vector2i(7, 11), Vector2i(7, 12), Vector2i(7, 13), Vector2i(7, 14), Vector2i(8, 8), Vector2i(8, 9), Vector2i(8, 10), Vector2i(8, 11), Vector2i(8, 12), Vector2i(9, 8), Vector2i(9, 9), Vector2i(9, 10), Vector2i(9, 11), Vector2i(9, 12), Vector2i(10, 8), Vector2i(10, 9), Vector2i(10, 10), Vector2i(10, 11), Vector2i(10, 12), Vector2i(11, 8), Vector2i(11, 9), Vector2i(11, 10), Vector2i(11, 11), Vector2i(12, 8), Vector2i(12, 9), Vector2i(12, 10), Vector2i(12, 11)],
+}   # base 玩家自放：level_database 里 fixed_base=(-1,-1)（同 L5 口径）
+
 ## L5 由 tmp/level5_board_finder.py 烘焙（seed=67, center=(3,5), 7x7 方形预开）：
 ## 全程双规则可解（20 旗+108 开=全盘，拔完 20 颗牙不猜雷）/ 预开 68 格（35%）/
 ## 开局 5 个秒推目标含 5 面旗 / 最大连锁 19 格 / 第一行整行留墙（史莱姆入场通道）+

@@ -162,8 +162,9 @@ func _apply_playtest_level3(lvl: LevelData) -> void:
 	lvl.preopen_coords.assign(FixedBoards.L3.preopen)
 
 
-## 外部试玩版第四关（除害关·随机图）：三虫+保安+探测+随机盘首见
-## 设计文档：docs/active/试玩版内容/第四关-设计文档.md（v2.1）
+## 外部试玩版第四关（除害关·固定图）：三虫+保安+探测+大片预开固定盘
+## 设计文档：docs/active/试玩版内容/第四关-设计文档.md（v2.3：随机盘→固定图，盲测反馈
+## 单起点洪水 42% 概率预开 <15%，"开局一小撮"体验差；FixedBoards.L4 保底 57 格预开）
 func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.grid_size = Vector2i(16, 16)
 	lvl.mine_count = 40
@@ -180,7 +181,12 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.free_correct_flags = 0
 	lvl.cooldown_sec = 3.0
 	lvl.cooldown_after_purchase = -1.0
-	lvl.pregen_random = true    # 本关核心开关：裸随机盘+洪水预开+玩家自放基地
+	# 固定图（v2.3）：大片预开保底 + 玩家自放基地保留（fixed_base=(-1,-1) 同 L5 口径）；
+	# pests 开裂缝+预置虫害（main.gd 固定盘分支内布置）
+	lvl.pests = true
+	lvl.fixed_mines.assign(FixedBoards.L4.mines)
+	lvl.fixed_base = Vector2i(-1, -1)
+	lvl.preopen_coords.assign(FixedBoards.L4.preopen)
 	lvl.shop_limits = {"guard": 1}  # 保安限购 1
 	lvl.shop_hidden = ["detector", "miner", "drone", "debug"]
 	lvl.shop_extra = ["guard", "probe"]  # 两个新按钮本关可见
@@ -197,7 +203,7 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.is_playtest = true
 	lvl.short_name = "除虫"
 	lvl.intro_line = "虫巢孵化害虫，探测与保安随你调遣。"
-	lvl.mechanic_tags = ["探测", "保安", "随机盘"]
+	lvl.mechanic_tags = ["探测", "保安", "虫害"]
 	lvl.first_clear_reward = RewardData.new()
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()
