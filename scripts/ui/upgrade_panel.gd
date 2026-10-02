@@ -76,25 +76,34 @@ func _rebuild_rows_if_needed() -> void:
 
 
 ## 行节点显式命名（如 OpenerMoveRow），避免 get_children() 遍历误匹配
-## 列宽策略：名称列弹性占位、等级列收缩、按钮按内容收缩（旧固定 110+110+170 最小宽
-## 合计 414 > 面板内容宽，是按钮溢出右框的根因）
-func _make_row(upgrade_id: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
+## 两行式紧凑行：上行 名称+当前等级，下行 整宽购买按钮；字号对齐主题常规（名称/按钮 16），
+## 2026-10-03 反馈"显示不全"后从小字号(13/14)上调。BuyButton 必须保持为 row 直接子节点
+## （_refresh_row 与 tmp/test_batch_a 按此路径取）
+func _make_row(upgrade_id: String) -> VBoxContainer:
+	var row := VBoxContainer.new()
 	row.name = upgrade_id.to_pascal_case() + "Row"
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 4)
+	var head := HBoxContainer.new()
+	head.name = "Head"
+	head.add_theme_constant_override("separation", 8)
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.clip_text = true
 	name_label.text = TRACK_NAMES.get(upgrade_id, upgrade_id)
 	var level_label := Label.new()
 	level_label.name = "LevelLabel"
+	level_label.add_theme_font_size_override("font_size", 14)
+	head.add_child(name_label)
+	head.add_child(level_label)
 	var buy_button := Button.new()
 	buy_button.name = "BuyButton"
 	buy_button.custom_minimum_size = Vector2(0, 40)
 	buy_button.add_theme_font_size_override("font_size", 16)
+	buy_button.clip_text = true
 	buy_button.pressed.connect(func() -> void: GameState.purchase_upgrade(upgrade_id))
-	row.add_child(name_label)
-	row.add_child(level_label)
+	row.add_child(head)
 	row.add_child(buy_button)
 	return row
 
@@ -110,7 +119,7 @@ func _refresh_all() -> void:
 			_refresh_row(row, _row_ids[row])
 
 
-func _refresh_row(row: HBoxContainer, upgrade_id: String) -> void:
+func _refresh_row(row: VBoxContainer, upgrade_id: String) -> void:
 	var lvl: int = GameState.get_upgrade_level(upgrade_id)
 	var prices: Array = GameState.get_upgrade_prices(upgrade_id)
 	var tiers: Array
@@ -120,7 +129,7 @@ func _refresh_row(row: HBoxContainer, upgrade_id: String) -> void:
 		tiers = GameState.RECHARGE_LEVELS  # 乘数表；显示层换算成实际回充秒数
 	else:
 		tiers = GameState.get_upgrade_levels_table(upgrade_id)
-	var level_label: Label = row.get_node("LevelLabel")
+	var level_label: Label = row.get_node("Head/LevelLabel")
 	var buy_button: Button = row.get_node("BuyButton")
 
 	if upgrade_id == "discount":

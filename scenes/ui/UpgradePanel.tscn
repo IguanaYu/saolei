@@ -2,42 +2,46 @@
 
 [ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="1_up"]
 
+; 右侧停靠窄面板（2026-10-02 居中版挡棋盘改版；10-03 反馈"显示不全"字号对齐主题）：
+; 打开时只盖住右侧机器人日志栏，玩家可边升级边点格操作，ESC/关闭按钮收起。
+; 宽 260：默认 1024 画布下左缘 752，与最大盘(16×16)格子区(≤736)零交叠，仅压岩框 4px。
 [node name="UpgradePanel" type="Panel"]
 visible = false
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -230.0
-offset_right = 260.0
-offset_bottom = 230.0
-grow_horizontal = 2
-grow_vertical = 2
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -272.0
+offset_top = 92.0
+offset_right = -12.0
+offset_bottom = -188.0
+grow_horizontal = 0
 script = ExtResource("1_up")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = -16.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
 mouse_filter = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
+mouse_filter = 2
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 text = "局内升级（金钱）"
 horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="RowsScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 320)
+size_flags_vertical = 3
 
 [node name="RowsBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/RowsScroll"]
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="CloseButton" type="Button" parent="MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
