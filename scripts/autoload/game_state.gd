@@ -75,9 +75,13 @@ var player_actions_used: int = 0    # 本局玩家有效动作总数（埋点口
 # ---- 结算统计（开格分/标旗分/人机操作占比，reset_state 清零）----
 var result_stats := {
 	"open_score": 0, "flag_score": 0, "mine_score": 0, "wrong_flags": 0,
-	"player_ops": 0, "robot_ops": 0, "player_actions": 0,
-	"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
-	# L4 除害关（敌人/探测，设计 §9.10）
+		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
+		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
+		# 得分明细新键（P2-01：预开格/探测/战斗清障；与 score_breakdown 同步维护）
+		"preopen_score": 0, "detector_score": 0, "combat_score": 0,
+		# 局末快照键（N12：提前清零防跨局残留旧值）
+		"crossing_elapsed": -1.0, "win_score": 0, "obj_final_text": "",
+		# L4 除害关（敌人/探测，设计 §9.10）
 	"nest_cleared_elapsed": -1.0,   # 首巢摧毁时点（-1=未除）
 	"nests_destroyed": 0,           # 结算行「除巢数」
 	"guard_bought_elapsed": -1.0,   # 保安购买时点（-1=未买）
@@ -136,8 +140,23 @@ func add_money(amount: int) -> void:
 	money_changed.emit(money)
 
 
-func add_score(amount: int) -> void:
+# ---- 得分来源账本（P2-01：总分 = 各来源之和，局内/结算同口径）----
+# 来源 → 累计分值；result_stats 键名映射见 SCORE_SOURCE_KEYS。
+# 明细在 add_score 内部入账（先于 score_changed emit），保证最后一次加分也进结算快照
+var score_breakdown: Dictionary = {}
+
+const SCORE_SOURCE_KEYS := {
+	"open": "open_score", "flag": "flag_score", "mine": "mine_score",
+	"preopen": "preopen_score", "detector": "detector_score",
+	"combat": "combat_score", "time_bonus": "time_bonus",
+}
+
+
+func add_score(amount: int, source := "other") -> void:
 	score = max(0, score + amount)
+	if amount != 0 and source != "other":
+		score_breakdown[source] = int(score_breakdown.get(source, 0)) + amount
+		result_stats[SCORE_SOURCE_KEYS.get(source, source + "_score")] = score_breakdown[source]
 	score_changed.emit(score)
 
 
@@ -257,6 +276,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	game_active = false
 	continue_mode = false
 	game_phase = "placing_base"
+	score_breakdown = {}  # 得分来源账本清零（与 result_stats 明细键同生共死）
 	# 玩家操作 CD 初始化（cooldown_sec>0 才启用；免费阶段无 CD 概念）
 	cd_phase = "free" if lvl != null and lvl.cooldown_sec > 0.0 else "off"
 	cd_free_clicks_left = lvl.free_clicks if lvl != null else 0
@@ -274,6 +294,8 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"open_score": 0, "flag_score": 0, "mine_score": 0, "wrong_flags": 0,
 		"player_ops": 0, "robot_ops": 0, "player_actions": 0,
 		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
+		"preopen_score": 0, "detector_score": 0, "combat_score": 0,
+		"crossing_elapsed": -1.0, "win_score": 0, "obj_final_text": "",
 		"nest_cleared_elapsed": -1.0, "nests_destroyed": 0,
 		"guard_bought_elapsed": -1.0, "probe_used": 0, "probe_coords": "",
 		"enemy_kills_player": 0, "enemy_kills_guard": 0,

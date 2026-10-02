@@ -31,6 +31,9 @@ var levels_entered: Dictionary = {}        # {"ch01_s03": true} 进关即记（�
 var stats := {
 	"total_games": 0, "wins": 0, "best_time": -1.0, "best_score": 0,
 	"cur_streak": 0, "max_streak": 0, "total_play_sec": 0.0,
+	# N13：动态追加键必须进默认字典，否则 _merge_dict 只按默认键合并、重启即丢
+	"playtest": [],        # 盲测记录（record_playtest 追加，封顶见该函数）
+	"meta_purchases": [],  # 局外升级购买埋点（顺序数组，record_meta_purchase append）
 }
 var daily := {
 	"today_key": "", "today_best": -1.0,   # 今日挑战最佳用时

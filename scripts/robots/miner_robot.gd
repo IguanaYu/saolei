@@ -102,9 +102,7 @@ func _tick_unloading(grid) -> void:
 	AudioManager.play_sfx("coin")
 	grid.cargo_unloaded.emit(global_position, cargo)  # 确认动效（金光/跳字/飞币）
 	GameState.add_money(cargo)
-	GameState.add_score(cargo)
-	# 采矿分项埋点（右栏 ScorePanel / 结算账单「采矿分」行）
-	GameState.result_stats["mine_score"] = int(GameState.result_stats.get("mine_score", 0)) + cargo
+	GameState.add_score(cargo, "mine")  # 采矿分明细键（mine_score）由得分账本写入
 	cargo = 0
 	miner_state = "to_mine"
 	_state = "working"

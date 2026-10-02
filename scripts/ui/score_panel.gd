@@ -4,6 +4,9 @@ extends PanelContainer
 @onready var open_label: Label = $Margin/VBox/OpenScoreLabel
 @onready var flag_label: Label = $Margin/VBox/FlagScoreLabel
 @onready var mine_label: Label = $Margin/VBox/MineScoreLabel
+@onready var preopen_label: Label = $Margin/VBox/PreopenScoreLabel
+@onready var detector_label: Label = $Margin/VBox/DetectorScoreLabel
+@onready var combat_label: Label = $Margin/VBox/CombatScoreLabel
 
 
 func _ready() -> void:
@@ -25,5 +28,15 @@ func _refresh() -> void:
 	open_label.text = "开格 %d" % int(s["open_score"])
 	flag_label.text = "标雷 %d" % int(s["flag_score"])
 	mine_label.text = "采矿 %d" % int(s.get("mine_score", 0))
+	# P2-01 新来源行：零值收起（探测/战斗只在 L4/L5 出现；预开格只在 L3 有值）
+	var preopen: int = int(s.get("preopen_score", 0))
+	preopen_label.text = "预开格 %d" % preopen
+	preopen_label.visible = preopen > 0
+	var detector: int = int(s.get("detector_score", 0))
+	detector_label.text = "探测 %d" % detector
+	detector_label.visible = detector > 0
+	var combat: int = int(s.get("combat_score", 0))
+	combat_label.text = "战斗/清障 %d" % combat
+	combat_label.visible = combat > 0
 	# 引导/面板压暗层都在本栏之上（Main.tscn 侧栏置底），无需让路隐藏
 	visible = GameState.game_active

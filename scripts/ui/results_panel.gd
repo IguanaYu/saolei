@@ -24,7 +24,7 @@ const FORCED_STOP_ORE_DIVISOR := 10
 @onready var record_badge: PanelContainer = $Center/Panel/VBox/RecordBadge
 @onready var stars_row: HBoxContainer = $Center/Panel/VBox/StarsRow
 @onready var star_hint_label: Label = $Center/Panel/VBox/StarHintLabel
-@onready var rewards_box: VBoxContainer = $Center/Panel/VBox/RewardsBox
+@onready var rewards_box: VBoxContainer = $Center/Panel/VBox/RewardsScroll/RewardsBox
 @onready var final_score_label: Label = $Center/Panel/VBox/ScoreRow/FinalScoreLabel
 @onready var next_button: Button = $Center/Panel/VBox/ButtonsRow/NextLevelButton
 @onready var restart_button: Button = $Center/Panel/VBox/ButtonsRow/RestartButton
@@ -104,6 +104,9 @@ func _record_playtest(result: String) -> void:
 		"robot_ops": s["robot_ops"],
 		"player_actions": s["player_actions"],
 		"time_bonus": s.get("time_bonus", 0),
+		"preopen_score": s.get("preopen_score", 0),
+		"detector_score": s.get("detector_score", 0),
+		"combat_score": s.get("combat_score", 0),
 		"crossing_elapsed": s.get("crossing_elapsed", -1.0),  # 过线时刻（L3 目标型玩法）
 		"first_upgrade_elapsed": s.get("first_upgrade_elapsed", -1.0),
 		# 4 轨终值 [开墙移动, 开墙工作, 标雷移动, 标雷工作]（L1/L2 无工作轨=与移动同步）
@@ -162,9 +165,10 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	var lvl := GameState.get_current_level()
 	if result != "win":
 		# 到点/命尽 = 强行停止并结算（非失败态，设计 v1.2）：正常给矿、不算过关、可重玩
-		# L5 Boss 关到点专属文案（设计 §4）：Boss 撤了，不是矿工收工
+		# P2-05：结束原因写明（不再让玩家从 0:00 反推）；L5 Boss 关到点专属文案（设计 §4）
+		var reason := "生命耗尽" if result == "lose" else "时间到"
 		title_label.text = "它退回了黑暗里 · 牙没拔完" \
-				if GameState.current_level_id == "ch01_s05" else "本次挖矿结束 · 目标未达成"
+				if GameState.current_level_id == "ch01_s05" else "%s · 目标未达成" % reason
 		stars_row.visible = false
 		star_hint_label.visible = false
 		var ore_earned: int = GameState.score / FORCED_STOP_ORE_DIVISOR
@@ -204,15 +208,22 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 	final_score_label.text = str(GameState.score)
 
 
-## 固定账单：开格/标雷/采矿/时间加分/操作占比（时间加分 0 也显示——让玩家知道有这项）
+## 固定账单：开格/标雷/采矿/预开/探测/战斗/时间加分/操作占比（P2-01：总分=各行之和；
+## 零值来源行收起；时间加分 0 也显示——让玩家知道有这项）
 func _add_playtest_rows(include_time_bonus := true) -> void:
 	var s: Dictionary = GameState.result_stats
 	_add_row(ICON_COIN, "开格分", str(s["open_score"]))
 	_add_row(ICON_COIN, "标旗分", str(s["flag_score"]))
 	_add_row(ICON_COIN, "采矿分", str(int(s.get("mine_score", 0))))
+	if int(s.get("preopen_score", 0)) > 0:
+		_add_row(ICON_COIN, "预开格分", str(int(s.get("preopen_score", 0))))
+	if int(s.get("detector_score", 0)) > 0:
+		_add_row(ICON_COIN, "探测分", str(int(s.get("detector_score", 0))))
+	if int(s.get("combat_score", 0)) > 0:
+		_add_row(ICON_COIN, "战斗/清障分", str(int(s.get("combat_score", 0))))
 	var total_ops: int = int(s["player_ops"]) + int(s["robot_ops"])
 	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
-	_add_row(ICON_STAR, "你的操作",
+	_add_row(ICON_STAR, "你的扫雷操作",
 		"%d 次 · 机器人 %d 次（你占 %d%%）" % [s["player_ops"], s["robot_ops"], pct])
 	if include_time_bonus:
 		_add_row(ICON_CLOCK, "时间加分",

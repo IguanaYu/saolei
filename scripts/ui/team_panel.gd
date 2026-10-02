@@ -1,7 +1,8 @@
 extends PanelContainer
 ## 队伍概况（左栏）：让玩家判断投资是否有效（"开墙 2 台 · 1 台空闲"→ 指向空闲原因）
 
-const NAMES := {"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工"}
+const NAMES := {"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
+	"guard": "保安"}
 const IDLE_REASON := {
 	"opener": "暂无可推理目标", "marker": "暂无可推理目标",
 	"detector": "暂无可检测旗位", "miner": "暂无可采矿脉",
@@ -10,6 +11,7 @@ const IDLE_REASON := {
 @onready var _rows := {
 	"opener": $Margin/VBox/OpenerRow, "marker": $Margin/VBox/MarkerRow,
 	"detector": $Margin/VBox/DetectorRow, "miner": $Margin/VBox/MinerRow,
+	"guard": $Margin/VBox/GuardRow,
 }
 
 
@@ -40,6 +42,16 @@ func _refresh() -> void:
 	for type in NAMES:
 		var n: int = counts.get(type, 0)
 		var line := "%s %d 台" % [NAMES[type], n]
+		if type == "guard":
+			# 保安无"空闲"概念（is_idle 恒 false）：按有无目标显示交战/执勤（P2-02）
+			var engaged := 0
+			for r in rm.robots:
+				if r.robot_type == "guard" and r.is_engaged():
+					engaged += 1
+			line += " · %s" % ("交战中" if engaged > 0 else "执勤中")
+			_rows[type].text = line
+			_rows[type].visible = n > 0 or _guard_in_shop()
+			continue
 		if idle.get(type, 0) > 0:
 			line += " · %d 空闲" % idle[type]
 			if idle[type] == n and idle_reason == "":
@@ -54,3 +66,10 @@ func _refresh() -> void:
 func _type_in_shop(type: String) -> bool:
 	var lvl: LevelData = GameState.get_current_level()
 	return lvl != null and not lvl.shop_hidden.has(type)
+
+
+## 保安的可见性口径与商店一致（shop.gd：extra 反向开闸，L4/L5 声明才出现）——
+## 不能用 _type_in_shop（guard 不在 L1-L3 的 shop_hidden 里，会误显示）
+func _guard_in_shop() -> bool:
+	var lvl: LevelData = GameState.get_current_level()
+	return lvl != null and lvl.shop_extra.has("guard") and not lvl.shop_hidden.has("guard")

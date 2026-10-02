@@ -26,6 +26,11 @@ func is_idle() -> bool:
 	return false
 
 
+## 是否有目标（索敌/交战中）——队伍栏状态文案用（P2-02：交战中/执勤中）
+func is_engaged() -> bool:
+	return _target_kind != ""
+
+
 func _process(delta: float) -> void:
 	super(delta)  # 基类行走帧动画
 	# 交战计时：目标在射程内站定开火（与移动 tick 分离，参照 detector 的 _process 模式）

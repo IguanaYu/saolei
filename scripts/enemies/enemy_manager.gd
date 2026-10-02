@@ -124,7 +124,7 @@ func _on_enemy_died(e: Enemy, by_actor: String) -> void:
 	if e.enemy_type == "slime":
 		# L5 史莱姆击杀奖励（设计 §5.1，点杀/保安同酬）；Boss 硬直由 main 接 enemy_killed 转发
 		GameState.add_money(10)
-		GameState.add_score(10)
+		GameState.add_score(10, "combat")
 		GameState.result_stats["slime_kills"] += 1
 	enemy_killed.emit(e, by_actor)
 

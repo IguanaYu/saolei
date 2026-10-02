@@ -299,7 +299,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				GameState.game_active = true
 			# 预开算分（设计 v1.2）：只计分不计钱；300 > 预开上限 115，不会开局误判过线
 			if lvl.preopen_scores:
-				GameState.add_score(lvl.preopen_coords.size())
+				GameState.add_score(lvl.preopen_coords.size(), "preopen")
 		# 随机盘（L4 除害关）：进关预生成雷+洪水预开，不设 game_active——
 		# 放完基地才激活（波次计时随之从放基地起算，elapsed 只在 active 后累计）
 		elif lvl.pregen_random:
@@ -702,7 +702,7 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 				return true
 			tentacle.cut_by_player()
 			GameState.add_money(15)
-			GameState.add_score(15)
+			GameState.add_score(15, "combat")
 			GameState.result_stats["tentacles_cut"] += 1
 			GameState.consume_player_action()
 			return true
@@ -884,8 +884,7 @@ func _on_cell_opened(_cell, by_actor: String) -> void:
 	if by_actor == "drone":
 		return  # 无人机开的格子不给奖励
 	GameState.add_money(1)
-	GameState.add_score(1)
-	GameState.result_stats["open_score"] += 1
+	GameState.add_score(1, "open")
 	if by_actor == "player":
 		GameState.result_stats["player_ops"] += 1
 	elif by_actor.begins_with("robot_"):
@@ -906,8 +905,7 @@ func _on_cell_flagged(_cell, by_actor: String, correct: bool, first_time: bool) 
 		return  # L4 探测「确认雷」格再插旗不重复给分（设计 §5 同格首次原则）
 	if correct:
 		GameState.add_money(5)
-		GameState.add_score(5)
-		GameState.result_stats["flag_score"] += 5
+		GameState.add_score(5, "flag")
 		if by_actor == "player":
 			GameState.result_stats["player_ops"] += 1
 			GameState.notify_player_correct_flag()  # 免费阶段第 N 面正确旗触发耗尽
@@ -1023,9 +1021,8 @@ func _apply_time_bonus() -> void:
 	var bonus: int = secs * lvl.time_bonus_per_sec
 	if bonus <= 0:
 		return
-	GameState.result_stats["time_bonus"] = bonus
 	GameState.result_stats["time_bonus_secs"] = secs
-	GameState.add_score(bonus)
+	GameState.add_score(bonus, "time_bonus")  # 明细键 time_bonus 由账本写入
 	# 积分目标关的过线瞬间提示（设计 §4.2：过线即跳结算 + toast）
 	var obj := GameState.current_objective
 	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE:

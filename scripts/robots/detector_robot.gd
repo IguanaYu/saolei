@@ -104,8 +104,8 @@ func _resolve_detection() -> void:
 		return
 
 	if cell.is_mine:
-		# 正确！旗子变矿脉
-		GameState.add_score(10)
+		# 正确！旗子变矿脉（P2-01：探测 10 分此前无任何明细行，现归 detector_score）
+		GameState.add_score(10, "detector")
 		cell.become_vein(100)
 		var locked: Dictionary = GameState.locked_targets
 		locked.erase(_detecting_target)
