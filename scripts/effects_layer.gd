@@ -7,7 +7,7 @@ extends Node2D
 
 const SHARD_SHEET := preload("res://visual_v2/runtime/fx/rock_shards_mask_sheet.png")
 const GLINT_SHEET := preload("res://visual_v2/runtime/fx/gold_glint_sheet.png")
-const FLAG_FINAL := preload("res://visual_v2/runtime/tiles/special_flag.png")
+const FLAG_FINAL := preload("res://visual_v2/runtime/completion/tiles/special_flag.png")
 const DUST_SHEET := preload("res://visual_v2/runtime/fx/flag_dust_sheet.png")
 const COIN_TEX := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
 
@@ -35,25 +35,32 @@ func _name(kind: String) -> StringName:
 
 # ---- 开格（批次入口：单格/连锁由 Grid 的 cell_open_batch 驱动）----
 
-## 单格：岩屑 +（仅玩家）+1 跳字；机器人只留轻岩屑；无人机全免
+## 单格：仅玩家 +1 跳字（岩屑已并入波纹调度 fx_reveal_wave）
 func fx_open_single(cell: Cell, by_actor: String) -> void:
-	_fx_shards(cell, 3 if by_actor == "player" else 2)
 	if by_actor == "player":
 		_fx_jump_text(cell.position + Vector2(10, -12), "+1")
 
 
-## 连锁：≤4 处轻岩屑 + 起点汇总 +N（锚在起点；无人机不发）
+## 连锁：起点汇总 +N（锚在起点；岩屑已并入波纹调度 fx_reveal_wave）
 func fx_open_chain(start_cell: Cell, chain: Array) -> void:
-	var picked: Array = []
-	var step: int = maxi(1, chain.size() / 4)
-	for i in range(0, chain.size(), step):
-		picked.append(chain[i])
-		if picked.size() >= 4:
-			break
-	for c in picked:
-		_fx_shards(c, 2)
 	_fx_jump_text(start_cell.position + Vector2(10, -14),
 		"+%d" % chain.size())
+
+
+## 扩散波纹岩屑：全程 ≤6 处采样，各自在波前到达时刻弹出
+## 玩家 3 粒 / 机器人与开局预开 1 粒（大片开疆也只点缀，避免糊屏）
+func fx_reveal_wave(entries: Array, by_actor: String) -> void:
+	if entries.is_empty():
+		return
+	var sample_step: int = maxi(1, int(ceil(entries.size() / 6.0)))
+	var count: int = 3 if by_actor == "player" else 1
+	for i in range(0, entries.size(), sample_step):
+		var cell: Cell = entries[i]["cell"]
+		var t := create_tween()
+		t.tween_interval(float(entries[i]["delay"]))
+		t.tween_callback(func():
+			if is_instance_valid(cell):
+				_fx_shards(cell, count))
 
 
 func on_open_batch(start_cell: Cell, by_actor: String, chain: Array) -> void:
@@ -152,7 +159,7 @@ func fx_tooth_pulled(world_pos: Vector2) -> void:
 	node.name = _name("Tooth")
 	var sprite := Sprite2D.new()
 	sprite.name = "ToothSprite"
-	sprite.texture = preload("res://visual_v2/runtime/fx/tooth.png")
+	sprite.texture = preload("res://visual_v2/runtime/completion/fx/tooth.png")
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	node.add_child(sprite)
 	node.position = world_pos

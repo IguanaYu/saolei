@@ -65,18 +65,18 @@ const EDGE_T := preload("res://visual_v2/runtime/tiles/wall_edge_T.png")
 const EDGE_B := preload("res://visual_v2/runtime/tiles/wall_edge_B.png")
 const EDGE_L := preload("res://visual_v2/runtime/tiles/wall_edge_L.png")
 const EDGE_R := preload("res://visual_v2/runtime/tiles/wall_edge_R.png")
-const SPECIAL_BASE := preload("res://visual_v2/runtime/tiles/special_base.png")
-const SPECIAL_FLAG := preload("res://visual_v2/runtime/tiles/special_flag.png")
-const SPECIAL_VEIN := preload("res://visual_v2/runtime/tiles/special_vein.png")
-const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/tiles/special_collapse.png")
-const OVERLAY_LOCK := preload("res://visual_v2/runtime/tiles/overlays/lock.png")
-const OVERLAY_WEB := preload("res://visual_v2/runtime/tiles/overlays/web.png")
-const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/tiles/overlays/slime_wall.png")
-const OVERLAY_SLIME_FLOOR := preload("res://visual_v2/runtime/tiles/overlays/slime_floor.png")
-const OVERLAY_CONFIRMED := preload("res://visual_v2/runtime/tiles/overlays/confirmed.png")
-const OVERLAY_FIRE := preload("res://visual_v2/runtime/tiles/overlays/fire_0.png")
-const OVERLAY_FIRE_1 := preload("res://visual_v2/runtime/tiles/overlays/fire_1.png")
-const OVERLAY_FIRE_LOW := preload("res://visual_v2/runtime/tiles/overlays/fire_low.png")
+const SPECIAL_BASE := preload("res://visual_v2/runtime/completion/tiles/special_base.png")
+const SPECIAL_FLAG := preload("res://visual_v2/runtime/completion/tiles/special_flag.png")
+const SPECIAL_VEIN := preload("res://visual_v2/runtime/completion/tiles/special_vein.png")
+const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/completion/tiles/special_collapse.png")
+const OVERLAY_LOCK := preload("res://visual_v2/runtime/completion/tiles/overlays/lock.png")
+const OVERLAY_WEB := preload("res://visual_v2/runtime/completion/tiles/overlays/web.png")
+const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_wall.png")
+const OVERLAY_SLIME_FLOOR := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_floor.png")
+const OVERLAY_CONFIRMED := preload("res://visual_v2/runtime/completion/tiles/overlays/confirmed.png")
+const OVERLAY_FIRE := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_0.png")
+const OVERLAY_FIRE_1 := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_1.png")
+const OVERLAY_FIRE_LOW := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_low.png")
 
 # 洞壁生态装饰（E 系主题套）：有 deco_<风格>_sheet 的风格在未开岩壁随机点缀
 const DECO_GRID := 4          # sheet 4x2
@@ -92,6 +92,15 @@ var _fire_frame := 0
 # 双击检测
 var _last_click_time: float = 0.0
 const DOUBLE_CLICK_THRESHOLD := 0.35
+
+# 左右键同按（和弦手势）：第二键落下时并成一次和弦触发，本击不再走单键分支
+var _gesture_open_stamp: float = -1.0  # 本次按持中左键刚掀开此格的时刻（同手势防连吃 2 CD）
+var _chord_shake_pending := false      # 和弦震波标记：波前到达翻开的瞬间横震一下
+var _shake_tween: Tween = null
+
+# 扩散波纹动画：逻辑已开（is_opened=true）但视觉保持岩壁，波前到达才翻开
+# 窗口期内寻路/计分/胜负判定全部读逻辑状态，不受视觉延迟影响
+var _reveal_pending := false
 
 
 func _ready() -> void:
@@ -255,7 +264,15 @@ func _side_is_open_side(g: Node, dir: Vector2i) -> bool:
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if not event is InputEventMouseButton or not event.pressed:
 		return
+	# 左右键同按（和弦手势）：另一键已按住时本击是补齐的第二键，并成一次和弦，
+	# 不再走左键开格/右键插旗的单键分支（防同一手势误触副动作）
+	if (event.button_index == MOUSE_BUTTON_LEFT
+			or event.button_index == MOUSE_BUTTON_RIGHT) \
+			and _is_chord_gesture(event as InputEventMouseButton):
+		_try_chord_gesture()
+		return
 	if event.button_index == MOUSE_BUTTON_LEFT:
+		var was_open := is_opened
 		var now: float = Time.get_ticks_msec() / 1000.0
 		if now - _last_click_time < DOUBLE_CLICK_THRESHOLD:
 			cell_double_clicked.emit(self)
@@ -263,8 +280,29 @@ func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> voi
 		else:
 			cell_left_clicked.emit(self)
 			_last_click_time = now
+		# 左键在本按持里刚掀开此格：短时间内补右键不算和弦（同一手势防双吃 CD）
+		if not was_open and is_opened:
+			_gesture_open_stamp = now
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
 		cell_right_clicked.emit(self)
+
+
+## 双键判定：本击落下时另一键也按住（button_mask 已含本击；再兜底查全局键态）
+func _is_chord_gesture(event: InputEventMouseButton) -> bool:
+	if event.button_mask & MOUSE_BUTTON_MASK_LEFT \
+			and event.button_mask & MOUSE_BUTTON_MASK_RIGHT:
+		return true
+	return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
+		and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+
+## 和弦手势入口：复用双击和弦管线（CD/预判门槛全同），落空由 Grid 摇头反馈
+func _try_chord_gesture() -> void:
+	# 同一手势里左键刚把此格从关闭掀开 → 不立刻续和弦（想吃连招请松键再来一次）
+	if Time.get_ticks_msec() / 1000.0 - _gesture_open_stamp < 0.4:
+		return
+	_last_click_time = 0.0  # 不给后续双击检测留尾巴（防手势+双击接连双触发）
+	cell_double_clicked.emit(self)
 
 
 func open(by_actor: String) -> bool:
@@ -433,6 +471,100 @@ func collapse() -> void:
 
 # ---- 动效 ----
 
+# ---- 扩散波纹翻开（Grid._schedule_reveal_wave 统一调度）----
+
+## 视觉延迟翻开：保持岩壁 delay 秒后切换并弹跳；delay<=0 立即翻
+func defer_visual_reveal(delay: float) -> void:
+	if delay <= 0.0:
+		play_reveal()
+		return
+	_reveal_pending = true
+	refresh_visual()  # 走 pending 分支：切回岩壁视觉（同帧内完成，无闪烁）
+	var t := create_tween()
+	t.tween_interval(delay)
+	t.tween_callback(_on_reveal_reached)
+
+
+func _on_reveal_reached() -> void:
+	_reveal_pending = false
+	refresh_visual()
+	# 期间被基地/矿脉/坍塌接管的格不再弹跳（它们有自己的表现）
+	if not (is_base or is_vein or is_collapsed):
+		_play_reveal_pop()
+		_play_chord_shake_if_pending()
+
+
+## 立即翻开 + 弹跳（波纹中心格 / 无延迟路径）
+func play_reveal() -> void:
+	_reveal_pending = false
+	refresh_visual()
+	_play_reveal_pop()
+	_play_chord_shake_if_pending()
+
+
+## 岩壁被凿开：整格放大回弹（BACK 过冲带一点下压感）+ 亮度脉冲
+func _play_reveal_pop() -> void:
+	scale = Vector2(1.22, 1.22)
+	modulate = Color(1.5, 1.42, 1.25)
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(self, "scale", Vector2.ONE, 0.14) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate", Color.WHITE, 0.18)
+
+
+# ---- 和弦震波（左右键同按/双击和弦触发；Grid.chord 排错峰次序）----
+
+## 被和弦波前掀到的格：翻开瞬间横震一下（标记由 Grid 设置，翻开时消费）
+func mark_chord_shake() -> void:
+	_chord_shake_pending = true
+
+
+## 开格失败（锁拦截/踩雷坍塌）：撤回震波标记，防悬空标记日后误震
+func clear_chord_shake() -> void:
+	_chord_shake_pending = false
+
+
+func _play_chord_shake_if_pending() -> void:
+	if _chord_shake_pending:
+		_chord_shake_pending = false
+		play_chord_shake()
+
+
+## 命中的邻格横震：衰减正弦、round 到整像素（±2→±1px），贴图不糊
+func play_chord_shake() -> void:
+	_run_shake(2.5, 0.22, 1.9)
+
+
+## 和弦落空：中心格摇头（不生效反馈，不吃 CD）
+func play_chord_deny() -> void:
+	_run_shake(2.0, 0.26, 2.2)
+
+
+func _home_position() -> Vector2:
+	return Vector2(
+		coord.x * cell_size + cell_size / 2.0,
+		coord.y * cell_size + cell_size / 2.0)
+
+
+func _run_shake(cycles: float, dur: float, amp: float) -> void:
+	if _shake_tween != null and _shake_tween.is_valid():
+		_shake_tween.kill()
+	var home := _home_position()
+	position = home  # 重放先归位，保证像素对齐
+	var step := func(t: float) -> void:
+		position = home + Vector2(round(sin(t * cycles * TAU) * amp * (1.0 - t)), 0.0)
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(step, 0.0, 1.0, dur)
+
+
+## 和弦命中：中心数字格短促弹胀（触发源锚点，给视线一个落点）
+func play_chord_pulse() -> void:
+	var t := create_tween()
+	t.tween_property(self, "scale", Vector2(1.12, 1.12), 0.07)
+	t.tween_property(self, "scale", Vector2.ONE, 0.10)
+
+
 func _play_collapse_flicker() -> void:
 	var bg: ColorRect = $Background
 	var tween := create_tween()
@@ -451,7 +583,12 @@ func refresh_visual() -> void:
 	var show_wall := false
 	var show_floor := false
 	special.texture = null
-	if is_base:
+	if _reveal_pending and is_opened and not is_base and not is_vein and not is_collapsed:
+		# 扩散波纹窗口：逻辑已开但波前未到——视觉保持岩壁，由 Grid 的延迟调度翻开
+		show_wall = true
+		bg.color = Color(0.20, 0.21, 0.25)
+		lbl.text = ""
+	elif is_base:
 		show_floor = true
 		bg.color = Color(0.17, 0.16, 0.15)
 		lbl.text = ""

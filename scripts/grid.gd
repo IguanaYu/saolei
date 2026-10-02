@@ -59,6 +59,10 @@ signal cell_unhovered(cell)
 # 已发过正确旗奖励的格子（coord→true）：同一格奖励仅首次发放、撤旗不退分（设计 §5，防刷）
 var rewarded_flags: Dictionary = {}
 
+# 和弦防抖（双击检测 + 左右同按手势混用时，同格短窗内只触发一次）
+var _last_chord_coord := Vector2i(-999, -999)
+var _last_chord_at := -1.0
+
 
 func _ready() -> void:
 	_lines = GridLines.new()
@@ -285,14 +289,14 @@ func place_first_base(coord: Vector2i) -> bool:
 	for c in cells:
 		cells[c].is_mine = mine_set.has(c)
 		cells[c].adjacent_mines = int(numbers.get(c, 0))
-	# 预开安全区（直接设字段，不触发 cell_opened 信号，避免给奖励）
+	# 预开安全区（直接设字段，不触发 cell_opened 信号，避免给奖励；视觉走波纹）
 	for sc in safe_coords:
 		cells[sc].is_opened = true
-		cells[sc].refresh_visual()
-	# 标记基地
+	# 标记基地（波纹中心：立即显示，周围从它逐步凿开）
 	cells[coord].become_base()
 	GameState.register_base(coord)
 	GameState.set_game_phase("playing")
+	_schedule_reveal_wave(safe_coords, coord, REVEAL_WAVE_STEP_INTRO)
 	return true
 
 
@@ -309,11 +313,10 @@ func apply_fixed_board(data: Dictionary) -> void:
 	for c in mine_set:
 		for n in get_neighbors(c):
 			n.adjacent_mines += 1
-	# 预开（直接设字段，不触发 cell_opened 信号，不给奖励；refresh_visual 自带描边刷新）
+	# 预开（直接设字段，不触发 cell_opened 信号，不给奖励；视觉走波纹统一翻开）
 	for sc in data.preopen:
 		if cells.has(sc):
 			cells[sc].is_opened = true
-			cells[sc].refresh_visual()
 	# 预置基地；base=(-1,-1) = 玩家自放（L5 Boss 关）：保持 placing_base 阶段，
 	# 走 place_first_base 的 board_generated 分支（仅已开格，同 L4 自放口径）
 	var base_coord: Vector2i = data.base
@@ -322,6 +325,10 @@ func apply_fixed_board(data: Dictionary) -> void:
 		GameState.register_base(base_coord)
 		GameState.set_game_phase("playing")
 	board_generated = true
+	# 预开扩散波纹：中心=基地，玩家自放关（无基地）取预开区质心
+	_schedule_reveal_wave(data.preopen,
+		base_coord if cells.has(base_coord) else _coords_center(data.preopen),
+		REVEAL_WAVE_STEP_INTRO)
 
 
 ## 随机盘装载（试玩版 L4 除害关·裸随机，设计 §7）：
@@ -350,11 +357,10 @@ func apply_random_board() -> void:
 	pool.shuffle()
 	var start: Vector2i = pool[0]
 	# 洪水预开：与 _flood_open 同构的连通展开，但直接设字段不 emit 信号（不给奖励，
-	# 同 apply_fixed_board 预开写法；从起点格自身开起）
+	# 同 apply_fixed_board 预开写法；从起点格自身开起，视觉走波纹统一翻开）
 	var queue: Array = [start]
 	var visited: Dictionary = {start: true}
 	cells[start].is_opened = true
-	cells[start].refresh_visual()
 	while not queue.is_empty():
 		var c: Vector2i = queue.pop_front()
 		for o in MapGenerator.NEIGHBOR_OFFSETS:
@@ -366,10 +372,11 @@ func apply_random_board() -> void:
 			if n_cell.is_opened or n_cell.is_flagged or n_cell.is_mine:
 				continue
 			n_cell.is_opened = true
-			n_cell.refresh_visual()
 			if n_cell.adjacent_mines == 0:
 				queue.append(n)
 	board_generated = true
+	# 预开扩散波纹：从洪水起点逐步凿开
+	_schedule_reveal_wave(visited.keys(), start, REVEAL_WAVE_STEP_INTRO)
 	# 裂缝与预置虫害的放置在 EnemyManager.setup_board（放基地前即可见，剧本 #0）
 
 
@@ -449,7 +456,8 @@ func get_neighbors(coord: Vector2i) -> Array:
 	return result
 
 
-func open_cell(coord: Vector2i, by_actor: String) -> void:
+## extra_reveal_delay：波纹整体推迟量（和弦震波按角度错峰用；其余调用方不传=原行为）
+func open_cell(coord: Vector2i, by_actor: String, extra_reveal_delay := 0.0) -> void:
 	if not cells.has(coord):
 		return
 	var cell: Cell = cells[coord]
@@ -473,7 +481,10 @@ func open_cell(coord: Vector2i, by_actor: String) -> void:
 	if count_safe_remaining() == 0:
 		all_safe_opened.emit()
 
-	# 批次结束事件：动效层据此区分单格/连锁（奖励已按 cell_opened 逐格结算）
+	# 扩散波纹：连锁格按到起点距离逐圈翻开（单格 delay=0 立即）
+	_schedule_reveal_wave(chain, cell.coord, REVEAL_WAVE_STEP, by_actor, extra_reveal_delay)
+
+	# 批次结束事件：起点汇总跳字（岩屑已并入波纹调度）
 	cell_open_batch.emit(cell, by_actor, chain)
 
 
@@ -514,10 +525,27 @@ func chord(coord: Vector2i, by_actor: String) -> void:
 			flagged_count += 1
 	if flagged_count != cell.adjacent_mines:
 		return
-	for n in neighbors:
-		# 确认雷与旗一样不参与开格（是已知的雷，开了必炸）
+	# 和弦震波（设计 2026-10-02）：命中的邻格按绕中心的角度排序错峰翻开，
+	# 翻开瞬间各自横震一下 → 「一圈岩壁被震裂荡开」的涟漪感（锁格等开格失败的自然留空）
+	var wave_order := 0
+	for n in _chord_neighbors_by_angle(neighbors, coord):
 		if not n.is_opened and not n.is_flagged and not n.is_confirmed_mine:
-			open_cell(n.coord, by_actor)
+			# 先标记再开：bias=0 的格在 open_cell 内同步立即翻开，开完再标记就晚了
+			n.mark_chord_shake()
+			open_cell(n.coord, by_actor, wave_order * 0.025)
+			wave_order += 1
+			if not (n.is_opened and not n.is_collapsed):
+				n.clear_chord_shake()  # 锁格拦截/踩雷坍塌：不吃震波标记
+
+
+## 和弦震波次序：绕中心的角度排序（0 点钟起顺时针），涟漪有确定走向
+func _chord_neighbors_by_angle(neighbors: Array, center: Vector2i) -> Array:
+	var c := Vector2(center)
+	var sorted := neighbors.duplicate()
+	var by_angle := func(a: Cell, b: Cell) -> bool:
+		return atan2(a.coord.y - c.y, a.coord.x - c.x) < atan2(b.coord.y - c.y, b.coord.x - c.x)
+	sorted.sort_custom(by_angle)
+	return sorted
 
 
 func is_walkable(coord: Vector2i) -> bool:
@@ -590,6 +618,38 @@ func coord_to_world(coord: Vector2i) -> Vector2:
 func world_to_coord(world_pos: Vector2) -> Vector2i:
 	var local: Vector2 = world_pos - global_position
 	return Vector2i(int(local.x / cell_size), int(local.y / cell_size))
+
+
+# ---- 扩散翻开波纹：逻辑瞬时、视觉延迟 ----
+# 连锁/预开的格子按到中心的距离逐圈翻开（Win7 扫雷式圆形波纹）
+const REVEAL_WAVE_STEP := 0.03          # 玩家/机器人连锁：对角线最远约 0.6s
+const REVEAL_WAVE_STEP_INTRO := 0.045   # 进关预开：稍慢，开疆仪式感
+
+
+## 对一批已开格排波纹：opened 元素为 Cell 或 Vector2i 皆可
+## 逻辑状态（is_opened）此刻已全部置位，这里只调视觉延迟；基地/矿脉/坍塌立即显示不参与
+func _schedule_reveal_wave(opened: Array, center: Vector2i, step: float, by_actor := "", bias := 0.0) -> void:
+	var fx_entries: Array = []
+	for c in opened:
+		var cell: Cell = cells[c] if c is Vector2i else c
+		if cell == null or not cell.is_opened \
+				or cell.is_base or cell.is_vein or cell.is_collapsed:
+			continue
+		var delay: float = Vector2(cell.coord - center).length() * step + bias
+		cell.defer_visual_reveal(delay)
+		fx_entries.append({"cell": cell, "delay": delay})
+	if _fx != null:
+		_fx.fx_reveal_wave(fx_entries, by_actor)
+
+
+## 坐标组质心（波纹中心兜底：预开盘无基地时用）
+func _coords_center(coords: Array) -> Vector2i:
+	if coords.is_empty():
+		return Vector2i.ZERO
+	var sum := Vector2.ZERO
+	for c in coords:
+		sum += Vector2(c)
+	return Vector2i((sum / coords.size()).round())
 
 
 ## 连锁展开，返回本次实际开成的格列表（供批次事件汇总动效用）
@@ -690,10 +750,19 @@ func _on_cell_double_clicked(cell: Cell) -> void:
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
+	# 双击检测与左右同按手势可能接连各报一次（先双击又立刻补键）：同格 0.25s 内并作一次
+	var now := Time.get_ticks_msec() / 1000.0
+	if cell.coord == _last_chord_coord and now - _last_chord_at < 0.25:
+		return
+	_last_chord_coord = cell.coord
+	_last_chord_at = now
 	if _chord_would_open(cell):
+		cell.play_chord_pulse()  # 中心数字格弹胀：触发源锚点
 		chord(cell.coord, "player")
 		GameState.consume_player_action()
 		play_player_action_visual(cell.coord, FLY_ICON_OPEN)
+	else:
+		cell.play_chord_deny()  # 落空摇头：纯反馈不吃 CD
 
 
 ## 和弦预判：数字格、已处理雷数匹配（口径同 chord）、且至少有一个可开邻格
