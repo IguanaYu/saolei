@@ -5,6 +5,10 @@ extends Node
 # ---- 公开状态 ----
 var money: int = 100
 var score: int = 0
+
+# 启动路径标记：经 BootLoading 加载页进入时为真（Main 侧据此跳过场景内闪屏；
+# 直接运行 Main.tscn 调试时为假，闪屏照播）。运行时状态，不进存档、不随局重置
+var boot_splash_played: bool = false
 var lives: int = 3
 var time_left: float = 90.0
 var game_active: bool = false
@@ -127,6 +131,7 @@ signal cd_tick(remaining: float, duration: float)
 signal cd_charges_changed(charges: int, max_charges: int)  # 囤层数变化（UI）
 signal cd_duration_changed(new_duration: float)  # 首购后 CD 变短
 signal player_action_performed                 # 每次有效玩家动作（剧本推进用）
+signal game_event_logged(text: String, side: String, color: String)  # 侧栏日志兜底通道（Boss/购买等无棋盘信号的事件）
 
 
 func has_time_limit() -> bool:
@@ -137,8 +142,23 @@ func has_life_limit() -> bool:
 	return lives_cfg > 0
 
 
-func add_money(amount: int) -> void:
+# ---- 金钱来源账本（2026-10-02 侧栏改造：结算页"谁挣了多少钱"）----
+# 只记正收入（支出不进账本）；result_stats 键名映射见 MONEY_SOURCE_KEYS。
+var money_breakdown: Dictionary = {}
+
+const MONEY_SOURCE_KEYS := {
+	"player_open": "money_player_open", "player_flag": "money_player_flag",
+	"player_combat": "money_player_combat", "robot_open": "money_robot_open",
+	"robot_flag": "money_robot_flag", "mine": "money_mine",
+	"guard_combat": "money_guard_combat",
+}
+
+
+func add_money(amount: int, source := "") -> void:
 	money = max(0, money + amount)
+	if amount > 0 and source != "":
+		money_breakdown[source] = int(money_breakdown.get(source, 0)) + amount
+		result_stats[MONEY_SOURCE_KEYS.get(source, "money_" + source)] = money_breakdown[source]
 	money_changed.emit(money)
 
 
@@ -279,6 +299,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	continue_mode = false
 	game_phase = "placing_base"
 	score_breakdown = {}  # 得分来源账本清零（与 result_stats 明细键同生共死）
+	money_breakdown = {}  # 金钱来源账本清零（结算页"谁挣了多少钱"）
 	# 玩家操作 CD 初始化（cooldown_sec>0 才启用；免费阶段无 CD 概念）
 	cd_phase = "free" if lvl != null and lvl.cooldown_sec > 0.0 else "off"
 	cd_free_clicks_left = lvl.free_clicks if lvl != null else 0

@@ -4,8 +4,9 @@ extends Node2D
 ## 由 main._process 在 game_active 时驱动（pause/结算天然停摆）；
 ## 波次计时用自身累计（只被 game_active 驱动 → 天然从放基地起算）
 
-const ENEMY_SCENE := preload("res://scenes/Enemy.tscn")
-const NEST_SCENE := preload("res://scenes/Nest.tscn")
+# 场景路径 + 用时 load：本节点常驻主场景，preload 会把虫/巢贴图链拉进开机加载
+const ENEMY_SCENE_PATH := "res://scenes/Enemy.tscn"
+const NEST_SCENE_PATH := "res://scenes/Nest.tscn"
 
 # 波次常量（初值，盲测校准项，设计 §10）
 const WAVES := [
@@ -65,7 +66,7 @@ func tick(delta: float, grid) -> void:
 
 
 func spawn_enemy(start_coord: Vector2i, type: String, grid) -> Enemy:
-	var e: Enemy = ENEMY_SCENE.instantiate()
+	var e: Enemy = load(ENEMY_SCENE_PATH).instantiate()
 	add_child(e)
 	e.setup(start_coord, type, grid)
 	enemies.append(e)
@@ -123,7 +124,7 @@ func _on_enemy_died(e: Enemy, by_actor: String) -> void:
 		GameState.result_stats["enemy_kills_guard"] += 1
 	if e.enemy_type == "slime":
 		# L5 史莱姆击杀奖励（设计 §5.1，点杀/保安同酬）；Boss 硬直由 main 接 enemy_killed 转发
-		GameState.add_money(10)
+		GameState.add_money(10, "guard_combat" if by_actor == "robot_guard" else "player_combat")
 		GameState.add_score(10, "combat")
 		GameState.result_stats["slime_kills"] += 1
 	enemy_killed.emit(e, by_actor)
@@ -137,7 +138,7 @@ func _spawn_nests(grid) -> void:
 	sides.shuffle()
 	for i in range(2):
 		var coord := _random_edge_coord(sides[i], grid)
-		var nest: Nest = NEST_SCENE.instantiate()
+		var nest: Nest = load(NEST_SCENE_PATH).instantiate()
 		add_child(nest)
 		nest.setup(coord, NEST_HP, grid)
 		nests.append(nest)

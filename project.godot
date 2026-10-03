@@ -17,7 +17,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 config/name="扫雷挖矿"
 config/version="0.1.0"
 config/icon="res://assets/ui/icons/app_icon.png"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/ui/BootLoading.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [autoload]

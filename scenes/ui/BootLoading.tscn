@@ -1,0 +1,98 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/boot_loading.gd" id="1_bl"]
+[ext_resource type="Texture2D" path="res://visual_v2/runtime/branding/menu_emblem.png" id="2_emblem"]
+
+[node name="BootLoading" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bl")
+
+[node name="Bg" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.063, 0.09, 1)
+mouse_filter = 2
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Emblem" type="TextureRect" parent="Center/VBox"]
+custom_minimum_size = Vector2(96, 96)
+size_flags_horizontal = 4
+texture = ExtResource("2_emblem")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="Center/VBox"]
+text = "扫雷挖矿"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 52
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+
+[node name="SubtitleLabel" type="Label" parent="Center/VBox"]
+text = "—— 指挥机器人，挖穿雷区矿洞 ——"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="Spacer" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 30)
+
+[node name="ProgressSlot" type="ColorRect" parent="Center/VBox"]
+custom_minimum_size = Vector2(320, 10)
+size_flags_horizontal = 4
+color = Color(0.16, 0.14, 0.11, 1)
+clip_contents = true
+
+[node name="ProgressFill" type="ColorRect" parent="Center/VBox/ProgressSlot"]
+offset_right = 0.0
+offset_bottom = 10.0
+color = Color(1, 0.82, 0.4, 1)
+
+[node name="StatusLabel" type="Label" parent="Center/VBox"]
+text = "正在开挖矿洞…"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.63, 0.5, 1)
+
+[node name="HealthLabel" type="Label" parent="."]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -56.0
+offset_bottom = -32.0
+text = "健康游戏忠告：适度挖矿益脑 · 沉迷雷区伤身"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)
+
+[node name="VersionLabel" type="Label" parent="."]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -32.0
+offset_bottom = -12.0
+text = "封闭试玩 v0.1"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5, 0.45, 0.38, 1)

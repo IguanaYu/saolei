@@ -12,10 +12,21 @@ var root_coord: Vector2i = Vector2i(-9, -9)
 var state := "alive"       # alive | broken | retracted
 var remaining := LIFETIME_SEC
 var _grid = null
-const ROOT_TEX := preload("res://visual_v2/runtime/boss/tentacle_root.png")
-const MIDDLE_TEX := preload("res://visual_v2/runtime/boss/tentacle_middle.png")
-const TIP_TEX := preload("res://visual_v2/runtime/boss/tentacle_tip.png")
-const BROKEN_TEX := preload("res://visual_v2/runtime/boss/tentacle_broken.png")
+# 贴图走运行时 load：本脚本经 BossManager 类型标注进启动解析链，
+# preload 会把 4 张触手贴图拖进开机加载（2026-10-02 启动卡顿排查）
+const TEX_PATHS := {
+	"root": "res://visual_v2/runtime/completion/boss/tentacle_root.png",
+	"middle": "res://visual_v2/runtime/completion/boss/tentacle_middle.png",
+	"tip": "res://visual_v2/runtime/completion/boss/tentacle_tip.png",
+	"broken": "res://visual_v2/runtime/completion/boss/tentacle_broken.png",
+}
+static var _tex_cache := {}
+
+
+static func tex(key: String) -> Texture2D:
+	if not _tex_cache.has(key):
+		_tex_cache[key] = load(String(TEX_PATHS[key]))
+	return _tex_cache[key]
 var _segments: Array = []
 
 
@@ -44,7 +55,7 @@ func _build_visual() -> void:
 	for i in cells.size():
 		var seg := Sprite2D.new()
 		seg.name = "TentacleSeg%d" % i
-		seg.texture = ROOT_TEX if i == 0 else (TIP_TEX if i == cells.size() - 1 else MIDDLE_TEX)
+		seg.texture = tex("root") if i == 0 else (tex("tip") if i == cells.size() - 1 else tex("middle"))
 		seg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var rel: Vector2 = _grid.coord_to_world(cells[i]) - root_pos
 		seg.position = rel
@@ -85,7 +96,7 @@ func release(mode: String) -> void:
 		var tw := create_tween()
 		for i in _segments.size():
 			var seg: Sprite2D = _segments[i]
-			seg.texture = BROKEN_TEX
+			seg.texture = tex("broken")
 			var dir := 1.0 if i % 2 == 0 else -1.0
 			tw.parallel().tween_property(seg, "position:y",
 					seg.position.y + dir * 26.0, 0.25)

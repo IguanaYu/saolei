@@ -15,16 +15,25 @@ var coord: Vector2i = Vector2i(-1, -1)
 var state := "shadow"  # shadow | fuse | deflect | exploding
 var _timer := 0.0
 var _grid = null
-const BOMB_SHADOW := preload("res://visual_v2/runtime/boss/bomb_shadow.png")
-const BOMB_FUSE_0 := preload("res://visual_v2/runtime/boss/bomb_fuse_0.png")
-const BOMB_FUSE_1 := preload("res://visual_v2/runtime/boss/bomb_fuse_1.png")
-const BOMB_DEFLECT := preload("res://visual_v2/runtime/boss/bomb_deflect.png")
-const BOMB_EXPLOSION := [
-	preload("res://visual_v2/runtime/boss/bomb_explosion0.png"),
-	preload("res://visual_v2/runtime/boss/bomb_explosion1.png"),
-	preload("res://visual_v2/runtime/boss/bomb_explosion2.png"),
-	preload("res://visual_v2/runtime/boss/bomb_explosion3.png"),
-]
+# 贴图走运行时 load（启动链只解析脚本不拉贴图；BossManager 类型标注在主场景
+# _ready 就会加载本脚本，preload 会把 8 张落弹贴图拖进开机加载——2026-10-02 启动卡顿排查）
+const TEX_PATHS := {
+	"shadow": "res://visual_v2/runtime/completion/boss/bomb_shadow.png",
+	"fuse_0": "res://visual_v2/runtime/completion/boss/bomb_fuse_0.png",
+	"fuse_1": "res://visual_v2/runtime/completion/boss/bomb_fuse_1.png",
+	"deflect": "res://visual_v2/runtime/completion/boss/bomb_deflect.png",
+	"explosion_0": "res://visual_v2/runtime/completion/boss/bomb_explosion0.png",
+	"explosion_1": "res://visual_v2/runtime/completion/boss/bomb_explosion1.png",
+	"explosion_2": "res://visual_v2/runtime/completion/boss/bomb_explosion2.png",
+	"explosion_3": "res://visual_v2/runtime/completion/boss/bomb_explosion3.png",
+}
+static var _tex_cache := {}
+
+
+static func tex(key: String) -> Texture2D:
+	if not _tex_cache.has(key):
+		_tex_cache[key] = load(String(TEX_PATHS[key]))
+	return _tex_cache[key]
 var _sprite: Sprite2D
 
 
@@ -49,14 +58,14 @@ func setup(at: Vector2i, grid) -> void:
 
 func _apply_shadow_visual() -> void:
 	# 阴影预告：定制落点图从大缩小。
-	_sprite.texture = BOMB_SHADOW
+	_sprite.texture = tex("shadow")
 	scale = Vector2(1.6, 1.6)
 	var tw := create_tween()
 	tw.tween_property(self, "scale", Vector2(0.9, 0.9), SHADOW_SEC)
 
 
 func _apply_fuse_visual(grid) -> void:
-	_sprite.texture = BOMB_FUSE_0
+	_sprite.texture = tex("fuse_0")
 	var cell = grid.get_cell(coord)
 	if cell != null:
 		cell.set_bomb_masked(true)  # 数字被挡（口径同网，机器人同盲）
@@ -77,7 +86,7 @@ func tick(delta: float, grid, boss: BossManager) -> void:
 				state = "fuse"
 				_apply_fuse_visual(grid)
 		"fuse":
-			_sprite.texture = BOMB_FUSE_0 if int(_timer * 8.0) % 2 == 0 else BOMB_FUSE_1
+			_sprite.texture = tex("fuse_0") if int(_timer * 8.0) % 2 == 0 else tex("fuse_1")
 			if _timer >= FUSE_SEC:
 				state = "exploding"
 				_explode(grid, boss)
@@ -92,7 +101,7 @@ func deflect(boss: BossManager) -> void:
 		var cell = _grid.get_cell(coord)
 		if cell != null:
 			cell.set_bomb_masked(false)
-	_sprite.texture = BOMB_DEFLECT
+	_sprite.texture = tex("deflect")
 	var target: Vector2 = boss.beast_world_pos()
 	var tw := create_tween()
 	tw.tween_property(self, "position", target, DEFLECT_FLY_SEC) \
@@ -110,16 +119,16 @@ func _explode(grid, boss: BossManager) -> void:
 		cell.set_bomb_masked(false)
 	boss.ignite_fire_cross(coord)
 	# 爆炸动效：定制火光帧放大 + 渐隐
-	_sprite.texture = BOMB_EXPLOSION[0]
+	_sprite.texture = tex("explosion_0")
 	var scale_tween := create_tween()
 	scale_tween.tween_property(self, "scale", Vector2(2.2, 2.2), 0.24)
 	scale_tween.parallel().tween_property(self, "modulate:a", 0.0, 0.26)
 	var frames := create_tween()
 	frames.tween_interval(0.065)
-	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[1])
+	frames.tween_callback(func(): _sprite.texture = tex("explosion_1"))
 	frames.tween_interval(0.065)
-	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[2])
+	frames.tween_callback(func(): _sprite.texture = tex("explosion_2"))
 	frames.tween_interval(0.065)
-	frames.tween_callback(func(): _sprite.texture = BOMB_EXPLOSION[3])
+	frames.tween_callback(func(): _sprite.texture = tex("explosion_3"))
 	frames.tween_interval(0.07)
 	frames.tween_callback(queue_free)

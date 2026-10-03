@@ -9,25 +9,26 @@ signal close_requested
 @onready var legend_box: VBoxContainer = $Center/Panel/Margin/VBox/RulesScroll/RulesList/LegendBox
 
 var _was_paused := false
+var _legend_built := false   # 图例含 load() 贴图，推迟到首次打开再建（不占启动链）
 
 ## 图例表：icon 为 null 的条目用文字代替（数字无贴图——格子上就是 Label）
 ## 贴图与 cell.gd 运行时同源（visual_v2/runtime），不复制文件
 const LEGEND := [
-	{"icon": "res://visual_v2/runtime/tiles/special_flag.png", "name": "旗",
+	{"icon": "res://visual_v2/runtime/completion/tiles/special_flag.png", "name": "旗",
 		"desc": "标记怀疑的雷", "act": "右键插 / 撤"},
 	{"icon": null, "num": "3", "name": "数字",
 		"desc": "周围 8 格的雷数", "act": "左键开格"},
-	{"icon": "res://visual_v2/runtime/tiles/overlays/confirmed.png", "name": "确认雷",
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/confirmed.png", "name": "确认雷",
 		"desc": "探测确认的雷位", "act": "不可再交互"},
-	{"icon": "res://visual_v2/runtime/tiles/overlays/web.png", "name": "蛛网",
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/web.png", "name": "蛛网",
 		"desc": "盖住数字，挡机器人推理", "act": "点击清除"},
-	{"icon": "res://visual_v2/runtime/tiles/overlays/lock.png", "name": "锁格",
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/lock.png", "name": "锁格",
 		"desc": "锁死格子，无法开 / 标", "act": "点击清除"},
-	{"icon": "res://visual_v2/runtime/tiles/overlays/slime_floor.png", "name": "黏液",
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/slime_floor.png", "name": "黏液",
 		"desc": "机器人经过减速", "act": "点击清除"},
-	{"icon": "res://visual_v2/runtime/tiles/overlays/fire_0.png", "name": "火焰",
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/fire_0.png", "name": "火焰",
 		"desc": "阻断通路，会蔓延熄灭", "act": "点击整片熄灭 +5 分"},
-	{"icon": "res://visual_v2/runtime/boss/tentacle_root.png", "name": "触手",
+	{"icon": "res://visual_v2/runtime/completion/boss/tentacle_root.png", "name": "触手",
 		"desc": "占格挡路（第 5 关）", "act": "点根部断整条 +15 分"},
 ]
 
@@ -35,7 +36,6 @@ const LEGEND := [
 func _ready() -> void:
 	hide()
 	close_button.pressed.connect(close)
-	_build_legend()
 
 
 func _build_legend() -> void:
@@ -86,6 +86,9 @@ func _build_legend() -> void:
 
 
 func open() -> void:
+	if not _legend_built:
+		_build_legend()
+		_legend_built = true
 	_was_paused = get_tree().paused
 	get_tree().paused = true
 	show()

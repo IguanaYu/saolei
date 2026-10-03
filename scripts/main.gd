@@ -111,6 +111,13 @@ func _ready() -> void:
 	# 闪屏 → 主菜单（+ 每日首启签到弹窗）
 	splash.finished.connect(_on_splash_finished)
 	main_menu.hide()  # 闪屏期间藏住主菜单
+	# 经 BootLoading 加载页进入：闪屏职责已被加载页吸收，直接亮主菜单
+	# （直接运行 Main.tscn 调试时标志为假，原闪屏照播，调试路径不受影响；
+	# 只 hide 不 free——_in_game() 等处常驻访问 splash.visible，free 后会刷
+	# "previously freed" 报错；残留的 finished 回调是幂等的 show+refresh，无害）
+	if GameState.boot_splash_played:
+		splash.hide()
+		_on_splash_finished()
 	# 暂停
 	hud.pause_requested.connect(_toggle_pause)
 	pause_panel.resume_requested.connect(_resume)
@@ -733,6 +740,7 @@ func _handle_escape() -> void:
 
 
 ## 数字键 1-4 快捷放置机器人；返回 true 表示按键已处理
+## 键位映射与商店角标（Shop.tscn 各按钮 KeyBadge"按1-按4"）同源，改键位需两处同步
 func _try_robot_shortcut(keycode: Key) -> bool:
 	if GameState.game_phase == "placing_base":
 		return false  # 先放第一个基地
