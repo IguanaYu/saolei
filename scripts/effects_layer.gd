@@ -56,7 +56,7 @@ func fx_reveal_wave(entries: Array, by_actor: String) -> void:
 	var count: int = 3 if by_actor == "player" else 1
 	for i in range(0, entries.size(), sample_step):
 		var cell: Cell = entries[i]["cell"]
-		var t := create_tween()
+		var t := cell.create_tween()  # 重开时随旧格销毁，不能留下延迟回调。
 		t.tween_interval(float(entries[i]["delay"]))
 		t.tween_callback(func():
 			if is_instance_valid(cell):

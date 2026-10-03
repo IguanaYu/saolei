@@ -101,6 +101,8 @@ var _shake_tween: Tween = null
 # 扩散波纹动画：逻辑已开（is_opened=true）但视觉保持岩壁，波前到达才翻开
 # 窗口期内寻路/计分/胜负判定全部读逻辑状态，不受视觉延迟影响
 var _reveal_pending := false
+var _wall_open_fx: Control = null
+var _wall_open_tween: Tween = null
 
 
 func _ready() -> void:
@@ -473,7 +475,7 @@ func collapse() -> void:
 
 # ---- 扩散波纹翻开（Grid._schedule_reveal_wave 统一调度）----
 
-## 视觉延迟翻开：保持岩壁 delay 秒后切换并弹跳；delay<=0 立即翻
+## 视觉延迟翻开：保持岩壁 delay 秒后碎落；delay<=0 立即翻
 func defer_visual_reveal(delay: float) -> void:
 	if delay <= 0.0:
 		play_reveal()
@@ -488,29 +490,83 @@ func defer_visual_reveal(delay: float) -> void:
 func _on_reveal_reached() -> void:
 	_reveal_pending = false
 	refresh_visual()
-	# 期间被基地/矿脉/坍塌接管的格不再弹跳（它们有自己的表现）
+	# 期间被基地/矿脉/坍塌接管的格不再碎落（它们有自己的表现）
 	if not (is_base or is_vein or is_collapsed):
-		_play_reveal_pop()
+		_play_wall_open()
 		_play_chord_shake_if_pending()
 
 
-## 立即翻开 + 弹跳（波纹中心格 / 无延迟路径）
+## 立即翻开 + 岩壁碎落（波纹中心格 / 无延迟路径）
 func play_reveal() -> void:
 	_reveal_pending = false
 	refresh_visual()
-	_play_reveal_pop()
+	_play_wall_open()
 	_play_chord_shake_if_pending()
 
 
-## 岩壁被凿开：整格放大回弹（BACK 过冲带一点下压感）+ 亮度脉冲
-func _play_reveal_pop() -> void:
-	scale = Vector2(1.22, 1.22)
-	modulate = Color(1.5, 1.42, 1.25)
-	var t := create_tween()
-	t.set_parallel(true)
-	t.tween_property(self, "scale", Vector2.ONE, 0.14) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "modulate", Color.WHITE, 0.18)
+## 原墙纹理分成四块，轻落淡出；只动覆盖层，数字与碰撞区留在原位。
+func _play_wall_open() -> void:
+	if not is_opened or is_base or is_vein or is_collapsed:
+		return
+	_clear_wall_open_fx()
+	var wall: TextureRect = $WallTex
+	var fx := Control.new()
+	fx.name = "WallOpenFx"
+	fx.position = wall.position
+	fx.size = wall.size
+	fx.clip_contents = true  # 碎块限制在本格，不能压到邻格数字。
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fx.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fx.z_index = 1
+	add_child(fx)
+	_wall_open_fx = fx
+	var source: Texture2D = wall.texture
+	var region := Rect2(Vector2.ZERO, source.get_size())
+	if source is AtlasTexture:
+		region = source.region
+		source = source.atlas
+	var half := region.size / 2.0
+	_wall_open_tween = fx.create_tween().set_parallel(true)
+	for i in 4:
+		var quadrant := Vector2(i % 2, int(i / 2))
+		var texture := AtlasTexture.new()
+		texture.atlas = source
+		texture.region = Rect2(region.position + quadrant * half, half)
+		texture.filter_clip = true
+		var piece := Sprite2D.new()
+		piece.name = "WallQuarter%d" % i
+		piece.texture = texture
+		piece.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		piece.scale = wall.size / region.size
+		var start := (quadrant + Vector2(0.5, 0.5)) * fx.size / 2.0
+		piece.position = start
+		fx.add_child(piece)
+		var fall := Vector2(-2 if i % 2 == 0 else 2, 1 if i < 2 else 3)
+		_wall_open_tween.tween_method(func(k: float):
+			piece.position = start + (fall * k).round()
+			piece.self_modulate.a = 1.0 - k,
+			0.0, 1.0, 0.22)
+	if _deco_tex != null:
+		var deco := Sprite2D.new()
+		deco.name = "WallDecoCover"
+		deco.texture = _deco_tex.texture
+		deco.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		deco.position = _deco_tex.position - wall.position + _deco_tex.size / 2.0
+		fx.add_child(deco)
+		_wall_open_tween.tween_property(deco, "self_modulate:a", 0.0, 0.22)
+	_wall_open_tween.chain().tween_callback(func():
+		if _wall_open_fx == fx:
+			_wall_open_fx = null
+		fx.queue_free())
+
+
+func _clear_wall_open_fx() -> void:
+	if _wall_open_tween != null and _wall_open_tween.is_valid():
+		_wall_open_tween.kill()
+	_wall_open_tween = null
+	if is_instance_valid(_wall_open_fx):
+		_wall_open_fx.queue_free()
+	_wall_open_fx = null
 
 
 # ---- 和弦震波（左右键同按/双击和弦触发；Grid.chord 排错峰次序）----
@@ -577,6 +633,8 @@ func _play_collapse_flicker() -> void:
 
 
 func refresh_visual() -> void:
+	if is_base or is_vein or is_collapsed:
+		_clear_wall_open_fx()
 	var bg: ColorRect = $Background
 	var lbl: Label = $Label
 	var special: TextureRect = $SpecialIcon
