@@ -13,15 +13,12 @@ Thumbs.db
 claude.md
 .gitignore
 
-# 美术生成脚本产物/缓存的 Godot 导入噪音（游戏素材在 assets/ 下，其 .import 需跟踪）
-tmp/*.import
-tmp/__pycache__/
+# tmp/ 整目录为调试产物（截图/测试脚本/中间产物），新增文件一律不入库；
+# 历史已跟踪的 224 个文件不受影响，仍正常跟踪其改动
+tmp/
 
-# 一次性调试运行日志
-tmp/*.log
-
-# Kenney 等外部素材源包/压缩包（存放在仓库外 ../素材源包/）
-tmp/kenney_*
+# ZCode agent 工作区目录
+.zcode/
 
 # secrets
 .env
