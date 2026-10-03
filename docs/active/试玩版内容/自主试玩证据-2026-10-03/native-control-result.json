@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-03",
+  "method": "Windows Computer Use sky mouse keyboard wheel, original Godot main scene",
+  "window": {
+    "app": "E:\\其他\\chorme_download\\Godot_v4.6.1-stable_win64.exe\\Godot_v4.6.1-stable_win64.exe",
+    "id": 8391282,
+    "title": "扫雷挖矿 (DEBUG)"
+  },
+  "window_closed": true,
+  "evidence_prefix": "native-",
+  "native_confirmed": [
+    "left click open",
+    "right click flag and remove",
+    "flag protects left click",
+    "key 1 buys robot",
+    "Esc opens pause",
+    "Esc fails inside pause and paused settings",
+    "settings return and resume buttons work",
+    "return to main menu confirmation works",
+    "Esc works in main-menu settings",
+    "wheel scrolls rules",
+    "Esc fails in rules twice",
+    "rules return button works",
+    "exit confirmation closes target window"
+  ],
+  "immediate_window_closed": false,
+  "process_exit_code": 0
+}

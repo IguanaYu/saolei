@@ -1,0 +1,7 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 591.86 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 4060 Ti
+
+[SelfPlay] USER_DATA=C:/Users/86132/AppData/Roaming/扫雷挖矿
+[SelfPlay] COMMAND {"action":"snapshot","id":0.0,"shot":"01-main-menu.png","wait":3.0}
+[SelfPlay] DONE 0 shot=01-main-menu.png paused=false
+[SelfPlay] COMMAND {"action":"quit","id":1.0}

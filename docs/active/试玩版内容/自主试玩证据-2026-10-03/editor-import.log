@@ -1,0 +1,55 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 591.86 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 4060 Ti
+
+ERROR: Cannot open file 'res://.godot/imported/fusion-pixel-12px-proportional-zh_hans.ttf-66f66ea67972b4eabc57d162381e3e87.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1220)
+ERROR: Failed loading resource: res://.godot/imported/fusion-pixel-12px-proportional-zh_hans.ttf-66f66ea67972b4eabc57d162381e3e87.fontdata.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Cannot open file 'res://.godot/imported/fusion-pixel-12px-proportional-latin.ttf-a5fe2b45a31b7a709e0e70c6723e9711.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1220)
+ERROR: Failed loading resource: res://.godot/imported/fusion-pixel-12px-proportional-latin.ttf-a5fe2b45a31b7a709e0e70c6723e9711.fontdata.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://assets/fonts/fusion-pixel-12px-proportional-latin.ttf.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Unable to open file: res://.godot/imported/panel_metal.png-23d50e31b827a66734574bf711e4064a.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:42)
+ERROR: Failed loading resource: res://.godot/imported/panel_metal.png-23d50e31b827a66734574bf711e4064a.ctex.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/panel_metal.png.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Unable to open file: res://.godot/imported/btn_normal.png-d25e141de8a95945b571cebdcba14830.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:42)
+ERROR: Failed loading resource: res://.godot/imported/btn_normal.png-d25e141de8a95945b571cebdcba14830.ctex.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/btn_normal.png.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Unable to open file: res://.godot/imported/btn_hover.png-56199d4a41af4d9fbf4e16bb891f8851.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:42)
+ERROR: Failed loading resource: res://.godot/imported/btn_hover.png-56199d4a41af4d9fbf4e16bb891f8851.ctex.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/btn_hover.png.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Unable to open file: res://.godot/imported/btn_pressed.png-40c5b84601c4ce5f777e8ad4fa6de54f.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:42)
+ERROR: Failed loading resource: res://.godot/imported/btn_pressed.png-40c5b84601c4ce5f777e8ad4fa6de54f.ctex.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/btn_pressed.png.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Unable to open file: res://.godot/imported/btn_disabled.png-c1ec1e7207ed98812df5fb07024330e7.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:42)
+ERROR: Failed loading resource: res://.godot/imported/btn_disabled.png-c1ec1e7207ed98812df5fb07024330e7.ctex.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/btn_disabled.png.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: res://visual_v2/runtime/ui/ui_theme_v2.tres:12 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:40)
+ERROR: res://visual_v2/runtime/ui/ui_theme_v2.tres:12 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:40)
+ERROR: Failed loading resource: res://visual_v2/runtime/ui/ui_theme_v2.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+ERROR: Error loading custom project theme 'res://visual_v2/runtime/ui/ui_theme_v2.tres'
+   at: initialize_theme (scene/theme/theme_db.cpp:69)
+res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf: Pixel font detected, disabling subpixel positioning.
+res://assets/fonts/fusion-pixel-12px-proportional-latin.ttf: Pixel font detected, disabling subpixel positioning.

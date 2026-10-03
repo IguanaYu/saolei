@@ -1,0 +1,72 @@
+extends SceneTree
+
+const EVIDENCE := "E:/gpt/worktree/e9a6/扫雷/docs/active/试玩版内容/自主试玩证据-2026-10-03/"
+const COMMAND := "E:/gpt/worktree/e9a6/扫雷/tmp/self_play_command.json"
+var last_id := -1
+var busy := false
+
+func _initialize() -> void:
+	print("[SelfPlay] USER_DATA=", OS.get_user_data_dir())
+	call_deferred("start_game")
+
+func start_game() -> void:
+	change_scene_to_file("res://scenes/ui/BootLoading.tscn")
+
+func _process(_delta: float) -> bool:
+	if busy or not FileAccess.file_exists(COMMAND):
+		return false
+	var command = JSON.parse_string(FileAccess.get_file_as_string(COMMAND))
+	if not command is Dictionary or int(command.get("id", -1)) <= last_id:
+		return false
+	last_id = int(command.id)
+	busy = true
+	perform(command)
+	return false
+
+func perform(command: Dictionary) -> void:
+	print("[SelfPlay] COMMAND ", JSON.stringify(command))
+	match command.get("action", "snapshot"):
+		"click":
+			var event := InputEventMouseButton.new()
+			event.position = Vector2(command.x, command.y)
+			event.global_position = event.position
+			event.button_index = int(command.get("button", MOUSE_BUTTON_LEFT))
+			event.pressed = true
+			Input.parse_input_event(event)
+			await process_frame
+			event = event.duplicate()
+			event.pressed = false
+			Input.parse_input_event(event)
+		"key":
+			var event := InputEventKey.new()
+			event.keycode = OS.find_keycode_from_string(command.key)
+			event.physical_keycode = event.keycode
+			event.pressed = true
+			Input.parse_input_event(event)
+			await process_frame
+			event = event.duplicate()
+			event.pressed = false
+			Input.parse_input_event(event)
+		"quit":
+			quit()
+			return
+	await create_timer(float(command.get("wait", 0.5)), true).timeout
+	await RenderingServer.frame_post_draw
+	var output_name: String = command.get("shot", "%03d.png" % last_id)
+	var screenshot := root.get_texture().get_image()
+	screenshot.save_png(EVIDENCE + output_name)
+	var ui: Array = []
+	collect_visible(root, ui)
+	var output := {"id": last_id, "shot": output_name, "size": [screenshot.get_width(), screenshot.get_height()], "paused": paused, "ui": ui}
+	var file := FileAccess.open(EVIDENCE + "state.json", FileAccess.WRITE)
+	file.store_string(JSON.stringify(output, "  "))
+	print("[SelfPlay] DONE ", last_id, " shot=", output_name, " paused=", paused)
+	busy = false
+
+func collect_visible(node: Node, ui: Array) -> void:
+	if node is Control and node.is_visible_in_tree():
+		if node is Button or node is Label:
+			var rect: Rect2 = node.get_global_rect()
+			ui.append({"path": str(node.get_path()), "text": node.text, "rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y], "disabled": node.disabled if node is Button else false})
+	for child in node.get_children():
+		collect_visible(child, ui)

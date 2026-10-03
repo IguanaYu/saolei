@@ -1,0 +1,320 @@
+{
+  "cleared_levels": {
+    "ch01_s01": true
+  },
+  "daily": {
+    "all_best": -1.0,
+    "badges": {
+
+    },
+    "chest_weeks": [],
+    "today_best": -1.0,
+    "today_key": ""
+  },
+  "first_clear_claimed": {
+    "ch01_s01": true
+  },
+  "level_stars": {
+    "ch01_s01": 0
+  },
+  "levels_entered": {
+    "ch01_s01": true,
+    "ch01_s02": true,
+    "ch01_s03": true,
+    "ch01_s04": true,
+    "ch01_s05": true
+  },
+  "ore": 252,
+  "signin": {
+    "last_claim_date": "",
+    "streak": 0
+  },
+  "stats": {
+    "best_score": 87,
+    "best_time": 314.695136555417,
+    "cur_streak": 0,
+    "max_streak": 1,
+    "meta_purchases": [],
+    "playtest": [
+      {
+        "combat_score": 0,
+        "crossing_elapsed": -1.0,
+        "detector_score": 0,
+        "elapsed": 314.7,
+        "enemy_kills": [
+          0,
+          0
+        ],
+        "first_upgrade_elapsed": -1.0,
+        "flag_score": 50,
+        "guard_bought_elapsed": -1.0,
+        "level": "ch01_s01",
+        "meta_snapshot": {
+          "global_speed": 0,
+          "start_lives": 0,
+          "start_money": 0,
+          "start_robot": 0,
+          "work_speed": 0
+        },
+        "money_left": 62,
+        "nest_cleared_elapsed": -1.0,
+        "nests_destroyed": 0,
+        "obstacles_cleared": [
+          0,
+          0
+        ],
+        "open_score": 37,
+        "player_actions": 8,
+        "player_ops": 6,
+        "preopen_score": 0,
+        "probe_coords": "",
+        "probe_used": 0,
+        "result": "win",
+        "robot_ops": 41,
+        "robots_final": [
+          1,
+          1
+        ],
+        "score": 87,
+        "slowed_seconds": 0.0,
+        "speed_levels_final": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "stall_seconds": 71.2,
+        "time_bonus": 0,
+        "ts": 1791015227.421,
+        "wrong_flags": 1
+      },
+      {
+        "combat_score": 0,
+        "crossing_elapsed": -1.0,
+        "detector_score": 0,
+        "elapsed": 120.0,
+        "enemy_kills": [
+          0,
+          0
+        ],
+        "first_upgrade_elapsed": 61.8,
+        "flag_score": 65,
+        "guard_bought_elapsed": -1.0,
+        "level": "ch01_s02",
+        "meta_snapshot": {
+          "global_speed": 0,
+          "start_lives": 0,
+          "start_money": 0,
+          "start_robot": 0,
+          "work_speed": 0
+        },
+        "money_left": 192,
+        "nest_cleared_elapsed": -1.0,
+        "nests_destroyed": 0,
+        "obstacles_cleared": [
+          0,
+          0
+        ],
+        "open_score": 77,
+        "player_actions": 0,
+        "player_ops": 0,
+        "preopen_score": 0,
+        "probe_coords": "",
+        "probe_used": 0,
+        "result": "timeout",
+        "robot_ops": 90,
+        "robots_final": [
+          1,
+          1
+        ],
+        "score": 142,
+        "slowed_seconds": 0.0,
+        "speed_levels_final": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "stall_seconds": 10.2,
+        "time_bonus": 0,
+        "ts": 1791015693.164,
+        "wrong_flags": 0
+      },
+      {
+        "combat_score": 0,
+        "crossing_elapsed": -1.0,
+        "detector_score": 0,
+        "elapsed": 150.0,
+        "enemy_kills": [
+          0,
+          0
+        ],
+        "first_upgrade_elapsed": -1.0,
+        "flag_score": 0,
+        "guard_bought_elapsed": -1.0,
+        "level": "ch01_s03",
+        "meta_snapshot": {
+          "global_speed": 0,
+          "start_lives": 0,
+          "start_money": 0,
+          "start_robot": 0,
+          "work_speed": 0
+        },
+        "money_left": 300,
+        "nest_cleared_elapsed": -1.0,
+        "nests_destroyed": 0,
+        "obstacles_cleared": [
+          0,
+          0
+        ],
+        "open_score": 0,
+        "player_actions": 0,
+        "player_ops": 0,
+        "preopen_score": 101,
+        "probe_coords": "",
+        "probe_used": 0,
+        "result": "timeout",
+        "robot_ops": 0,
+        "robots_final": [
+          0,
+          0
+        ],
+        "score": 101,
+        "slowed_seconds": 0.0,
+        "speed_levels_final": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "stall_seconds": 0.0,
+        "time_bonus": 0,
+        "ts": 1791016072.843,
+        "wrong_flags": 0
+      },
+      {
+        "combat_score": 0,
+        "crossing_elapsed": -1.0,
+        "detector_score": 0,
+        "elapsed": 180.0,
+        "enemy_kills": [
+          0,
+          3
+        ],
+        "first_upgrade_elapsed": -1.0,
+        "flag_score": 70,
+        "guard_bought_elapsed": 29.2,
+        "level": "ch01_s04",
+        "meta_snapshot": {
+          "global_speed": 0,
+          "start_lives": 0,
+          "start_money": 0,
+          "start_robot": 0,
+          "work_speed": 0
+        },
+        "money_left": 126,
+        "nest_cleared_elapsed": -1.0,
+        "nests_destroyed": 0,
+        "obstacles_cleared": [
+          0,
+          8
+        ],
+        "open_score": 36,
+        "player_actions": 2,
+        "player_ops": 0,
+        "preopen_score": 0,
+        "probe_coords": "13,5",
+        "probe_used": 1,
+        "result": "timeout",
+        "robot_ops": 50,
+        "robots_final": [
+          1,
+          1
+        ],
+        "score": 106,
+        "slowed_seconds": 0.0,
+        "speed_levels_final": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "stall_seconds": 3.3,
+        "time_bonus": 0,
+        "ts": 1791020566.692,
+        "wrong_flags": 0
+      },
+      {
+        "combat_score": 0,
+        "crossing_elapsed": -1.0,
+        "detector_score": 0,
+        "elapsed": 210.0,
+        "enemy_kills": [
+          0,
+          0
+        ],
+        "first_upgrade_elapsed": -1.0,
+        "flag_score": 55,
+        "guard_bought_elapsed": 4.5,
+        "level": "ch01_s05",
+        "meta_snapshot": {
+          "global_speed": 0,
+          "start_lives": 0,
+          "start_money": 0,
+          "start_robot": 0,
+          "work_speed": 0
+        },
+        "money_left": 42,
+        "nest_cleared_elapsed": -1.0,
+        "nests_destroyed": 0,
+        "obstacles_cleared": [
+          0,
+          69
+        ],
+        "open_score": 67,
+        "player_actions": 1,
+        "player_ops": 0,
+        "preopen_score": 0,
+        "probe_coords": "6,1;11,7",
+        "probe_used": 2,
+        "result": "timeout",
+        "robot_ops": 78,
+        "robots_final": [
+          1,
+          1
+        ],
+        "score": 122,
+        "slowed_seconds": 100.8,
+        "speed_levels_final": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "stall_seconds": 3.0,
+        "time_bonus": 0,
+        "ts": 1791021445.103,
+        "wrong_flags": 0
+      }
+    ],
+    "total_games": 6,
+    "total_play_sec": 1081.61521822206,
+    "wins": 1
+  },
+  "unlocked_chapters": [
+    "ch01"
+  ],
+  "unlocks": {
+    "detector": false,
+    "drone": false,
+    "expand_zone": 0,
+    "global_speed": 0,
+    "miner": false,
+    "start_lives": 0,
+    "start_money": 0,
+    "start_robot": 0,
+    "tower": false,
+    "work_speed": 0
+  },
+  "version": 4
+}

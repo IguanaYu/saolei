@@ -1,0 +1,50 @@
+[
+  {
+    "file": "editor-import.log",
+    "script_errors": 0,
+    "errors": 25,
+    "warnings": 0
+  },
+  {
+    "file": "import-confirm.log",
+    "script_errors": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  {
+    "file": "runtime-01.log",
+    "script_errors": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  {
+    "file": "runtime-engine-input-02.log",
+    "script_errors": 0,
+    "errors": 1,
+    "warnings": 0
+  },
+  {
+    "file": "runtime-engine-input-03.log",
+    "script_errors": 41,
+    "errors": 3,
+    "warnings": 1
+  },
+  {
+    "file": "runtime-engine-input.log",
+    "script_errors": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  {
+    "file": "runtime-native-retry.log",
+    "script_errors": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  {
+    "file": "runtime-restart.log",
+    "script_errors": 0,
+    "errors": 0,
+    "warnings": 1
+  }
+]

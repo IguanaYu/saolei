@@ -1,0 +1,3190 @@
+{
+  "id": 100,
+  "paused": false,
+  "shot": "78-probe-result.png",
+  "size": [
+    1024,
+    768
+  ],
+  "ui": [
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3904/Label",
+      "rect": [
+        288.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3905/Label",
+      "rect": [
+        316.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3906/Label",
+      "rect": [
+        344.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3907/Label",
+      "rect": [
+        372.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3908/Label",
+      "rect": [
+        400.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3909/Label",
+      "rect": [
+        428.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3910/Label",
+      "rect": [
+        456.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3911/Label",
+      "rect": [
+        484.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3912/Label",
+      "rect": [
+        512.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3913/Label",
+      "rect": [
+        540.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3914/Label",
+      "rect": [
+        568.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3915/Label",
+      "rect": [
+        596.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3916/Label",
+      "rect": [
+        624.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3917/Label",
+      "rect": [
+        652.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3918/Label",
+      "rect": [
+        680.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3919/Label",
+      "rect": [
+        708.0,
+        110.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3920/Label",
+      "rect": [
+        288.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3921/Label",
+      "rect": [
+        316.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3922/Label",
+      "rect": [
+        344.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3923/Label",
+      "rect": [
+        372.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3924/Label",
+      "rect": [
+        400.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3925/Label",
+      "rect": [
+        428.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3926/Label",
+      "rect": [
+        456.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3927/Label",
+      "rect": [
+        484.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3928/Label",
+      "rect": [
+        512.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3929/Label",
+      "rect": [
+        540.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3930/Label",
+      "rect": [
+        568.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3931/Label",
+      "rect": [
+        596.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3932/Label",
+      "rect": [
+        624.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3933/Label",
+      "rect": [
+        652.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3934/Label",
+      "rect": [
+        680.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3935/Label",
+      "rect": [
+        708.0,
+        138.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3936/Label",
+      "rect": [
+        288.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3937/Label",
+      "rect": [
+        316.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3938/Label",
+      "rect": [
+        344.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3939/Label",
+      "rect": [
+        372.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3940/Label",
+      "rect": [
+        400.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3941/Label",
+      "rect": [
+        428.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3942/Label",
+      "rect": [
+        456.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3943/Label",
+      "rect": [
+        484.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3944/Label",
+      "rect": [
+        512.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3945/Label",
+      "rect": [
+        540.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3946/Label",
+      "rect": [
+        568.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3947/Label",
+      "rect": [
+        596.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3948/Label",
+      "rect": [
+        624.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3949/Label",
+      "rect": [
+        652.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3950/Label",
+      "rect": [
+        680.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3951/Label",
+      "rect": [
+        708.0,
+        166.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3952/Label",
+      "rect": [
+        288.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3953/Label",
+      "rect": [
+        316.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3954/Label",
+      "rect": [
+        344.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3955/Label",
+      "rect": [
+        372.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3956/Label",
+      "rect": [
+        400.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3957/Label",
+      "rect": [
+        428.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3958/Label",
+      "rect": [
+        456.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3959/Label",
+      "rect": [
+        484.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3960/Label",
+      "rect": [
+        512.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3961/Label",
+      "rect": [
+        540.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3962/Label",
+      "rect": [
+        568.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3963/Label",
+      "rect": [
+        596.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3964/Label",
+      "rect": [
+        624.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3965/Label",
+      "rect": [
+        652.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3966/Label",
+      "rect": [
+        680.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3967/Label",
+      "rect": [
+        708.0,
+        194.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3968/Label",
+      "rect": [
+        288.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3969/Label",
+      "rect": [
+        316.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3970/Label",
+      "rect": [
+        344.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3971/Label",
+      "rect": [
+        372.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3972/Label",
+      "rect": [
+        400.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3973/Label",
+      "rect": [
+        428.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3974/Label",
+      "rect": [
+        456.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3975/Label",
+      "rect": [
+        484.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3976/Label",
+      "rect": [
+        512.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3977/Label",
+      "rect": [
+        540.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3978/Label",
+      "rect": [
+        568.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3979/Label",
+      "rect": [
+        596.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3980/Label",
+      "rect": [
+        624.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3981/Label",
+      "rect": [
+        652.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3982/Label",
+      "rect": [
+        680.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3983/Label",
+      "rect": [
+        708.0,
+        222.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3984/Label",
+      "rect": [
+        288.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3985/Label",
+      "rect": [
+        316.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3986/Label",
+      "rect": [
+        344.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3987/Label",
+      "rect": [
+        372.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3988/Label",
+      "rect": [
+        400.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3989/Label",
+      "rect": [
+        428.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3990/Label",
+      "rect": [
+        456.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3991/Label",
+      "rect": [
+        484.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3992/Label",
+      "rect": [
+        512.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3993/Label",
+      "rect": [
+        540.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3994/Label",
+      "rect": [
+        568.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3995/Label",
+      "rect": [
+        596.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3996/Label",
+      "rect": [
+        624.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3997/Label",
+      "rect": [
+        652.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3998/Label",
+      "rect": [
+        680.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@3999/Label",
+      "rect": [
+        708.0,
+        250.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4000/Label",
+      "rect": [
+        288.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4001/Label",
+      "rect": [
+        316.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4002/Label",
+      "rect": [
+        344.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4003/Label",
+      "rect": [
+        372.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4004/Label",
+      "rect": [
+        400.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4005/Label",
+      "rect": [
+        428.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4006/Label",
+      "rect": [
+        456.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4007/Label",
+      "rect": [
+        484.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4008/Label",
+      "rect": [
+        512.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4009/Label",
+      "rect": [
+        540.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4010/Label",
+      "rect": [
+        568.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4011/Label",
+      "rect": [
+        596.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4012/Label",
+      "rect": [
+        624.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4013/Label",
+      "rect": [
+        652.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4014/Label",
+      "rect": [
+        680.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4015/Label",
+      "rect": [
+        708.0,
+        278.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4016/Label",
+      "rect": [
+        288.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4017/Label",
+      "rect": [
+        316.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4018/Label",
+      "rect": [
+        344.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4019/Label",
+      "rect": [
+        372.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4020/Label",
+      "rect": [
+        400.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4021/Label",
+      "rect": [
+        428.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4022/Label",
+      "rect": [
+        456.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4023/Label",
+      "rect": [
+        484.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4024/Label",
+      "rect": [
+        512.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4025/Label",
+      "rect": [
+        540.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4026/Label",
+      "rect": [
+        568.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4027/Label",
+      "rect": [
+        596.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4028/Label",
+      "rect": [
+        624.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4029/Label",
+      "rect": [
+        652.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4030/Label",
+      "rect": [
+        680.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4031/Label",
+      "rect": [
+        708.0,
+        306.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4032/Label",
+      "rect": [
+        288.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4033/Label",
+      "rect": [
+        316.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4034/Label",
+      "rect": [
+        344.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4035/Label",
+      "rect": [
+        372.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4036/Label",
+      "rect": [
+        400.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4037/Label",
+      "rect": [
+        428.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4038/Label",
+      "rect": [
+        456.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4039/Label",
+      "rect": [
+        484.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4040/Label",
+      "rect": [
+        512.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4041/Label",
+      "rect": [
+        540.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4042/Label",
+      "rect": [
+        568.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4043/Label",
+      "rect": [
+        596.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4044/Label",
+      "rect": [
+        624.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4045/Label",
+      "rect": [
+        652.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4046/Label",
+      "rect": [
+        680.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4047/Label",
+      "rect": [
+        708.0,
+        334.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4048/Label",
+      "rect": [
+        288.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4049/Label",
+      "rect": [
+        316.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4050/Label",
+      "rect": [
+        344.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4051/Label",
+      "rect": [
+        372.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4052/Label",
+      "rect": [
+        400.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4053/Label",
+      "rect": [
+        428.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4054/Label",
+      "rect": [
+        456.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4055/Label",
+      "rect": [
+        484.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4056/Label",
+      "rect": [
+        512.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4057/Label",
+      "rect": [
+        540.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4058/Label",
+      "rect": [
+        568.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4059/Label",
+      "rect": [
+        596.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4060/Label",
+      "rect": [
+        624.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4061/Label",
+      "rect": [
+        652.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4062/Label",
+      "rect": [
+        680.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4063/Label",
+      "rect": [
+        708.0,
+        362.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4064/Label",
+      "rect": [
+        288.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4065/Label",
+      "rect": [
+        316.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4066/Label",
+      "rect": [
+        344.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4067/Label",
+      "rect": [
+        372.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4068/Label",
+      "rect": [
+        400.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4069/Label",
+      "rect": [
+        428.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4070/Label",
+      "rect": [
+        456.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4071/Label",
+      "rect": [
+        484.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4072/Label",
+      "rect": [
+        512.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4073/Label",
+      "rect": [
+        540.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4074/Label",
+      "rect": [
+        568.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4075/Label",
+      "rect": [
+        596.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4076/Label",
+      "rect": [
+        624.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4077/Label",
+      "rect": [
+        652.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4078/Label",
+      "rect": [
+        680.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4079/Label",
+      "rect": [
+        708.0,
+        390.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4080/Label",
+      "rect": [
+        288.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4081/Label",
+      "rect": [
+        316.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4082/Label",
+      "rect": [
+        344.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4083/Label",
+      "rect": [
+        372.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4084/Label",
+      "rect": [
+        400.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4085/Label",
+      "rect": [
+        428.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4086/Label",
+      "rect": [
+        456.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4087/Label",
+      "rect": [
+        484.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4088/Label",
+      "rect": [
+        512.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4089/Label",
+      "rect": [
+        540.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4090/Label",
+      "rect": [
+        568.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4091/Label",
+      "rect": [
+        596.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4092/Label",
+      "rect": [
+        624.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4093/Label",
+      "rect": [
+        652.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4094/Label",
+      "rect": [
+        680.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4095/Label",
+      "rect": [
+        708.0,
+        418.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4096/Label",
+      "rect": [
+        288.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4097/Label",
+      "rect": [
+        316.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4098/Label",
+      "rect": [
+        344.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4099/Label",
+      "rect": [
+        372.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4100/Label",
+      "rect": [
+        400.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4101/Label",
+      "rect": [
+        428.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4102/Label",
+      "rect": [
+        456.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4103/Label",
+      "rect": [
+        484.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4104/Label",
+      "rect": [
+        512.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4105/Label",
+      "rect": [
+        540.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4106/Label",
+      "rect": [
+        568.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4107/Label",
+      "rect": [
+        596.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4108/Label",
+      "rect": [
+        624.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4109/Label",
+      "rect": [
+        652.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4110/Label",
+      "rect": [
+        680.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4111/Label",
+      "rect": [
+        708.0,
+        446.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4112/Label",
+      "rect": [
+        288.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4113/Label",
+      "rect": [
+        316.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4114/Label",
+      "rect": [
+        344.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4115/Label",
+      "rect": [
+        372.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4116/Label",
+      "rect": [
+        400.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4117/Label",
+      "rect": [
+        428.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4118/Label",
+      "rect": [
+        456.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4119/Label",
+      "rect": [
+        484.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4120/Label",
+      "rect": [
+        512.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4121/Label",
+      "rect": [
+        540.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4122/Label",
+      "rect": [
+        568.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4123/Label",
+      "rect": [
+        596.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4124/Label",
+      "rect": [
+        624.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4125/Label",
+      "rect": [
+        652.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4126/Label",
+      "rect": [
+        680.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4127/Label",
+      "rect": [
+        708.0,
+        474.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4128/Label",
+      "rect": [
+        288.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4129/Label",
+      "rect": [
+        316.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4130/Label",
+      "rect": [
+        344.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4131/Label",
+      "rect": [
+        372.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4132/Label",
+      "rect": [
+        400.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4133/Label",
+      "rect": [
+        428.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4134/Label",
+      "rect": [
+        456.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4135/Label",
+      "rect": [
+        484.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4136/Label",
+      "rect": [
+        512.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "3"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4137/Label",
+      "rect": [
+        540.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "4"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4138/Label",
+      "rect": [
+        568.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4139/Label",
+      "rect": [
+        596.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4140/Label",
+      "rect": [
+        624.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4141/Label",
+      "rect": [
+        652.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4142/Label",
+      "rect": [
+        680.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4143/Label",
+      "rect": [
+        708.0,
+        502.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4144/Label",
+      "rect": [
+        288.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4145/Label",
+      "rect": [
+        316.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4146/Label",
+      "rect": [
+        344.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4147/Label",
+      "rect": [
+        372.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4148/Label",
+      "rect": [
+        400.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4149/Label",
+      "rect": [
+        428.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4150/Label",
+      "rect": [
+        456.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4151/Label",
+      "rect": [
+        484.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": "2"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4152/Label",
+      "rect": [
+        512.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4153/Label",
+      "rect": [
+        540.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4154/Label",
+      "rect": [
+        568.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4155/Label",
+      "rect": [
+        596.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4156/Label",
+      "rect": [
+        624.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4157/Label",
+      "rect": [
+        652.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4158/Label",
+      "rect": [
+        680.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": "1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/Grid/@Area2D@4159/Label",
+      "rect": [
+        708.0,
+        530.0,
+        28.0,
+        32.0
+      ],
+      "text": ""
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/PlayerLogPanel/Margin/VBox/TitleLabel",
+      "rect": [
+        46.0,
+        152.0,
+        184.0,
+        20.0
+      ],
+      "text": "你的行动"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/RobotLogPanel/Margin/VBox/TitleLabel",
+      "rect": [
+        794.0,
+        152.0,
+        184.0,
+        20.0
+      ],
+      "text": "机器人作业"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/MoneyPanel/ResBox/MoneyLabel",
+      "rect": [
+        62.0,
+        26.0,
+        36.0,
+        32.0
+      ],
+      "text": "101"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/MoneyPanel/ResBox/MoneyHintLabel",
+      "rect": [
+        108.0,
+        35.0,
+        44.0,
+        15.0
+      ],
+      "text": "购买设备"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/MiddleBox/LevelTitleLabel",
+      "rect": [
+        178.0,
+        8.0,
+        484.0,
+        19.0
+      ],
+      "text": "第 4 关 · 除虫"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/MiddleBox/ObjectiveRow/ObjectiveLabel",
+      "rect": [
+        278.0,
+        31.0,
+        284.0,
+        32.0
+      ],
+      "text": "目标: 开 160 格 (83/160)"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/ScoreLabel",
+      "rect": [
+        720.0,
+        26.0,
+        24.0,
+        32.0
+      ],
+      "text": "81"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/TimeLabel",
+      "rect": [
+        784.0,
+        26.0,
+        44.0,
+        32.0
+      ],
+      "text": "0:51"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/PauseButton",
+      "rect": [
+        932.0,
+        20.0,
+        64.0,
+        45.0
+      ],
+      "text": "暂停"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/HUD/ToastPanel/ToastLabel",
+      "rect": [
+        240.0,
+        214.0,
+        544.0,
+        26.0
+      ],
+      "text": "探测完成：2 格确认雷"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton",
+      "rect": [
+        66.0,
+        600.0,
+        220.0,
+        60.0
+      ],
+      "text": "开墙型 ¥100\n已有 1 台"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton/KeyBadge/KeyLabel",
+      "rect": [
+        246.0,
+        606.0,
+        30.0,
+        16.0
+      ],
+      "text": "按1"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton",
+      "rect": [
+        290.0,
+        600.0,
+        220.0,
+        60.0
+      ],
+      "text": "标雷型 ¥100\n已有 1 台"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton/KeyBadge/KeyLabel",
+      "rect": [
+        470.0,
+        606.0,
+        30.0,
+        16.0
+      ],
+      "text": "按2"
+    },
+    {
+      "disabled": true,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyGuardButton",
+      "rect": [
+        514.0,
+        600.0,
+        220.0,
+        60.0
+      ],
+      "text": "🔒 保安\n已购满"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/DeviceFlow/BuyProbeButton",
+      "rect": [
+        738.0,
+        600.0,
+        220.0,
+        60.0
+      ],
+      "text": "探测 ¥100"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/BuildRow/BuildBaseButton",
+      "rect": [
+        248.0,
+        666.0,
+        176.0,
+        48.0
+      ],
+      "text": "建基地 ¥80"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/BuildRow/UpgradeButton",
+      "rect": [
+        440.0,
+        666.0,
+        160.0,
+        48.0
+      ],
+      "text": "局内升级"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/BuildRow/RulesButton",
+      "rect": [
+        616.0,
+        666.0,
+        160.0,
+        48.0
+      ],
+      "text": "操作说明"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/K1/KeyLabel",
+      "rect": [
+        251.0,
+        722.0,
+        24.0,
+        16.0
+      ],
+      "text": "左键"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/L1",
+      "rect": [
+        291.0,
+        723.0,
+        22.0,
+        15.0
+      ],
+      "text": "开格"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/Sep1",
+      "rect": [
+        323.0,
+        723.0,
+        11.0,
+        15.0
+      ],
+      "text": "·"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/K2/KeyLabel",
+      "rect": [
+        350.0,
+        722.0,
+        24.0,
+        16.0
+      ],
+      "text": "右键"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/L2",
+      "rect": [
+        390.0,
+        723.0,
+        22.0,
+        15.0
+      ],
+      "text": "标雷"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/Sep2",
+      "rect": [
+        422.0,
+        723.0,
+        11.0,
+        15.0
+      ],
+      "text": "·"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/K3/KeyLabel",
+      "rect": [
+        449.0,
+        722.0,
+        48.0,
+        16.0
+      ],
+      "text": "左右同按"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/L3",
+      "rect": [
+        513.0,
+        723.0,
+        44.0,
+        15.0
+      ],
+      "text": "和弦快开"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/Sep3",
+      "rect": [
+        567.0,
+        723.0,
+        11.0,
+        15.0
+      ],
+      "text": "·"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/K4/KeyLabel",
+      "rect": [
+        594.0,
+        722.0,
+        18.0,
+        16.0
+      ],
+      "text": "1-4"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/L4",
+      "rect": [
+        628.0,
+        723.0,
+        55.0,
+        15.0
+      ],
+      "text": "快购机器人"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/Sep4",
+      "rect": [
+        693.0,
+        723.0,
+        11.0,
+        15.0
+      ],
+      "text": "·"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/K5/KeyLabel",
+      "rect": [
+        720.0,
+        722.0,
+        21.0,
+        16.0
+      ],
+      "text": "ESC"
+    },
+    {
+      "disabled": false,
+      "path": "/root/Main/UILayer/Shop/MarginContainer/VBoxContainer/KeyHintBar/L5",
+      "rect": [
+        757.0,
+        723.0,
+        22.0,
+        15.0
+      ],
+      "text": "暂停"
+    }
+  ]
+}

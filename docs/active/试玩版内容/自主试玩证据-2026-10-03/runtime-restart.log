@@ -1,0 +1,19 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 591.86 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 4060 Ti
+
+[SelfPlay] USER_DATA=C:/Users/86132/AppData/Roaming/CodexPlaytest-e9a6-20261003
+[SelfPlay] COMMAND {"action":"snapshot","id":131.0,"shot":"109-restart-menu.png","wait":4.0}
+[SelfPlay] DONE 131 shot=109-restart-menu.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":132.0,"shot":"110-restart-settings.png","x":622.0,"y":514.0}
+[SelfPlay] DONE 132 shot=110-restart-settings.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":133.0,"key":"Escape","shot":"111-restart-settings-return.png"}
+[SelfPlay] DONE 133 shot=111-restart-settings-return.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":134.0,"shot":"112-restart-progress.png","x":512.0,"y":454.0}
+[SelfPlay] DONE 134 shot=112-restart-progress.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":135.0,"shot":"113-final-main-menu.png","x":115.0,"y":48.0}
+[SelfPlay] DONE 135 shot=113-final-main-menu.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":136.0,"shot":"114-final-exit-confirm.png","x":558.0,"y":567.0}
+[SelfPlay] DONE 136 shot=114-final-exit-confirm.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":137.0,"shot":"115-final-exit.png","x":420.0,"y":428.0}
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)

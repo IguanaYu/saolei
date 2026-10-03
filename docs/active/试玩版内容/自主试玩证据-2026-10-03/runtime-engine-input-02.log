@@ -1,0 +1,33 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 591.86 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 4060 Ti
+
+[SelfPlay] USER_DATA=C:/Users/86132/AppData/Roaming/CodexPlaytest-e9a6-20261003
+[SelfPlay] COMMAND {"action":"snapshot","id":2.0,"shot":"01-main-menu.png","wait":3.0}
+[SelfPlay] DONE 2 shot=01-main-menu.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":3.0,"shot":"02-rules-top.png","x":405.0,"y":514.0}
+[SelfPlay] DONE 3 shot=02-rules-top.png paused=true
+ERROR: Parse JSON failed. Error at line 0: Unknown error getting token
+   at: parse_string (core/io/json.cpp:624)
+   GDScript backtrace (most recent call first):
+       [0] _process (res://tmp/self_play_20261003.gd:18)
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":4.0,"shot":"03-rules-scroll.png","x":730.0,"y":468.0}
+[SelfPlay] DONE 4 shot=03-rules-scroll.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":5.0,"shot":"scroll-step-0.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 5 shot=scroll-step-0.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":6.0,"shot":"scroll-step-1.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 6 shot=scroll-step-1.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":7.0,"shot":"scroll-step-2.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 7 shot=scroll-step-2.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":8.0,"shot":"scroll-step-3.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 8 shot=scroll-step-3.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":9.0,"shot":"scroll-step-4.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 9 shot=scroll-step-4.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":10.0,"shot":"scroll-step-5.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 10 shot=scroll-step-5.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":11.0,"shot":"scroll-step-6.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 11 shot=scroll-step-6.png paused=true
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":12.0,"shot":"04-rules-bottom.png","wait":0.12,"x":730.0,"y":468.0}
+[SelfPlay] DONE 12 shot=04-rules-bottom.png paused=true
+[SelfPlay] COMMAND {"action":"key","id":13.0,"key":"Escape","shot":"05-rules-esc.png"}
+[SelfPlay] DONE 13 shot=05-rules-esc.png paused=true
+[SelfPlay] COMMAND {"action":"quit","id":14.0}

@@ -1,0 +1,555 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 591.86 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 4060 Ti
+
+[SelfPlay] USER_DATA=C:/Users/86132/AppData/Roaming/CodexPlaytest-e9a6-20261003
+[SelfPlay] COMMAND {"action":"snapshot","id":15.0,"shot":"01-main-menu.png","wait":3.0}
+[SelfPlay] DONE 15 shot=01-main-menu.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":16.0,"shot":"06-settings-top.png","x":620.0,"y":514.0}
+[SelfPlay] DONE 16 shot=06-settings-top.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":17.0,"shot":"07-settings-volume.png","x":590.0,"y":321.0}
+[SelfPlay] DONE 17 shot=07-settings-volume.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":18.0,"shot":"settings-scroll-0.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 18 shot=settings-scroll-0.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":19.0,"shot":"settings-scroll-1.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 19 shot=settings-scroll-1.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":20.0,"shot":"settings-scroll-2.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 20 shot=settings-scroll-2.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":21.0,"shot":"settings-scroll-3.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 21 shot=settings-scroll-3.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":22.0,"shot":"settings-scroll-4.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 22 shot=settings-scroll-4.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":23.0,"shot":"settings-scroll-5.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 23 shot=settings-scroll-5.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":24.0,"shot":"settings-scroll-6.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 24 shot=settings-scroll-6.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":25.0,"shot":"settings-scroll-7.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 25 shot=settings-scroll-7.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":5.0,"id":26.0,"shot":"08-settings-bottom.png","wait":0.12,"x":720.0,"y":500.0}
+[SelfPlay] DONE 26 shot=08-settings-bottom.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":27.0,"shot":"09-resolution-options.png","x":655.0,"y":507.0}
+[SelfPlay] DONE 27 shot=09-resolution-options.png paused=false
+ERROR: Parse JSON failed. Error at line 0: Unknown error getting token
+   at: parse_string (core/io/json.cpp:624)
+   GDScript backtrace (most recent call first):
+       [0] _process (res://tmp/self_play_20261003.gd:18)
+[SelfPlay] COMMAND {"action":"click","id":28.0,"shot":"10-settings-1280.png","x":655.0,"y":588.0}
+[SelfPlay] DONE 28 shot=10-settings-1280.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":29.0,"shot":"11-settings-fullscreen.png","x":850.0,"y":535.0}
+[SelfPlay] DONE 29 shot=11-settings-fullscreen.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":30.0,"shot":"12-settings-window-again.png","x":1670.0,"y":800.0}
+[SelfPlay] DONE 30 shot=12-settings-window-again.png paused=false
+ERROR: Parse JSON failed. Error at line 0: Unknown error getting token
+   at: parse_string (core/io/json.cpp:624)
+   GDScript backtrace (most recent call first):
+       [0] _process (res://tmp/self_play_20261003.gd:18)
+[SelfPlay] COMMAND {"action":"key","id":31.0,"key":"Escape","shot":"13-settings-esc.png"}
+[SelfPlay] DONE 31 shot=13-settings-esc.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":32.0,"shot":"14-first-prelevel.png","x":637.0,"y":488.0}
+[SelfPlay] DONE 32 shot=14-first-prelevel.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":33.0,"key":"Escape","shot":"15-fresh-escape-select.png"}
+[SelfPlay] DONE 33 shot=15-fresh-escape-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":34.0,"shot":"16-level1-precard.png","x":921.0,"y":865.0}
+[SelfPlay] DONE 34 shot=16-level1-precard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":35.0,"shot":"17-level1-tutorial.png","wait":1.0,"x":640.0,"y":680.0}
+[SelfPlay] DONE 35 shot=17-level1-tutorial.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":36.0,"shot":"18-level1-first-flag.png","x":796.0,"y":469.0}
+[SelfPlay] DONE 36 shot=18-level1-first-flag.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":37.0,"shot":"19-flag-protect-left.png","x":796.0,"y":469.0}
+[SelfPlay] DONE 37 shot=19-flag-protect-left.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":38.0,"shot":"20-flag-remove.png","x":796.0,"y":469.0}
+[SelfPlay] DONE 38 shot=20-flag-remove.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":39.0,"shot":"21-level1-open.png","x":796.0,"y":469.0}
+[SelfPlay] DONE 39 shot=21-level1-open.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":40.0,"key":"1","shot":"22-level1-buy-opener.png"}
+[SelfPlay] DONE 40 shot=22-level1-buy-opener.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":41.0,"shot":"23-flag-0.png","wait":0.3,"x":762.0,"y":469.0}
+[SelfPlay] DONE 41 shot=23-flag-0.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":42.0,"shot":"23-flag-1.png","wait":0.3,"x":762.0,"y":504.0}
+[SelfPlay] DONE 42 shot=23-flag-1.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":43.0,"shot":"23-flag-2.png","wait":0.3,"x":762.0,"y":539.0}
+[SelfPlay] DONE 43 shot=23-flag-2.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":44.0,"shot":"23-flag-3.png","wait":0.3,"x":552.0,"y":434.0}
+[SelfPlay] DONE 44 shot=23-flag-3.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":45.0,"shot":"23-flag-4.png","wait":0.3,"x":517.0,"y":434.0}
+[SelfPlay] DONE 45 shot=23-flag-4.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":46.0,"shot":"24-cooldown-tutorial-next.png","x":1140.0,"y":454.0}
+[SelfPlay] DONE 46 shot=24-cooldown-tutorial-next.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":47.0,"shot":"25-marker-and-robots.png","wait":3.0,"x":782.0,"y":790.0}
+[SelfPlay] DONE 47 shot=25-marker-and-robots.png paused=false
+[SelfPlay] COMMAND {"action":"snapshot","id":48.0,"shot":"26-robots-after-wait.png","wait":10.0}
+[SelfPlay] DONE 48 shot=26-robots-after-wait.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":49.0,"shot":"27-manual-opens-path.png","wait":2.0,"x":587.0,"y":329.0}
+[SelfPlay] DONE 49 shot=27-manual-opens-path.png paused=false
+[SelfPlay] COMMAND {"action":"snapshot","id":50.0,"shot":"28-level1-results.png","wait":5.0}
+[SelfPlay] DONE 50 shot=28-level1-results.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":51.0,"shot":"29-next-enters-level2.png","x":410.0,"y":802.0}
+[SelfPlay] DONE 51 shot=29-next-enters-level2.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":52.0,"shot":"30-level2-tutorial.png","wait":1.0,"x":640.0,"y":680.0}
+[SelfPlay] DONE 52 shot=30-level2-tutorial.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":53.0,"shot":"31-level2-skip.png","x":1115.0,"y":130.0}
+[SelfPlay] DONE 53 shot=31-level2-skip.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":54.0,"shot":"32-level2-upgrade-open.png","x":530.0,"y":863.0}
+[SelfPlay] DONE 54 shot=32-level2-upgrade-open.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":55.0,"shot":"33-upgrade-purchased.png","x":1100.0,"y":239.0}
+[SelfPlay] DONE 55 shot=33-upgrade-purchased.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":56.0,"key":"Escape","shot":"34-upgrade-esc.png"}
+[SelfPlay] DONE 56 shot=34-upgrade-esc.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":57.0,"key":"Escape","shot":"35-pause.png","wait":1.0}
+[SelfPlay] DONE 57 shot=35-pause.png paused=true
+[SelfPlay] COMMAND {"action":"snapshot","id":58.0,"shot":"36-pause-time-frozen.png","wait":3.0}
+[SelfPlay] DONE 58 shot=36-pause-time-frozen.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":59.0,"shot":"37-pause-settings.png","x":640.0,"y":498.0}
+[SelfPlay] DONE 59 shot=37-pause-settings.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":60.0,"shot":"38-pause-resolutions.png","x":830.0,"y":634.0}
+[SelfPlay] DONE 60 shot=38-pause-resolutions.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":61.0,"shot":"39-settings-1024.png","x":830.0,"y":692.0}
+[SelfPlay] DONE 61 shot=39-settings-1024.png paused=true
+[SelfPlay] COMMAND {"action":"key","id":62.0,"key":"Escape","shot":"40-settings-returns-pause.png"}
+[SelfPlay] DONE 62 shot=40-settings-returns-pause.png paused=true
+[SelfPlay] COMMAND {"action":"key","id":63.0,"key":"Escape","shot":"41-pause-settings-esc-repeat.png"}
+[SelfPlay] DONE 63 shot=41-pause-settings-esc-repeat.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":64.0,"shot":"42-settings-return-button.png","x":512.0,"y":670.0}
+[SelfPlay] DONE 64 shot=42-settings-return-button.png paused=true
+[SelfPlay] COMMAND {"action":"key","id":65.0,"key":"Escape","shot":"43-pause-escape-resume.png"}
+[SelfPlay] DONE 65 shot=43-pause-escape-resume.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":66.0,"shot":"44-resume-button.png","x":512.0,"y":273.0}
+[SelfPlay] DONE 66 shot=44-resume-button.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":67.0,"shot":"45-upgrade-through-end.png","wait":20.0,"x":424.0,"y":691.0}
+[SelfPlay] DONE 67 shot=45-upgrade-through-end.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":68.0,"shot":"46-level-select-after-two.png","x":600.0,"y":626.0}
+[SelfPlay] DONE 68 shot=46-level-select-after-two.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":69.0,"shot":"47-level3-select.png","x":258.0,"y":331.0}
+[SelfPlay] DONE 69 shot=47-level3-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":70.0,"shot":"48-level3-precard.png","x":737.0,"y":692.0}
+[SelfPlay] DONE 70 shot=48-level3-precard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":71.0,"shot":"49-level3-enter.png","wait":1.0,"x":512.0,"y":544.0}
+[SelfPlay] DONE 71 shot=49-level3-enter.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":72.0,"shot":"50-level3-skip.png","x":894.0,"y":104.0}
+[SelfPlay] DONE 72 shot=50-level3-skip.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":73.0,"shot":"51-level3-five-upgrades.png","x":512.0,"y":691.0}
+[SelfPlay] DONE 73 shot=51-level3-five-upgrades.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":74.0,"key":"Escape","shot":"52-level3-upgrade-close.png"}
+[SelfPlay] DONE 74 shot=52-level3-upgrade-close.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":75.0,"shot":"53-build-base-mode.png","x":338.0,"y":691.0}
+[SelfPlay] DONE 75 shot=53-build-base-mode.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":76.0,"shot":"54-base-invalid-wall.png","x":694.0,"y":293.0}
+[SelfPlay] DONE 76 shot=54-base-invalid-wall.png paused=false
+[SelfPlay] COMMAND {"action":"snapshot","id":77.0,"shot":"55-level3-current.png"}
+[SelfPlay] DONE 77 shot=55-level3-current.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":78.0,"shot":"56-level3-replay.png","x":418.0,"y":626.0}
+[SelfPlay] DONE 78 shot=56-level3-replay.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":79.0,"shot":"57-base-mode-replay.png","x":338.0,"y":691.0}
+[SelfPlay] DONE 79 shot=57-base-mode-replay.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":80.0,"shot":"58-base-placed.png","x":525.0,"y":155.0}
+[SelfPlay] DONE 80 shot=58-base-placed.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":81.0,"shot":"59-base-mode-again.png","x":338.0,"y":691.0}
+[SelfPlay] DONE 81 shot=59-base-mode-again.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":82.0,"shot":"60-base-cancel.png","x":525.0,"y":155.0}
+[SelfPlay] DONE 82 shot=60-base-cancel.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":83.0,"key":"1","shot":"61-level3-opener.png"}
+[SelfPlay] DONE 83 shot=61-level3-opener.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":84.0,"key":"2","shot":"62-level3-both-robots.png","wait":2.0}
+[SelfPlay] DONE 84 shot=62-level3-both-robots.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":85.0,"key":"Escape","shot":"63-level3-pause.png"}
+[SelfPlay] DONE 85 shot=63-level3-pause.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":86.0,"shot":"64-abandon-confirm.png","x":512.0,"y":522.0}
+[SelfPlay] DONE 86 shot=64-abandon-confirm.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":87.0,"shot":"65-abandon-cancel.png","x":604.0,"y":428.0}
+[SelfPlay] DONE 87 shot=65-abandon-cancel.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":88.0,"shot":"66-abandon-reopen.png","x":512.0,"y":522.0}
+[SelfPlay] DONE 88 shot=66-abandon-reopen.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":89.0,"shot":"67-abandon-to-select.png","x":420.0,"y":428.0}
+[SelfPlay] DONE 89 shot=67-abandon-to-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":90.0,"shot":"68-level4-select.png","x":258.0,"y":431.0}
+[SelfPlay] DONE 90 shot=68-level4-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":91.0,"shot":"69-level4-precard.png","x":737.0,"y":692.0}
+[SelfPlay] DONE 91 shot=69-level4-precard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":92.0,"shot":"70-level4-tutorial.png","wait":1.0,"x":512.0,"y":544.0}
+[SelfPlay] DONE 92 shot=70-level4-tutorial.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":93.0,"shot":"71-level4-skip.png","x":894.0,"y":104.0}
+[SelfPlay] DONE 93 shot=71-level4-skip.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":94.0,"shot":"72-first-base-invalid.png","x":650.0,"y":180.0}
+[SelfPlay] DONE 94 shot=72-first-base-invalid.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":95.0,"shot":"73-level4-base-placed.png","wait":1.0,"x":441.0,"y":435.0}
+[SelfPlay] DONE 95 shot=73-level4-base-placed.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":96.0,"key":"1","shot":"74-level4-opener.png"}
+[SelfPlay] DONE 96 shot=74-level4-opener.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":97.0,"key":"2","shot":"75-level4-marker.png"}
+[SelfPlay] DONE 97 shot=75-level4-marker.png paused=false
+ERROR: Parse JSON failed. Error at line 0: Unknown error getting token
+   at: parse_string (core/io/json.cpp:624)
+   GDScript backtrace (most recent call first):
+       [0] _process (res://tmp/self_play_20261003.gd:18)
+[SelfPlay] COMMAND {"action":"click","id":98.0,"shot":"76-level4-guard.png","wait":1.0,"x":622.0,"y":632.0}
+[SelfPlay] DONE 98 shot=76-level4-guard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":99.0,"shot":"77-probe-mode.png","x":848.0,"y":631.0}
+[SelfPlay] DONE 99 shot=77-probe-mode.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":100.0,"shot":"78-probe-result.png","x":666.0,"y":265.0}
+[SelfPlay] DONE 100 shot=78-probe-result.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":101.0,"shot":"79-remove-mine-flag.png","x":496.0,"y":375.0}
+[SelfPlay] DONE 101 shot=79-remove-mine-flag.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":102.0,"shot":"80-step-mine.png","wait":1.0,"x":496.0,"y":375.0}
+[SelfPlay] DONE 102 shot=80-step-mine.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":103.0,"shot":"81-level4-return-select.png","x":600.0,"y":626.0}
+[SelfPlay] DONE 103 shot=81-level4-return-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":104.0,"shot":"82-level5-select.png","x":258.0,"y":531.0}
+[SelfPlay] DONE 104 shot=82-level5-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":105.0,"shot":"83-level5-precard.png","x":737.0,"y":692.0}
+[SelfPlay] DONE 105 shot=83-level5-precard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":106.0,"shot":"84-level5-enter.png","wait":1.0,"x":512.0,"y":544.0}
+[SelfPlay] DONE 106 shot=84-level5-enter.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":107.0,"shot":"85-level5-skip.png","x":894.0,"y":104.0}
+[SelfPlay] DONE 107 shot=85-level5-skip.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":108.0,"shot":"86-level5-base.png","x":441.0,"y":265.0}
+[SelfPlay] DONE 108 shot=86-level5-base.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":109.0,"key":"1","shot":"87-level5-opener.png"}
+[SelfPlay] DONE 109 shot=87-level5-opener.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":110.0,"key":"2","shot":"88-level5-marker.png"}
+[SelfPlay] DONE 110 shot=88-level5-marker.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":111.0,"shot":"89-level5-guard.png","wait":1.0,"x":620.0,"y":631.0}
+[SelfPlay] DONE 111 shot=89-level5-guard.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":112.0,"shot":"90-level5-probe-mode.png","x":848.0,"y":631.0}
+[SelfPlay] DONE 112 shot=90-level5-probe-mode.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":113.0,"shot":"91-level5-probe-result.png","wait":1.0,"x":497.0,"y":181.0}
+[SelfPlay] DONE 113 shot=91-level5-probe-result.png paused=false
+[SelfPlay] COMMAND {"action":"click","button":2.0,"id":114.0,"shot":"92-level5-phase2-trigger.png","wait":1.0,"x":385.0,"y":153.0}
+[SelfPlay] DONE 114 shot=92-level5-phase2-trigger.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":115.0,"key":"Escape","shot":"93-boss-phase2-pause.png"}
+[SelfPlay] DONE 115 shot=93-boss-phase2-pause.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":116.0,"shot":"94-boss-resume.png","x":512.0,"y":273.0}
+[SelfPlay] DONE 116 shot=94-boss-resume.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":117.0,"shot":"95-boss-second-probe-mode.png","x":848.0,"y":631.0}
+[SelfPlay] DONE 117 shot=95-boss-second-probe-mode.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":118.0,"shot":"96-boss-second-probe.png","wait":1.0,"x":637.0,"y":349.0}
+[SelfPlay] DONE 118 shot=96-boss-second-probe.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":119.0,"key":"Escape","shot":"97-boss-pause-after-probe.png"}
+[SelfPlay] DONE 119 shot=97-boss-pause-after-probe.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":120.0,"shot":"98-boss-after-running.png","wait":12.0,"x":512.0,"y":273.0}
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_cell_flagged (res://scripts/ui/event_log_connector.gd:100)
+       [3] toggle_flag (res://scripts/grid.gd:508)
+       [4] do_tick (res://scripts/robot.gd:145)
+       [5] accumulate_and_maybe_tick (res://scripts/robot.gd:92)
+       [6] tick_all (res://scripts/robot_manager.gd:105)
+       [7] _process (res://scripts/main.gd:656)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+[SelfPlay] DONE 120 shot=98-boss-after-running.png paused=false
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+[SelfPlay] COMMAND {"action":"key","id":121.0,"key":"Escape","shot":"99-boss-pause-again.png"}
+[SelfPlay] DONE 121 shot=99-boss-pause-again.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":122.0,"shot":"100-boss-log-overflow-running.png","wait":15.0,"x":512.0,"y":273.0}
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+[SelfPlay] DONE 122 shot=100-boss-log-overflow-running.png paused=false
+[SelfPlay] COMMAND {"action":"key","id":123.0,"key":"Escape","shot":"101-boss-log-overflow-paused.png"}
+[SelfPlay] DONE 123 shot=101-boss-log-overflow-paused.png paused=true
+[SelfPlay] COMMAND {"action":"click","id":124.0,"shot":"102-boss-timeout.png","wait":40.0,"x":512.0,"y":273.0}
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_cell_flagged (res://scripts/ui/event_log_connector.gd:100)
+       [3] toggle_flag (res://scripts/grid.gd:508)
+       [4] do_tick (res://scripts/robot.gd:145)
+       [5] accumulate_and_maybe_tick (res://scripts/robot.gd:92)
+       [6] tick_all (res://scripts/robot_manager.gd:105)
+       [7] _process (res://scripts/main.gd:656)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_obstacle_cleared (res://scripts/ui/event_log_connector.gd:115)
+       [3] _on_cell_obstacle_cleared (res://scripts/grid.gd:694)
+       [4] clear_slime (res://scripts/cell.gd:417)
+       [5] _fire (res://scripts/robots/guard_robot.gd:157)
+       [6] _process (res://scripts/robots/guard_robot.gd:44)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _poll_idle (res://scripts/ui/event_log_connector.gd:172)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _flush_opens (res://scripts/ui/event_log_connector.gd:90)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_line' in base 'RichTextLabel'.
+   at: log_event (res://scripts/ui/event_log_panel.gd:38)
+   GDScript backtrace (most recent call first):
+       [0] log_event (res://scripts/ui/event_log_panel.gd:38)
+       [1] _robot (res://scripts/ui/event_log_connector.gd:183)
+       [2] _on_game_over (res://scripts/ui/event_log_connector.gd:149)
+       [3] _end_game (res://scripts/main.gd:1229)
+       [4] _process (res://scripts/main.gd:654)
+[SelfPlay] DONE 124 shot=102-boss-timeout.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":125.0,"shot":"103-boss-return-select.png","x":600.0,"y":626.0}
+[SelfPlay] DONE 125 shot=103-boss-return-select.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":126.0,"shot":"104-menu-before-restart.png","x":115.0,"y":48.0}
+[SelfPlay] DONE 126 shot=104-menu-before-restart.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":127.0,"shot":"105-normal-quit.png","x":558.0,"y":567.0}
+[SelfPlay] DONE 127 shot=105-normal-quit.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":128.0,"shot":"106-quit-cancel.png","x":604.0,"y":428.0}
+[SelfPlay] DONE 128 shot=106-quit-cancel.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":129.0,"shot":"107-quit-confirm.png","x":558.0,"y":567.0}
+[SelfPlay] DONE 129 shot=107-quit-confirm.png paused=false
+[SelfPlay] COMMAND {"action":"click","id":130.0,"shot":"108-quit-exit.png","x":420.0,"y":428.0}
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)

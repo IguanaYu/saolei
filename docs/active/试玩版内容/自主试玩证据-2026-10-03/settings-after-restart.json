@@ -1,0 +1,18 @@
+{
+  "feedback_url": "",
+  "fullscreen": false,
+  "music_on": true,
+  "music_volume": 0.15,
+  "screen_shake": true,
+  "sfx_on": true,
+  "sfx_volume": 0.8,
+  "show_grid": false,
+  "skip_pre_level": false,
+  "tutorial_done": true,
+  "tutorial_done_ch01_s01": true,
+  "tutorial_done_ch01_s02": true,
+  "tutorial_done_ch01_s03": true,
+  "tutorial_done_ch01_s04": true,
+  "tutorial_done_ch01_s05": true,
+  "window_size": "1024x768"
+}
