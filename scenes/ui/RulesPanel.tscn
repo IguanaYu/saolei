@@ -69,7 +69,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
 
 [node name="SectionBBody" type="Label" parent="Center/Panel/Margin/VBox/RulesScroll/RulesList"]
-text = "开墙机器人开安全格、标雷机器人插旗，它们自动寻找最近的目标，购买后需放置到棋盘；第 4 关起可用「探测」按钮确认可疑格、雇「保安」除虫护场。"
+text = "开墙机器人开安全格、标雷机器人插旗，它们自动寻找最近的目标，购买后从最新基地旁自动出场；只有建基地和探测需要手动选位置。第 4 关起可用「探测」按钮确认可疑格、雇「保安」除虫护场。"
 autowrap_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.85, 0.8, 0.7, 1)
