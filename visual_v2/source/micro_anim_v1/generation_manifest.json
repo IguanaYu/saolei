@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "date": "2026-10-02",
+  "status": "generated images accepted; integrated into primary Godot project",
+  "entries": [
+    {
+      "name": "opener",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-7caaa458-460f-4ff4-91a4-d38250544718.png",
+      "reference": "visual_v2/runtime/robots/robot_opener_idle.png",
+      "kind": "robots",
+      "native_size": 24,
+      "prompt": "Use case: precise-object-edit. Asset type: production pixel-art game sprite animation sheet. Edit target: the referenced opener robot PNG, whose logical canvas is exactly 24x24 pixels. Preserve its existing tiny pixel-art identity, angled drill pointing down-right, blue-cyan glass face, dark gray brass mechanical body, silhouette, all proportions and pose. Produce ONE transparent sprite sheet of exactly THREE copies of this SAME existing sprite, arranged in a single horizontal row of equally sized square cells with no gaps. Each cell represents exactly a 24x24 logical pixel canvas; render it enlarged with crisp square pixels. All three robot bodies, feet, head and outline must be identical and registered to the same pixel locations in their respective cells. The ONLY animation change between the three frames is the gray drill at lower-right: alternate just the tiny diagonal light/dark grooves along its cone, as if it rotates quietly. Keep drill location, angle, tip and silhouette fixed. First frame reproduces original. Second frame shifts the bright grooves one logical pixel along the cone. Third frame is another subtle phase of rotating grooves. This is a very slight 2-3 frame local loop, NOT different poses. Extremely low resolution, true 24x24 pixel art, NO new details, no new character design, no turning, no walking, no wheel movement, no body bobbing. Entire background must be transparent alpha including gutters. No text, numbers, captions, cell borders, checkerboard background, scenery, shadows outside the sprite, motion trails, antialiasing or glow.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/opener_generated.png"
+    },
+    {
+      "name": "marker",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-5b58f090-84d5-437c-b41b-7d0fa365d154.png",
+      "reference": "visual_v2/runtime/robots/robot_marker_idle.png",
+      "kind": "robots",
+      "native_size": 24,
+      "prompt": "Use case: precise-object-edit. Asset type: production pixel-art game animation spritesheet. Edit the referenced EXISTING 24x24 logical-pixel robot sprite. Preserve its identity, all proportions, same silhouette except the specified movable part, exact angled view, pose, existing colors, and tiny 24x24 pixel-art style. Produce ONE transparent sprite sheet with THREE frames in ONE horizontal row, equally sized square cells, no gutters, no text or borders. Render enlarged with crisp square logical pixels. First frame reproduces original; each frame contains the same registered robot. Keep all body/head/feet/chassis details pixel-identical between frames. ONLY vary the one specified small part, no additional actions. No walking, tracks/wheels animation, whole-body bobbing, turning, new details, gradients, antialiasing, outer glow, trails, scenery, checkerboard background or ground. Transparent alpha everywhere outside the sprites. The ONE moving part is the small red flag atop its tall vertical flagpole. Keep the entire pole and flag attachment fixed. Three frames: original flag, free tip bends up by ONE logical pixel, free tip bends down by ONE logical pixel. The flag fabric only waves very gently; the robot is completely still.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/marker_generated.png"
+    },
+    {
+      "name": "detector",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-976cd98d-071d-449e-9723-28feb203072f.png",
+      "reference": "visual_v2/runtime/robots/robot_detector_idle.png",
+      "kind": "robots",
+      "native_size": 24,
+      "prompt": "Use case: precise-object-edit. Asset type: production pixel-art game animation spritesheet. Edit the referenced EXISTING 24x24 logical-pixel robot sprite. Preserve its identity, all proportions, same silhouette except the specified movable part, exact angled view, pose, existing colors, and tiny 24x24 pixel-art style. Produce ONE transparent sprite sheet with THREE frames in ONE horizontal row, equally sized square cells, no gutters, no text or borders. Render enlarged with crisp square logical pixels. First frame reproduces original; each frame contains the same registered robot. Keep all body/head/feet/chassis details pixel-identical between frames. ONLY vary the one specified small part, no additional actions. No walking, tracks/wheels animation, whole-body bobbing, turning, new details, gradients, antialiasing, outer glow, trails, scenery, checkerboard background or ground. Transparent alpha everywhere outside the sprites. The ONE moving part is the little bright violet-pink scanning dot INSIDE the existing round purple sensor at the top-right of the robot. Keep the circular sensor outer outline fixed. Three frames move the small bright spot left, center, right within the sensor. All other details completely fixed. A very subtle scan, no rings or beams outside the sprite.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/detector_generated.png"
+    },
+    {
+      "name": "miner",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-0abf7195-3200-4fd8-b295-409faf587e8a.png",
+      "reference": "visual_v2/runtime/robots/robot_miner_idle.png",
+      "kind": "robots",
+      "native_size": 24,
+      "prompt": "Use case: precise-object-edit. Asset type: production pixel-art game animation spritesheet. Edit the referenced EXISTING 24x24 logical-pixel robot sprite. Preserve its identity, all proportions, same silhouette except the specified movable part, exact angled view, pose, existing colors, and tiny 24x24 pixel-art style. Produce ONE transparent sprite sheet with THREE frames in ONE horizontal row, equally sized square cells, no gutters, no text or borders. Render enlarged with crisp square logical pixels. First frame reproduces original; each frame contains the same registered robot. Keep all body/head/feet/chassis details pixel-identical between frames. ONLY vary the one specified small part, no additional actions. No walking, tracks/wheels animation, whole-body bobbing, turning, new details, gradients, antialiasing, outer glow, trails, scenery, checkerboard background or ground. Transparent alpha everywhere outside the sprites. The ONE moving part is the small gray drill/tool at the lower-right front of the gold-yellow mining robot. Three phases of light/dark grooves alternate locally along the tool, making the drill gently spin. The tool outline, angle, installation point and tip location are fixed. Preserve the yellow/gold upper hopper and dark metal body completely unchanged.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/miner_generated.png"
+    },
+    {
+      "name": "guard",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-21964d39-c8f6-4525-8715-2ff34f12cbdb.png",
+      "reference": "visual_v2/runtime/robots/robot_guard_idle.png",
+      "kind": "robots",
+      "native_size": 24,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game micro-animation spritesheet. Target is the referenced original 24x24 pixel sprite, not a new design. Produce ONE transparent sheet containing exactly THREE evenly registered copies of the SAME sprite in ONE horizontal row of equal square cells with zero gutters, enlarged using hard square pixels. Each cell represents exactly 24x24 logical pixels, use a very limited existing palette. Preserve all pose, view, body, shading, identity and dimensions. Only animate the ONE small specified component, with subtle local variation. First frame matches reference. Fixed feet/ground baseline and installation points in all frames. Same squat teal robot, front-facing rectangular cyan face, short orange-yellow beacon on top, gray feet and small side arms. Preserve its tiny design and completely fixed body. The ONLY animation is two existing small light areas alternating brightness: top beacon bright/bottom side signal dim; top beacon dim/bottom side signal bright; repeat the first. Use existing amber and cyan tones, no red warning, no new machinery. TWO alternating light states plus a repeat of the first state; keep all outline pixels identical. No whole-body bobbing, walking, rotation, wheels, new details, smooth shading, antialiasing, glow, background, scenery, shadows outside the sprite, labels, numbers, captions, cell outlines or checkerboard. True transparent alpha.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/guard_generated.png"
+    },
+    {
+      "name": "web",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-de1ac2aa-4ea1-4f96-bf6a-b4b317fa625d.png",
+      "reference": "visual_v2/runtime/enemies/web_0.png",
+      "kind": "enemies",
+      "native_size": 22,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game micro-animation spritesheet. Target is the referenced original 22x22 pixel sprite, not a new design. Produce ONE transparent sheet containing exactly THREE evenly registered copies of the SAME sprite in ONE horizontal row of equal square cells with zero gutters, enlarged using hard square pixels. Each cell represents exactly 22x22 logical pixels, use a very limited existing palette. Preserve all pose, view, body, shading, identity and dimensions. Only animate the ONE small specified component, with subtle local variation. First frame matches reference. Fixed feet/ground baseline and installation points in all frames. Same tiny blue-gray star/spider shaped web insect with two cyan eyes and angular jointed side appendages. Keep the center body, eyes and bottom tip EXACTLY fixed. Only the thin left and right appendage tips gently fold inward by ONE logical pixel in frame 2 and extend back outward in frame 3. Do NOT turn into a realistic spider or add legs. Very slight appendage motion, not walking. No whole-body bobbing, walking, rotation, wheels, new details, smooth shading, antialiasing, glow, background, scenery, shadows outside the sprite, labels, numbers, captions, cell outlines or checkerboard. True transparent alpha.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/web_generated.png"
+    },
+    {
+      "name": "lock",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-15c56a0c-8329-47f1-9a84-718aaac60b44.png",
+      "reference": "visual_v2/runtime/enemies/lock_0.png",
+      "kind": "enemies",
+      "native_size": 22,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game micro-animation spritesheet. Target is the referenced original 22x22 pixel sprite, not a new design. Produce ONE transparent sheet containing exactly THREE evenly registered copies of the SAME sprite in ONE horizontal row of equal square cells with zero gutters, enlarged using hard square pixels. Each cell represents exactly 22x22 logical pixels, use a very limited existing palette. Preserve all pose, view, body, shading, identity and dimensions. Only animate the ONE small specified component, with subtle local variation. First frame matches reference. Fixed feet/ground baseline and installation points in all frames. Same tiny purple oval lock insect with three lilac spike-like lock teeth on its back and pale rectangular eye band. Keep bottom of body, entire oval shell and eye band fixed. ONLY the three vertical lock teeth gently rise by ONE logical pixel in frame 2 and settle in frame 3. Do NOT change outline of body or introduce hands, face, metal padlock, gears or new parts. No whole-body bobbing, walking, rotation, wheels, new details, smooth shading, antialiasing, glow, background, scenery, shadows outside the sprite, labels, numbers, captions, cell outlines or checkerboard. True transparent alpha.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/lock_generated.png"
+    },
+    {
+      "name": "slow",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-d8903859-e179-44ea-b547-b3f7ab705a81.png",
+      "reference": "visual_v2/runtime/enemies/slow_0.png",
+      "kind": "enemies",
+      "native_size": 22,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game micro-animation sprite sheet. Edit target is the referenced EXISTING 22x22 logical-pixel enemy sprite. Preserve original proportions, view, very low resolution pixel art, existing tiny palette, personality and identifiable shape. Create ONE transparent sheet of THREE frames arranged horizontally in equal square cells with zero gaps, each representing exactly 22x22 logical pixels, rendered enlarged with hard square pixels. First frame reproduces original. All frame sprites have the same position and fixed baseline. Animate ONLY the one specified subtle body component, keep other parts unchanged. Same tiny turquoise/teal slime-like slow insect with two black square eyes, flat bottom edge, mint highlight ridge on top, asymmetrical body contour. A sluggish sticky wobble. Only top ridge and upper outline rise ONE logical pixel in middle frame then settle; bottom edge, face eyes and side feet remain fixed. Three frames are relaxed, slightly puffed top, relaxed. No added bubbles, slime drops, tongue or new face. No whole-body movement, rotation, walking, limbs, gradients, antialiasing, outer glow, scenery, captions, labels, numbers, cell borders, shadows, checkerboard or colored background. Transparent alpha outside sprites.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/slow_generated.png"
+    },
+    {
+      "name": "slime",
+      "source": "C:\\Users\\86132\\.codex\\generated_images\\01a0fd12-8da4-7db2-8924-3ec2ee4ef954\\exec-8651c259-f7ae-4c34-9242-058cbb87e555.png",
+      "reference": "visual_v2/runtime/enemies/slime_0.png",
+      "kind": "enemies",
+      "native_size": 22,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game micro-animation sprite sheet. Edit target is the referenced EXISTING 22x22 logical-pixel enemy sprite. Preserve original proportions, view, very low resolution pixel art, existing tiny palette, personality and identifiable shape. Create ONE transparent sheet of THREE frames arranged horizontally in equal square cells with zero gaps, each representing exactly 22x22 logical pixels, rendered enlarged with hard square pixels. First frame reproduces original. All frame sprites have the same position and fixed baseline. Animate ONLY the one specified subtle body component, keep other parts unchanged. Same tiny green slime blob with two black square eyes and pale mint highlight on top. A soft quiet breathing cycle. Keep the full bottom edge stationary, body upper contour gently puffs ONE logical pixel higher in second frame and relaxes in third; existing eyes remain stationary. Three frames are relaxed, slightly rounder upper body, relaxed. Slightly more elastic than sticky. No jumping, new eyes, smile, liquid drops, bubbles or new details. No whole-body movement, rotation, walking, limbs, gradients, antialiasing, outer glow, scenery, captions, labels, numbers, cell borders, shadows, checkerboard or colored background. Transparent alpha outside sprites.",
+      "tool": "built-in image_gen",
+      "generated_copy": "visual_v2/source/micro_anim_v1/slime_generated.png"
+    }
+  ]
+}

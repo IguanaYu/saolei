@@ -32,7 +32,9 @@ func is_engaged() -> bool:
 
 
 func _process(delta: float) -> void:
-	super(delta)  # 基类行走帧动画
+	if not MICRO_ANIMATION.is_gameplay_running(self):
+		return
+	super(delta)  # 基类局部微动画
 	# 交战计时：目标在射程内站定开火（与移动 tick 分离，参照 detector 的 _process 模式）
 	if _target_kind != "" and _grid_ref != null \
 			and _chebyshev(_target_coord) <= FIRE_RANGE:

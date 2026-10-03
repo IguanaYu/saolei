@@ -14,19 +14,10 @@ var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
 var _move_tween: Tween = null  # 当前移动动画（snap_to 震退时取消）
 
-# 皮肤帧（4 型 × 待机/移动；与商店/HUD 图标同设计语言）
-const SKINS := {
-	"opener": [preload("res://visual_v2/runtime/robots/robot_opener_idle.png"), preload("res://visual_v2/runtime/robots/robot_opener_move.png")],
-	"marker": [preload("res://visual_v2/runtime/robots/robot_marker_idle.png"), preload("res://visual_v2/runtime/robots/robot_marker_move.png")],
-	"detector": [preload("res://visual_v2/runtime/robots/robot_detector_idle.png"), preload("res://visual_v2/runtime/robots/robot_detector_move.png")],
-	"miner": [preload("res://visual_v2/runtime/robots/robot_miner_idle.png"), preload("res://visual_v2/runtime/robots/robot_miner_move.png")],
-	"guard": [preload("res://visual_v2/runtime/robots/robot_guard_idle.png"), preload("res://visual_v2/runtime/robots/robot_guard_move.png")],
-}
-const SKIN_FRAME_INTERVAL := 0.18  # 移动时帧交替间隔
+const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
 const FOOT_SHADOW_TEXTURE := preload("res://visual_v2/runtime/robots/shadow_blob.png")
 
-var _anim_timer := 0.0
-var _anim_frame := 0
+var _micro_loop := MICRO_ANIMATION.new()
 
 signal action_performed(robot: Robot, action: String, cell_coord: Vector2i)
 
@@ -37,7 +28,7 @@ func _ready() -> void:
 
 
 ## 脚下接触影（两级羽化 blob，调研文档：docs/active/美术生产/调研-2D游戏脚下阴影-2026-10-02.md）
-## 独立节点而非烘进皮肤帧：move 帧自带弹跳，影子要贴地不跟跳
+## 独立节点而非烘进皮肤帧：皮肤局部微动，影子继续贴地
 func _add_foot_shadow() -> void:
 	var shadow := Sprite2D.new()
 	shadow.name = "FootShadow"
@@ -49,19 +40,9 @@ func _add_foot_shadow() -> void:
 
 
 func _process(delta: float) -> void:
-	# 移动中：待机/移动帧交替（履带滚动+弹跳）；静止回待机帧
-	if not SKINS.has(robot_type):
-		return
-	if _state == "moving":
-		_anim_timer += delta
-		if _anim_timer >= SKIN_FRAME_INTERVAL:
-			_anim_timer = 0.0
-			_anim_frame = 1 - _anim_frame
-			$Skin.texture = SKINS[robot_type][_anim_frame]
-	elif _anim_frame != 0:
-		_anim_frame = 0
-		_anim_timer = 0.0
-		$Skin.texture = SKINS[robot_type][0]
+	# 钻头、旗、探头、灯各自轻循环，不按移动/作业切换动作。
+	if MICRO_ANIMATION.is_gameplay_running(self):
+		_micro_loop.advance(delta)
 
 
 func set_initial_position(start_coord: Vector2i, grid) -> void:
@@ -72,15 +53,11 @@ func set_initial_position(start_coord: Vector2i, grid) -> void:
 func _update_visual() -> void:
 	var body: ColorRect = $Body
 	var lbl: Label = $IconLabel
-	if SKINS.has(robot_type):
-		# 像素皮肤：隐藏旧色块/emoji，显示皮肤待机帧
+	if MICRO_ANIMATION.has_animation(robot_type):
+		# 像素皮肤：只更新已有 Skin，不添加可被遍历误认的实体节点。
 		body.visible = false
 		lbl.visible = false
-		var skin: Sprite2D = $Skin
-		skin.texture = SKINS[robot_type][0]
-		skin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_anim_frame = 0
-		_anim_timer = 0.0
+		_micro_loop.configure($Skin, robot_type)
 		return
 	# 无皮肤类型兜底：旧色块样式
 	if robot_type == "opener":

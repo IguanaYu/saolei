@@ -23,7 +23,9 @@ func _update_visual() -> void:
 
 
 func _process(delta: float) -> void:
-	super(delta)  # 基类行走帧动画
+	if not MICRO_ANIMATION.is_gameplay_running(self):
+		return
+	super(delta)  # 基类局部微动画
 	if _detector_state != DetectorState.DETECTING:
 		return
 	_detecting_timer += delta

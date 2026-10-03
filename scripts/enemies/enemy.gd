@@ -12,13 +12,8 @@ var _move_timer := 0.0
 var _harm_timer := 0.0
 var _alive := true
 
-const SPRITES := {
-	"web": [preload("res://visual_v2/runtime/enemies/web_0.png"), preload("res://visual_v2/runtime/enemies/web_1.png")],
-	"lock": [preload("res://visual_v2/runtime/enemies/lock_0.png"), preload("res://visual_v2/runtime/enemies/lock_1.png")],
-	"slow": [preload("res://visual_v2/runtime/enemies/slow_0.png"), preload("res://visual_v2/runtime/enemies/slow_1.png")],
-	"slime": [preload("res://visual_v2/runtime/enemies/slime_0.png"), preload("res://visual_v2/runtime/enemies/slime_1.png")],
-}
-var _anim_time := 0.0
+const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
+var _micro_loop := MICRO_ANIMATION.new()
 
 const SLIME_MOVE_SEC := 2.5  # 史莱姆步速（设计 §5.1，初值）
 
@@ -36,16 +31,15 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not _alive:
+	if not _alive or not MICRO_ANIMATION.is_gameplay_running(self):
 		return
-	_anim_time += delta
-	$Skin.texture = SPRITES.get(enemy_type, SPRITES["web"])[int(_anim_time * 3.0) % 2]
+	_micro_loop.advance(delta)
 
 
 func _update_visual() -> void:
 	$Body.visible = false
 	$IconLabel.visible = false
-	$Skin.texture = SPRITES.get(enemy_type, SPRITES["web"])[0]
+	_micro_loop.configure($Skin, enemy_type if MICRO_ANIMATION.has_animation(enemy_type) else "web")
 
 
 func setup(start_coord: Vector2i, type: String, grid) -> void:
