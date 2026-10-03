@@ -13,6 +13,7 @@ signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（�
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton
 @onready var hint_label: Label = $MarginContainer/VBoxContainer/HintLabel
+@onready var key_hint_bar: HBoxContainer = $MarginContainer/VBoxContainer/KeyHintBar
 
 
 const BUTTON_ICONS := {
@@ -20,17 +21,18 @@ const BUTTON_ICONS := {
 	"marker": preload("res://visual_v2/runtime/ui/icons/icon_robot_marker.png"),
 	"detector": preload("res://visual_v2/runtime/ui/icons/icon_robot_detector.png"),
 	"miner": preload("res://visual_v2/runtime/ui/icons/icon_robot_miner.png"),
-	"guard": preload("res://visual_v2/runtime/ui/icons/icon_robot_guard.png"),
-	"probe": preload("res://visual_v2/runtime/ui/icons/icon_probe.png"),
-	"base": preload("res://visual_v2/runtime/ui/icons/icon_base.png"),
+	"guard": preload("res://visual_v2/runtime/completion/ui/icons/icon_robot_guard.png"),
+	"probe": preload("res://visual_v2/runtime/completion/ui/icons/icon_probe.png"),
+	"base": preload("res://visual_v2/runtime/completion/ui/icons/icon_base.png"),
 	"upgrade": preload("res://visual_v2/runtime/ui/icons/icon_upgrade.png"),
 }
 
-## 放置提示行：show 切显隐；text 非空则更新文案（P2-03：按放置对象给出费用与落点规则）
+## 提示行：放置模式显示放置提示（P2-03 费用/落点文案），平时显示常驻快捷键行；text 非空则更新文案
 func set_placing_hint(show: bool, text := "") -> void:
 	if text != "":
 		hint_label.text = text
 	hint_label.visible = show
+	key_hint_bar.visible = not show
 
 
 func _ready() -> void:
@@ -110,6 +112,9 @@ func can_buy(robot_type: String) -> bool:
 
 ## 返回未解锁/禁用原因，"" 表示可购买
 func lock_reason(robot_type: String) -> String:
+	var lvl: LevelData = GameState.get_current_level()
+	if lvl != null and lvl.shop_hidden.has(robot_type):
+		return "本关未开放"  # 按数字键快购也不能绕过关卡隐藏（如某关隐藏检测型）
 	if robot_type == "detector":
 		if not bool(SaveSystem.unlocks.get("detector", false)):
 			return "检测型未解锁（通 2-5）"
@@ -121,7 +126,6 @@ func lock_reason(robot_type: String) -> String:
 		if not GameState.is_module_allowed("miner"):
 			return "本关禁用矿工型"
 	# 关卡限购（教学关：opener/marker 各 1 台）
-	var lvl: LevelData = GameState.get_current_level()
 	if lvl != null and lvl.shop_limits.has(robot_type):
 		if GameState.get_robot_purchased_count(robot_type) >= int(lvl.shop_limits[robot_type]):
 			return "已购满"

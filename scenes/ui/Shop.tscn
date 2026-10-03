@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop.gd" id="1_shop"]
+[ext_resource type="PackedScene" path="res://scenes/ui/key_hint.tscn" id="2_key_hint"]
 
 [node name="Shop" type="Control"]
 anchor_top = 1.0
@@ -36,11 +37,31 @@ clip_text = true
 text = "开墙型 ¥50"
 theme_override_font_sizes/font_size = 16
 
+[node name="KeyBadge" parent="MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton" instance=ExtResource("2_key_hint")]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -46.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 26.0
+grow_horizontal = 0
+key_text = "按1"
+
 [node name="BuyMarkerButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 custom_minimum_size = Vector2(220, 56)
 clip_text = true
 text = "标雷型 ¥50"
 theme_override_font_sizes/font_size = 16
+
+[node name="KeyBadge" parent="MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton" instance=ExtResource("2_key_hint")]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -46.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 26.0
+grow_horizontal = 0
+key_text = "按2"
 
 [node name="BuyDetectorButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 custom_minimum_size = Vector2(220, 56)
@@ -48,11 +69,31 @@ clip_text = true
 text = "检测型 ¥80"
 theme_override_font_sizes/font_size = 16
 
+[node name="KeyBadge" parent="MarginContainer/VBoxContainer/DeviceFlow/BuyDetectorButton" instance=ExtResource("2_key_hint")]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -46.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 26.0
+grow_horizontal = 0
+key_text = "按3"
+
 [node name="BuyMinerButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 custom_minimum_size = Vector2(220, 56)
 clip_text = true
 text = "矿工型 ¥60"
 theme_override_font_sizes/font_size = 16
+
+[node name="KeyBadge" parent="MarginContainer/VBoxContainer/DeviceFlow/BuyMinerButton" instance=ExtResource("2_key_hint")]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -46.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 26.0
+grow_horizontal = 0
+key_text = "按4"
 
 [node name="BuyGuardButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 visible = false
@@ -85,8 +126,91 @@ text = "局内升级"
 custom_minimum_size = Vector2(160, 46)
 text = "操作说明"
 
+[node name="KeyHintBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+alignment = 1
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="K1" parent="MarginContainer/VBoxContainer/KeyHintBar" instance=ExtResource("2_key_hint")]
+key_text = "左键"
+
+[node name="L1" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "开格"
+
+[node name="Sep1" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 0.5, 0.42, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "·"
+
+[node name="K2" parent="MarginContainer/VBoxContainer/KeyHintBar" instance=ExtResource("2_key_hint")]
+key_text = "右键"
+
+[node name="L2" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "标雷"
+
+[node name="Sep2" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 0.5, 0.42, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "·"
+
+[node name="K3" parent="MarginContainer/VBoxContainer/KeyHintBar" instance=ExtResource("2_key_hint")]
+key_text = "左右同按"
+
+[node name="L3" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "和弦快开"
+
+[node name="Sep3" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 0.5, 0.42, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "·"
+
+[node name="K4" parent="MarginContainer/VBoxContainer/KeyHintBar" instance=ExtResource("2_key_hint")]
+key_text = "1-4"
+
+[node name="L4" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "快购机器人"
+
+[node name="Sep4" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 0.5, 0.42, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "·"
+
+[node name="K5" parent="MarginContainer/VBoxContainer/KeyHintBar" instance=ExtResource("2_key_hint")]
+key_text = "ESC"
+
+[node name="L5" type="Label" parent="MarginContainer/VBoxContainer/KeyHintBar"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.66, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+text = "暂停"
+
 [node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 visible = false
 horizontal_alignment = 1
-text = "点击地图放置机器人（1-4 切换类型，右键 / ESC 取消）"
+text = ""
 mouse_filter = 2
