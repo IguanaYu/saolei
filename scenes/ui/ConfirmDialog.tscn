@@ -38,10 +38,10 @@ theme_override_font_sizes/font_size = 15
 alignment = 1
 theme_override_constants/separation = 24
 
-[node name="CancelButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
-custom_minimum_size = Vector2(160, 46)
-text = "继续"
-
 [node name="ConfirmButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
 custom_minimum_size = Vector2(160, 46)
 text = "确认"
+
+[node name="CancelButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
+custom_minimum_size = Vector2(160, 46)
+text = "继续"
