@@ -35,7 +35,7 @@ func log_event(text_bbcode: String) -> void:
 	_entries.append("[color=%s][%d:%02d][/color] %s" % [STAMP_COLOR, t / 60, t % 60, text_bbcode])
 	if _entries.size() > MAX_ENTRIES:
 		_entries.pop_front()
-		if not _log.remove_line(0):   # remove_line 只认 append 出的段落，失败则整体重排兜底
+		if not _log.remove_paragraph(0):   # 段落级淘汰；失败（索引越界等）则整体重排兜底
 			_rerender()
 			return
 	_log.append_text(_entries[-1] + "\n")
