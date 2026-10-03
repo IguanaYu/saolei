@@ -27,6 +27,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/EventLogPanel.tscn" id="25_elp"]
 [ext_resource type="Script" path="res://scripts/ui/event_log_connector.gd" id="26_elc"]
 [ext_resource type="Script" path="res://scripts/boss/boss_manager.gd" id="27_bm"]
+[ext_resource type="Script" path="res://scripts/ui/escape_router.gd" id="28_er"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -83,6 +84,9 @@ grow_horizontal = 0
 
 [node name="EventLogConnector" parent="UILayer" type="Node"]
 script = ExtResource("26_elc")
+
+[node name="EscapeRouter" parent="UILayer" type="Node"]
+script = ExtResource("28_er")
 
 [node name="HUD" parent="UILayer" instance=ExtResource("4_hud")]
 

@@ -26,6 +26,7 @@ extends Node
 @onready var upgrade_panel = $UILayer/UpgradePanel
 @onready var ore_shop = $UILayer/OreShop
 @onready var event_log_connector = $UILayer/EventLogConnector
+@onready var escape_router = $UILayer/EscapeRouter
 
 # 当前放置模式（"base"=建基地 / "probe"=探针；机器人已改直购直出，不走放置）
 var placing_mode: String = ""
@@ -59,6 +60,9 @@ const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 func _ready() -> void:
 	# 不立即 reset，等玩家选关进入
 	_register_custom_cursors()
+	# Esc 走 UILayer 下的 ALWAYS 路由器转发：暂停/规则等置 paused=true 的树里
+	# main._input（可暂停）已停摆，"按 ESC 继续"不能只靠它（2026-10-03 盲测 F01）
+	escape_router.escape_requested.connect(_handle_escape)
 	grid.all_safe_opened.connect(_on_all_safe_opened)
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
@@ -662,11 +666,8 @@ func _process(delta: float) -> void:
 
 # 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
 func _input(event: InputEvent) -> void:
-	# ESC：设置/暂停/引导等各层优先
-	if event is InputEventKey and event.pressed and not event.echo \
-			and event.keycode == KEY_ESCAPE:
-		_handle_escape()
-		return
+	# Esc 已移交流程见 _ready：EscapeRouter（UILayer/ALWAYS）转发到 _handle_escape，
+	# 暂停树里本函数已停摆，不能再承担 Esc 分层（2026-10-03 盲测 F01）
 	# 教学可见时，落在教学控件（气泡/跳过）上的点击放行给它们，不走局内输入
 	# （放置模式会 set_input_as_handled 把「跳过」的左键吞掉，回归 2026-10-01 P1）
 	if tutorial_guide.visible and event is InputEventMouseButton \
