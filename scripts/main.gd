@@ -48,6 +48,11 @@ var _pending_confirm: String = ""
 # L4 pregen 关的开局赠机（放完基地后在基地旁落位）
 var _pending_gifts: Dictionary = {}
 
+# 踩雷全屏反馈（屏震+闪光）：世界层四节点同源震动用
+var _shake_tween: Tween = null
+var _shake_bases: Array[Vector2] = []
+var _blast_flash: ColorRect = null
+
 const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 
 
@@ -1088,6 +1093,7 @@ func _on_obstacle_cleared(_cell, _kind: String, by_actor: String) -> void:
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:
+	_play_mine_blast_fx()  # 屏震+闪光：坍塌即爆炸，先于继续挑战/无命关的早退分支
 	# 继续挑战中踩雷不扣命（防"胜利后又失败"坏状态，设计 §5）；格子坍塌照常浪费动作
 	if GameState.continue_mode:
 		return
@@ -1097,6 +1103,52 @@ func _on_mine_stepped(_cell, _by_actor: String) -> void:
 	GameState.lose_life()
 	if GameState.lives <= 0:
 		_end_game("lose")
+
+
+## 踩雷全屏反馈：世界层同源屏震（0.25s 平方衰减）+ UILayer 顶层暖白闪光（0.35s）
+## Grid/Robot/Enemy/Boss 四节点共用同一偏移——只摇棋盘会让机器人"钉在原地"穿帮
+func _play_mine_blast_fx() -> void:
+	var world_nodes: Array[Node2D] = [grid, robot_manager, enemy_manager, boss_manager]
+	# 震动开始才采基点：棋盘位置随 _relayout_play_area 变化，不能在 _ready 采
+	if _shake_tween != null and _shake_tween.is_valid():
+		_shake_tween.kill()
+		_restore_world_positions(world_nodes)
+	_shake_bases.clear()
+	for n in world_nodes:
+		_shake_bases.append(n.position)
+	const AMP := 6.0
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(
+		func(k: float):
+			var decay: float = (1.0 - k) * (1.0 - k)
+			var offset := Vector2(randf_range(-AMP, AMP), randf_range(-AMP, AMP)) * decay
+			for i in world_nodes.size():
+				world_nodes[i].position = _shake_bases[i] + offset,
+		0.0, 1.0, 0.25)
+	_shake_tween.finished.connect(func(): _restore_world_positions(world_nodes))
+	# 闪光：全屏暖白不挡鼠标；连炸时旧闪先离树再释放（queue_free 拖到帧末，
+	# 同帧新建会撞名被改名 @2，违反显式命名规矩）
+	if _blast_flash != null and is_instance_valid(_blast_flash):
+		_blast_flash.get_parent().remove_child(_blast_flash)
+		_blast_flash.queue_free()
+	_blast_flash = ColorRect.new()
+	_blast_flash.name = "MineBlastFlash"
+	_blast_flash.color = Color(1.0, 0.96, 0.86, 0.0)
+	_blast_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blast_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	$UILayer.add_child(_blast_flash)
+	var ft := _blast_flash.create_tween()
+	ft.tween_property(_blast_flash, "color:a", 0.30, 0.05)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	ft.tween_property(_blast_flash, "color:a", 0.0, 0.30)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	ft.tween_callback(_blast_flash.queue_free)
+
+
+func _restore_world_positions(world_nodes: Array[Node2D]) -> void:
+	for i in mini(world_nodes.size(), _shake_bases.size()):
+		if is_instance_valid(world_nodes[i]):
+			world_nodes[i].position = _shake_bases[i]
 
 
 func _on_all_safe_opened() -> void:

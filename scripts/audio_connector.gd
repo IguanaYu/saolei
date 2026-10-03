@@ -13,7 +13,8 @@ func _ready() -> void:
 	var grid: Node = main.get_node("Grid")
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
-	grid.mine_stepped.connect(func(_c, _a): AudioManager.play_sfx("mine"))
+	# 踩雷：玩家原调、机器人低沉（与开格音 pitch 惯例一致）
+	grid.mine_stepped.connect(func(_c, by_actor: String): AudioManager.play_sfx("mine", 1.0 if by_actor == "player" else 0.85))
 	GameState.upgrade_changed.connect(func(_id, _lv): AudioManager.play_sfx("upgrade"))
 	GameState.game_over.connect(_on_game_over)
 	GameState.time_changed.connect(_on_time_changed)
