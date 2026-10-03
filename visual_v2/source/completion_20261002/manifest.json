@@ -1,0 +1,796 @@
+[
+  {
+    "sheet": "base",
+    "columns": 1,
+    "rows": 1,
+    "slots": [
+      0
+    ],
+    "names": [
+      "tiles/special_base"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1
+  },
+  {
+    "sheet": "base",
+    "columns": 1,
+    "rows": 1,
+    "slots": [
+      0
+    ],
+    "names": [
+      "ui/icons/icon_base"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1
+  },
+  {
+    "sheet": "specials",
+    "columns": 3,
+    "rows": 1,
+    "slots": [
+      0
+    ],
+    "names": [
+      "tiles/special_flag"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      699,
+      1440,
+      2172
+    ]
+  },
+  {
+    "sheet": "specials",
+    "columns": 3,
+    "rows": 1,
+    "slots": [
+      1
+    ],
+    "names": [
+      "tiles/special_vein"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      699,
+      1440,
+      2172
+    ]
+  },
+  {
+    "sheet": "specials",
+    "columns": 3,
+    "rows": 1,
+    "slots": [
+      2
+    ],
+    "names": [
+      "tiles/special_collapse"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      699,
+      1440,
+      2172
+    ]
+  },
+  {
+    "sheet": "guard",
+    "columns": 2,
+    "rows": 1,
+    "slots": [
+      0,
+      1
+    ],
+    "names": [
+      "robots/robot_guard_idle",
+      "robots/robot_guard_move"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      883,
+      1774
+    ]
+  },
+  {
+    "sheet": "guard",
+    "columns": 2,
+    "rows": 1,
+    "slots": [
+      0
+    ],
+    "names": [
+      "ui/icons/icon_robot_guard"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      883,
+      1774
+    ]
+  },
+  {
+    "sheet": "enemies",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      0,
+      1
+    ],
+    "names": [
+      "enemies/web_0",
+      "enemies/web_1"
+    ],
+    "width": 22,
+    "height": 22,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      366,
+      728,
+      1099,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      394,
+      712,
+      1086
+    ]
+  },
+  {
+    "sheet": "enemies",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      2,
+      3
+    ],
+    "names": [
+      "enemies/lock_0",
+      "enemies/lock_1"
+    ],
+    "width": 22,
+    "height": 22,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      366,
+      728,
+      1099,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      394,
+      712,
+      1086
+    ]
+  },
+  {
+    "sheet": "enemies",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      4,
+      5
+    ],
+    "names": [
+      "enemies/slow_0",
+      "enemies/slow_1"
+    ],
+    "width": 22,
+    "height": 22,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      366,
+      728,
+      1099,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      394,
+      712,
+      1086
+    ]
+  },
+  {
+    "sheet": "enemies",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      6,
+      7
+    ],
+    "names": [
+      "enemies/slime_0",
+      "enemies/slime_1"
+    ],
+    "width": 22,
+    "height": 22,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      366,
+      728,
+      1099,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      394,
+      712,
+      1086
+    ]
+  },
+  {
+    "sheet": "enemies",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      8,
+      9,
+      10
+    ],
+    "names": [
+      "enemies/nest_0",
+      "enemies/nest_1",
+      "enemies/nest_2"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      366,
+      728,
+      1099,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      394,
+      712,
+      1086
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      0
+    ],
+    "names": [
+      "tiles/overlays/web"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      1
+    ],
+    "names": [
+      "tiles/overlays/lock"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      2
+    ],
+    "names": [
+      "tiles/overlays/slime_floor"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      3
+    ],
+    "names": [
+      "tiles/overlays/slime_wall"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      4,
+      5,
+      6
+    ],
+    "names": [
+      "tiles/overlays/fire_0",
+      "tiles/overlays/fire_1",
+      "tiles/overlays/fire_low"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "overlays",
+    "columns": 4,
+    "rows": 2,
+    "slots": [
+      7
+    ],
+    "names": [
+      "tiles/overlays/confirmed"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      457,
+      870,
+      1322,
+      1774
+    ],
+    "y_cuts": [
+      0,
+      449,
+      887
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      0
+    ],
+    "names": [
+      "boss/tentacle_root"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      1
+    ],
+    "names": [
+      "boss/tentacle_middle"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 0,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      2
+    ],
+    "names": [
+      "boss/tentacle_tip"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 0,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      3
+    ],
+    "names": [
+      "boss/tentacle_broken"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      4,
+      5,
+      6
+    ],
+    "names": [
+      "boss/bomb_fuse_0",
+      "boss/bomb_fuse_1",
+      "boss/bomb_deflect"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      7
+    ],
+    "names": [
+      "boss/bomb_shadow"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "hazards",
+    "columns": 4,
+    "rows": 3,
+    "slots": [
+      8,
+      9,
+      10,
+      11
+    ],
+    "names": [
+      "boss/bomb_explosion0",
+      "boss/bomb_explosion1",
+      "boss/bomb_explosion2",
+      "boss/bomb_explosion3"
+    ],
+    "width": 28,
+    "height": 28,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      351,
+      724,
+      1090,
+      1448
+    ],
+    "y_cuts": [
+      0,
+      369,
+      697,
+      1086
+    ]
+  },
+  {
+    "sheet": "boss_repacked",
+    "columns": 3,
+    "rows": 7,
+    "slots": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "names": [
+      "boss/beast_p1_idle",
+      "boss/beast_p2_idle",
+      "boss/beast_p3_idle",
+      "boss/beast_p1_claw",
+      "boss/beast_p2_claw",
+      "boss/beast_p3_claw",
+      "boss/beast_p1_inhale",
+      "boss/beast_p2_inhale",
+      "boss/beast_p3_inhale",
+      "boss/beast_p1_growl",
+      "boss/beast_p2_growl",
+      "boss/beast_p3_growl",
+      "boss/beast_p1_staggered",
+      "boss/beast_p2_staggered",
+      "boss/beast_p3_staggered",
+      "boss/beast_p1_crawl",
+      "boss/beast_p2_crawl",
+      "boss/beast_p3_crawl",
+      "boss/beast_p1_fall",
+      "boss/beast_p2_fall",
+      "boss/beast_p3_fall"
+    ],
+    "width": 140,
+    "height": 64,
+    "margin": 1,
+    "components": true
+  },
+  {
+    "sheet": "utilities",
+    "columns": 4,
+    "rows": 1,
+    "slots": [
+      0
+    ],
+    "names": [
+      "ui/icons/icon_drone"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      645,
+      1169,
+      1577,
+      2172
+    ]
+  },
+  {
+    "sheet": "utilities",
+    "columns": 4,
+    "rows": 1,
+    "slots": [
+      1
+    ],
+    "names": [
+      "ui/icons/icon_probe"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      645,
+      1169,
+      1577,
+      2172
+    ]
+  },
+  {
+    "sheet": "utilities",
+    "columns": 4,
+    "rows": 1,
+    "slots": [
+      2
+    ],
+    "names": [
+      "ui/icons/icon_tooth"
+    ],
+    "width": 16,
+    "height": 16,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      645,
+      1169,
+      1577,
+      2172
+    ]
+  },
+  {
+    "sheet": "utilities",
+    "columns": 4,
+    "rows": 1,
+    "slots": [
+      3
+    ],
+    "names": [
+      "ui/icons/icon_ore"
+    ],
+    "width": 24,
+    "height": 24,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      645,
+      1169,
+      1577,
+      2172
+    ]
+  },
+  {
+    "sheet": "utilities",
+    "columns": 4,
+    "rows": 1,
+    "slots": [
+      2
+    ],
+    "names": [
+      "fx/tooth"
+    ],
+    "width": 12,
+    "height": 12,
+    "margin": 1,
+    "x_cuts": [
+      0,
+      645,
+      1169,
+      1577,
+      2172
+    ]
+  }
+]

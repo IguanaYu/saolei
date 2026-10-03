@@ -5,9 +5,9 @@ extends Node2D
 
 var coord: Vector2i = Vector2i(-1, -1)
 var hp: int = 2
-const NEST_FULL := preload("res://visual_v2/runtime/enemies/nest_0.png")
-const NEST_DAMAGED := preload("res://visual_v2/runtime/enemies/nest_1.png")
-const NEST_BROKEN := preload("res://visual_v2/runtime/enemies/nest_2.png")
+const NEST_FULL := preload("res://visual_v2/runtime/completion/enemies/nest_0.png")
+const NEST_DAMAGED := preload("res://visual_v2/runtime/completion/enemies/nest_1.png")
+const NEST_BROKEN := preload("res://visual_v2/runtime/completion/enemies/nest_2.png")
 
 signal damaged(nest: Nest)      # 受击未毁（剧本 #2「巢被点第一下」的触发源）
 signal destroyed(nest: Nest)    # 摧毁（埋点/波次联动）

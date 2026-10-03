@@ -9,7 +9,7 @@ signal pose_finished(pose: String)
 const POSES := ["idle", "claw", "inhale", "growl", "staggered", "crawl", "fall"]
 const ANCHORS := ["top", "right"]
 
-const SPRITE_ROOT := "res://visual_v2/runtime/boss/beast_p%d_%s.png"
+const SPRITE_ROOT := "res://visual_v2/runtime/completion/boss/beast_p%d_%s.png"
 
 var pose := "idle"
 var anchor := "top"
