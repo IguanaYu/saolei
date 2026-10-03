@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/event_log_panel.gd" id="1_elp"]
+
+[node name="EventLogPanel" type="PanelContainer"]
+mouse_filter = 2
+script = ExtResource("1_elp")
+
+[node name="Margin" type="MarginContainer" parent="."]
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="Margin/VBox"]
+text = "事件"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.6, 0.55, 0.47, 1)
+mouse_filter = 2
+
+[node name="LogText" type="RichTextLabel" parent="Margin/VBox"]
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = false
+autowrap_mode = 3
+scroll_following = true
+theme_override_font_sizes/normal_font_size = 14

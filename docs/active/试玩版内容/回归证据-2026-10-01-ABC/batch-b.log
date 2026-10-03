@@ -1,0 +1,18 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS  shop_L1_opener_marker_visible  
+PASS  shop_L1_detector_miner_hidden  
+PASS  shop_L1_base_upgrade_hidden  
+PASS  shop_L4_guard_probe_visible  
+PASS  shop_L4_flow_fits  flow_w=220 vp_w=1024
+PASS  board_clears_shop.ch01_s04  board_bottom=558 shop_top=588
+PASS  board_below_hud.ch01_s04  board_top=110 hud_bottom=80
+PASS  board_clears_shop.ch01_s03  board_bottom=558 shop_top=588
+PASS  board_below_hud.ch01_s03  board_top=110 hud_bottom=80
+PASS  reproject_robot  pos=(358.0, 274.0) want=(358.0, 274.0)
+PASS  reproject_boss  beast=(526.0, 173.2) want=(526.0, 173.2)
+RESULT fails=0
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

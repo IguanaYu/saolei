@@ -41,7 +41,7 @@ func _ready() -> void:
 			_actions.append({"delay": float(parts[0]), "kind": "sig",
 					"arg": parts.slice(1)})
 		elif item.begins_with("get="):
-			# get=delay:node_path:property  例 get=4.9:/root/Main/UILayer/TeamPanel:visible
+			# get=delay:node_path:property  例 get=4.9:/root/Main/UILayer/PlayerLogPanel:visible
 			var parts: PackedStringArray = item.substr(4).split(":", true, 1)
 			var kv: PackedStringArray = parts[1].split(":")
 			_actions.append({"delay": float(parts[0]), "kind": "get", "arg": kv})

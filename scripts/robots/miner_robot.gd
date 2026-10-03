@@ -103,7 +103,7 @@ func _tick_to_base(grid, locked: Dictionary) -> void:
 func _tick_unloading(grid) -> void:
 	AudioManager.play_sfx("coin")
 	grid.cargo_unloaded.emit(global_position, cargo)  # 确认动效（金光/跳字/飞币）
-	GameState.add_money(cargo)
+	GameState.add_money(cargo, "mine")
 	GameState.add_score(cargo, "mine")  # 采矿分明细键（mine_score）由得分账本写入
 	cargo = 0
 	miner_state = "to_mine"

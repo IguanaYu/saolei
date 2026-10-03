@@ -400,7 +400,8 @@ func _cast_bomb(atk: Dictionary, grid) -> bool:
 
 ## 反弹结算（Bomb.deflect 飞抵后回调）：奖励 + 硬直 + 下次落弹顺延（设计 §5.2）
 func on_bomb_deflected() -> void:
-	GameState.add_money(15)
+	GameState.add_money(15, "player_combat")
+	GameState.game_event_logged.emit("你 弹开炸弹 +15金", "player", "player")
 	GameState.add_score(15, "combat")
 	GameState.result_stats["bombs_deflected"] += 1
 	stagger(2.0)
@@ -447,9 +448,10 @@ func extinguish_fire_group(coord: Vector2i) -> bool:
 		var cell = _grid.get_cell(c) if _grid != null else null
 		if cell != null:
 			cell.fire_out()
-	GameState.add_money(5)
-	GameState.add_score(5, "combat")
-	GameState.result_stats["fires_extinguished"] += 1
+		GameState.add_money(5, "player_combat")
+		GameState.add_score(5, "combat")
+		GameState.result_stats["fires_extinguished"] += 1
+		GameState.game_event_logged.emit("你 扑灭火焰 +5金", "player", "player")
 	return true
 
 

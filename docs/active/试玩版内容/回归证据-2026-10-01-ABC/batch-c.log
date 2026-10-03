@@ -1,0 +1,20 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS  next_level.ch01_s01  got=ch01_s02 want=ch01_s02
+PASS  next_level.ch01_s04  got=ch01_s05 want=ch01_s05
+PASS  next_level.ch01_s05  got= want=
+PASS  next_level.bogus  
+PASS  first_uncleared.fresh  
+PASS  first_uncleared.after_s01  
+PASS  first_uncleared.all_cleared_fallback_s05  
+PASS  next_level_opens_s02  card_id=ch01_s02 visible=true
+PASS  escape_shows_full_level_select  visible=true rows=5
+PASS  s05_next_is_noop  
+PASS  ore_reveal_gated_by_s02_clear  s01_only=false after_s02=true
+PASS  playtest_done_open  
+PASS  escape_on_done_back_to_select  done=false select=true
+RESULT fails=0
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

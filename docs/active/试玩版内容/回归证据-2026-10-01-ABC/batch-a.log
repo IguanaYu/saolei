@@ -1,0 +1,36 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+viewport=(1024.0, 768.0)
+WARNING: Nodes with non-equal opposite anchors will have their size overridden after _ready(). 
+If you want to set size, change the anchors or consider using set_deferred().
+   at: _set_size (scene/gui/control.cpp:1479)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tmp/test_batch_a.gd:39)
+PASS  settings.panel_fits_viewport  rect=[P: (0.0, 0.0), S: (560.0, 688.0)] vp_h=768
+PASS  settings.close_button_visible  rect=[P: (0.0, 0.0), S: (71.0, 46.0)]
+PASS  settings.scroll_present  min_h=528
+PASS  settings.scroll_in_viewport  rect=[P: (0.0, 0.0), S: (0.0, 528.0)]
+INFO  settings content_h=653 scroll_h=528
+PASS  upgrade.row_count_L3  rows=[&"OpenerMoveRow", &"OpenerWorkRow", &"MarkerMoveRow", &"MarkerWorkRow", &"RechargeRow"]
+PASS  upgrade.panel_fits_viewport  rect=[P: (252.0, 154.0), S: (520.0, 460.0)]
+PASS  upgrade.row_min_width.OpenerMoveRow  min_w=406 rows_w=488
+PASS  upgrade.buy_inside_panel.OpenerMoveRow  buy_end=756 panel_end=772
+PASS  upgrade.row_min_width.OpenerWorkRow  min_w=406 rows_w=488
+PASS  upgrade.buy_inside_panel.OpenerWorkRow  buy_end=756 panel_end=772
+PASS  upgrade.row_min_width.MarkerMoveRow  min_w=406 rows_w=488
+PASS  upgrade.buy_inside_panel.MarkerMoveRow  buy_end=756 panel_end=772
+PASS  upgrade.row_min_width.MarkerWorkRow  min_w=406 rows_w=488
+PASS  upgrade.buy_inside_panel.MarkerWorkRow  buy_end=756 panel_end=772
+PASS  upgrade.row_min_width.RechargeRow  min_w=382 rows_w=488
+PASS  upgrade.buy_inside_panel.RechargeRow  buy_end=756 panel_end=772
+PASS  upgrade.close_hides  
+PASS  main.upgrade_open  
+PASS  main.escape_closes_upgrade  
+PASS  main.close_overlays_clears_all  panel=false placing=''
+PASS  main.close_overlays_idempotent  
+PASS  main.end_game_clears_overlays  
+RESULT fails=0
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

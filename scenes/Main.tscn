@@ -24,8 +24,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/PreLevelCard.tscn" id="22_plc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/RulesPanel.tscn" id="23_rp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PlaytestDonePanel.tscn" id="24_pdp"]
-[ext_resource type="PackedScene" path="res://scenes/ui/TeamPanel.tscn" id="25_tp"]
-[ext_resource type="PackedScene" path="res://scenes/ui/ScorePanel.tscn" id="26_scp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/EventLogPanel.tscn" id="25_elp"]
+[ext_resource type="Script" path="res://scripts/ui/event_log_connector.gd" id="26_elc"]
 [ext_resource type="Script" path="res://scripts/boss/boss_manager.gd" id="27_bm"]
 
 [node name="Main" type="Node"]
@@ -64,10 +64,25 @@ script = ExtResource("27_bm")
 [node name="UILayer" type="CanvasLayer" parent="."]
 process_mode = 3
 
-; 侧栏（队伍/分项得分）置于 UILayer 最底：所有面板与教程压暗层都盖在其上
-[node name="TeamPanel" parent="UILayer" instance=ExtResource("25_tp")]
+; 侧栏（事件日志流：左=玩家行动，右=机器人作业）置于 UILayer 最底：所有面板与教程压暗层都盖在其上
+[node name="PlayerLogPanel" parent="UILayer" instance=ExtResource("25_elp")]
+offset_left = 16.0
+offset_top = 128.0
+offset_right = 260.0
+offset_bottom = 580.0
 
-[node name="ScorePanel" parent="UILayer" instance=ExtResource("26_scp")]
+[node name="RobotLogPanel" parent="UILayer" instance=ExtResource("25_elp")]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -260.0
+offset_top = 128.0
+offset_right = -16.0
+offset_bottom = 580.0
+grow_horizontal = 0
+
+[node name="EventLogConnector" parent="UILayer" type="Node"]
+script = ExtResource("26_elc")
 
 [node name="HUD" parent="UILayer" instance=ExtResource("4_hud")]
 

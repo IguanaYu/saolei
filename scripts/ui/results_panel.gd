@@ -9,7 +9,7 @@ signal back_to_level_select_requested
 signal back_to_menu_requested
 
 const ICON_COIN := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
-const ICON_ORE := preload("res://visual_v2/runtime/ui/icons/icon_ore.png")
+const ICON_ORE := preload("res://visual_v2/runtime/completion/ui/icons/icon_ore.png")
 const ICON_CLOCK := preload("res://visual_v2/runtime/ui/icons/icon_clock.png")
 const ICON_HEART := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
 const ICON_STAR := preload("res://visual_v2/runtime/ui/icons/icon_star.png")
@@ -154,6 +154,7 @@ func _handle_free_mode(result: String) -> void:
 	_add_row(ICON_ORE, "矿石结算", "+%d" % ore_earned)
 	stars_row.visible = false
 	star_hint_label.visible = false
+	_add_money_rows()  # 金钱来源放在各模式奖励列表末尾（谁挣了多少钱）
 	final_score_label.text = str(GameState.score)
 
 
@@ -178,6 +179,7 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		_add_row(ICON_HEART, "剩余生命", "%d" % GameState.lives)
 		if lvl != null and lvl.is_playtest:
 			_add_playtest_rows(false)
+		_add_money_rows()  # 金钱来源放在各模式奖励列表末尾（谁挣了多少钱）
 		final_score_label.text = str(GameState.score)
 		return
 	title_label.text = "目标达成"
@@ -205,6 +207,7 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		_animate_stars(stars)
 		star_hint_label.visible = true
 		star_hint_label.text = _star_hint(stars)
+	_add_money_rows()  # 金钱来源放在各模式奖励列表末尾（谁挣了多少钱）
 	final_score_label.text = str(GameState.score)
 
 
@@ -246,6 +249,32 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 				int(s.get("tentacles_cut", 0))])
 
 
+## 金钱来源（2026-10-02 侧栏改造收尾："谁挣了多少钱"，只在结算末尾展示）：
+## 按挣钱方分组读 money_breakdown；零值组收起；两组以上才给合计行
+func _add_money_rows() -> void:
+	var b: Dictionary = GameState.money_breakdown
+	var groups := [
+		["你的扫雷", ["player_open", "player_flag"]],
+		["你的战斗", ["player_combat"]],
+		["开墙机开格", ["robot_open"]],
+		["标雷机标旗", ["robot_flag"]],
+		["矿工采矿", ["mine"]],
+		["保安击退", ["guard_combat"]],
+	]
+	var total := 0
+	var shown := 0
+	for g in groups:
+		var sum := 0
+		for src in g[1]:
+			sum += int(b.get(src, 0))
+		total += sum
+		if sum > 0:
+			_add_row(ICON_COIN, "收入 · " + g[0], "+%d金" % sum)
+			shown += 1
+	if shown > 1:
+		_add_row(ICON_COIN, "收入合计", "+%d金" % total)
+
+
 func _handle_daily(result: String) -> void:
 	title_label.text = "挑战完成！" if result == "win" else ("挑战失败" if result == "lose" else "时间到")
 	back_button.text = "返回主菜单"
@@ -264,6 +293,7 @@ func _handle_daily(result: String) -> void:
 		if int(info.chest_ore) > 0:
 			SaveSystem.add_ore(int(info.chest_ore))
 			_add_row(ICON_ORE, "本周宝箱", "+%d 矿" % int(info.chest_ore))
+	_add_money_rows()  # 金钱来源放在各模式奖励列表末尾（谁挣了多少钱）
 	final_score_label.text = str(GameState.score)
 
 
