@@ -318,6 +318,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"mines": lvl.fixed_mines,
 				"preopen": lvl.preopen_coords,
 				"base": lvl.fixed_base,
+				"fossils": lvl.fixed_fossils,
 			})
 			# L4/L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
 			# 放完基地才 game_active（同 L4 口径，倒计时从放基地起算）
@@ -885,6 +886,8 @@ func place_block_reason(coord: Vector2i) -> String:
 	if placing_mode == "probe":
 		if cell == null:
 			return "盘外"
+		if cell.is_fossil:
+			return "化石下不会有雷"
 		if cell.is_confirmed_mine:
 			return "这格已是确认雷"
 		if GameState.money < GameState.PROBE_PRICE:

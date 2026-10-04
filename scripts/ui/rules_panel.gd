@@ -24,6 +24,8 @@ const LEGEND := [
 		"desc": "盖住数字，挡机器人推理", "act": "点击清除"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/lock.png", "name": "锁格",
 		"desc": "锁死格子，无法开 / 标", "act": "点击清除"},
+	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/fossil_tl.png", "name": "化石",
+		"desc": "嵌在岩层里的菊石，永久挡住 2×2", "act": "清不掉，绕过去"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/slime_floor.png", "name": "黏液",
 		"desc": "机器人经过减速", "act": "点击清除"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/fire_0.png", "name": "火焰",

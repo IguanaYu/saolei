@@ -24,6 +24,7 @@ var fixed_base: Vector2i = Vector2i(-1, -1)  # 预置基地；(-1,-1) = 玩家�
 var preopen_coords: Array[Vector2i] = []    # 预开区（含洪水结果，直接烘焙）
 var pregen_random: bool = false             # true：进关预生成随机盘+洪水预开（裸随机路径，暂无在用关）
 var pests: bool = false                     # true：进关布置裂缝+预置虫害并启波次（L4 除害关，配固定盘）
+var fixed_fossils: Array[Vector2i] = []     # 2×2 化石左上原点（永久多格障碍；约束见化石实施计划 §3）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽

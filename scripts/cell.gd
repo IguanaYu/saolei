@@ -27,6 +27,10 @@ var is_on_fire: bool = false    # 火=通路阻断：机器人禁入，8s 退散
 var bomb_masked: bool = false   # 炸弹压格=显示遮罩：数字被挡（口径同网，玩家与机器人同盲）
 var path_blockers: int = 0      # 通路阻断计数（火/触手 +1/-1）：is_walkable 判定，0=不阻断
 
+# ---- 化石（2×2 永久多格障碍；调研 §4 定调：纯难度件，不可清除，透明口径不改数字）----
+var is_fossil: bool = false                 # 永久占位：不可开/不可标/机器人虫子皆不可入
+var fossil_origin: Vector2i = Vector2i(-9, -9)  # 所属 2×2 化石左上原点（贴图取象限用）
+
 # 信号
 signal cell_left_clicked(cell: Cell)
 signal cell_right_clicked(cell: Cell)
@@ -77,6 +81,13 @@ const OVERLAY_CONFIRMED := preload("res://visual_v2/runtime/completion/tiles/ove
 const OVERLAY_FIRE := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_0.png")
 const OVERLAY_FIRE_1 := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_1.png")
 const OVERLAY_FIRE_LOW := preload("res://visual_v2/runtime/completion/tiles/overlays/fire_low.png")
+# 化石 2×2 整图四象限（tmp/make_fossil.py 生成；序=行*2+列，配 _fossil_texture()）
+const OVERLAY_FOSSIL := [
+	preload("res://visual_v2/runtime/completion/tiles/overlays/fossil_tl.png"),
+	preload("res://visual_v2/runtime/completion/tiles/overlays/fossil_tr.png"),
+	preload("res://visual_v2/runtime/completion/tiles/overlays/fossil_bl.png"),
+	preload("res://visual_v2/runtime/completion/tiles/overlays/fossil_br.png"),
+]
 
 # 洞壁生态装饰（E 系主题套）：有 deco_<风格>_sheet 的风格在未开岩壁随机点缀
 const DECO_GRID := 4          # sheet 4x2
@@ -148,6 +159,13 @@ func set_fire_frame(frame: int) -> void:
 
 func _fire_texture() -> Texture2D:
 	return OVERLAY_FIRE_LOW if _fire_frame == 2 else (OVERLAY_FIRE_1 if _fire_frame == 1 else OVERLAY_FIRE)
+
+
+## 化石象限贴图：按本格在 2×2 中的位置取四分之一（行*2+列）
+func _fossil_texture() -> Texture2D:
+	var dx: int = clampi(coord.x - fossil_origin.x, 0, 1)
+	var dy: int = clampi(coord.y - fossil_origin.y, 0, 1)
+	return OVERLAY_FOSSIL[dy * 2 + dx]
 
 
 func _setup_wall() -> void:
@@ -309,6 +327,8 @@ func _try_chord_gesture() -> void:
 
 func open(by_actor: String) -> bool:
 	# 返回 true 表示状态真的改变了
+	if is_fossil:
+		return false  # 化石=永久障碍：谁都开不了（无清除交互，纯难度件）
 	if is_locked:
 		return false  # 锁=交互阻断：谁都不能开（玩家/机器人/无人机一律拦）
 	if is_opened or is_collapsed or is_flagged:
@@ -341,6 +361,8 @@ func deplete_vein() -> void:
 
 
 func toggle_flag() -> bool:
+	if is_fossil:
+		return false  # 化石上不能插旗（它也不是雷，标了必错）
 	if is_locked:
 		return false  # 锁同时拦插旗与撤旗（Q6：已插旗格被锁，旗不可撤直到清锁）
 	if is_opened or is_collapsed:
@@ -376,8 +398,8 @@ func apply_web() -> bool:
 
 
 func apply_lock() -> bool:
-	if is_locked or is_opened or is_base or is_vein or is_collapsed:
-		return false  # 锁只锁关闭格
+	if is_locked or is_opened or is_base or is_vein or is_collapsed or is_fossil:
+		return false  # 锁只锁关闭格；化石永久占位不可叠锁（叠了永远清不掉，纯视觉噪音）
 	is_locked = true
 	refresh_visual()
 	return true
@@ -693,7 +715,10 @@ func refresh_visual() -> void:
 		# 网/炸弹盖数字：数字对玩家同样不可见（Q7「玩家与机器人同盲」）
 		lbl.text = ""
 	if _obstacle_mark != null:
-		if is_locked:
+		if is_fossil:
+			# 化石置顶：与其他障碍互斥（不可叠锁/不预开/不web——铺设侧已保证）
+			_obstacle_mark.texture = _fossil_texture()
+		elif is_locked:
 			_obstacle_mark.texture = OVERLAY_LOCK
 		elif is_on_fire:
 			_obstacle_mark.texture = _fire_texture()

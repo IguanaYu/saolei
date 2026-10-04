@@ -23,9 +23,11 @@ static func find_certain_actions(grid) -> Array:
 			# L4「确认雷」同理：机器人视同旗（探测情报直接进规则 1/2 推理）
 			if n.is_flagged or n.is_vein or n.is_collapsed or n.is_confirmed_mine:
 				flagged_count += 1
-			elif not n.is_opened and not n.is_collapsed:
+			elif not n.is_opened and not n.is_collapsed and not n.is_fossil:
 				# 锁格保留在 unopened 参与雷数计数（锁格真值未知，从计数里消失会误标邻格），
 				# 只在动作生成时跳过（机器人开不了锁格，WP2.4）
+				# 化石比锁更彻底地排除：它是玩家可见的「已知非雷永久占位」，
+				# 既不是潜在雷（计数必须剔除，否则规则2误标邻格）也永远不可开/标
 				unopened.append(n)
 
 		# 规则 1：已标雷数 == 数字 → 其余未开邻格全安全

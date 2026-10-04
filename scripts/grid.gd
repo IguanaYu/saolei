@@ -300,8 +300,9 @@ func place_first_base(coord: Vector2i) -> bool:
 	return true
 
 
-## 固定盘面装载（试玩版教学关）：写雷位 → 预开烘焙区 → 预置基地，跳过 placing_base 阶段
-## data 结构见 FixedBoards：{"mines": [Vector2i...], "preopen": [Vector2i...], "base": Vector2i}
+## 固定盘面装载（试玩版教学关）：写雷位 → 化石占位 → 预开烘焙区 → 预置基地，跳过 placing_base 阶段
+## data 结构见 FixedBoards：{"mines": [Vector2i...], "preopen": [Vector2i...], "base": Vector2i,
+##                           "fossils": [Vector2i...]（可选，2×2 左上原点）}
 func apply_fixed_board(data: Dictionary) -> void:
 	var mine_set: Dictionary = {}
 	for m in data.mines:
@@ -317,6 +318,21 @@ func apply_fixed_board(data: Dictionary) -> void:
 	for sc in data.preopen:
 		if cells.has(sc):
 			cells[sc].is_opened = true
+	# 化石最后铺设（透明口径：不改雷位不改数字，只是永久占位）；
+	# 与雷/预开重叠=数据配置错误：拒铺该格并大声警告，防半开半挡的脏状态
+	for origin in data.get("fossils", []):
+		for dy in 2:
+			for dx in 2:
+				var fc: Vector2i = origin + Vector2i(dx, dy)
+				if not cells.has(fc):
+					continue
+				var f_cell: Cell = cells[fc]
+				if f_cell.is_mine or f_cell.is_opened or fc == data.base:
+					push_warning("化石 %s 与雷/预开区/基地重叠，已拒铺（检查盘面数据）" % str(fc))
+					continue
+				f_cell.is_fossil = true
+				f_cell.fossil_origin = origin
+				f_cell.refresh_visual()  # 直接设字段同预开写法；化石无波纹动画，须手动刷障碍层
 	# 预置基地；base=(-1,-1) = 玩家自放（L5 Boss 关）：保持 placing_base 阶段，
 	# 走 place_first_base 的 board_generated 分支（仅已开格，同 L4 自放口径）
 	var base_coord: Vector2i = data.base
@@ -569,16 +585,17 @@ func is_slime_nearby(coord: Vector2i) -> bool:
 func count_safe_remaining() -> int:
 	var count: int = 0
 	for cell in cells.values():
-		if not cell.is_mine and not cell.is_opened:
+		if not cell.is_mine and not cell.is_opened and not cell.is_fossil:
 			count += 1
 	return count
 
 
 ## 安全格总数（与 count_safe_remaining 同口径；进度条 X/Y 的 Y）
+## 化石格剔除（锁格不剔除——锁最终可清，化石永远不可开，计入则进度条永远差格）
 func count_safe_total() -> int:
 	var count: int = 0
 	for cell in cells.values():
-		if not cell.is_mine:
+		if not cell.is_mine and not cell.is_fossil:
 			count += 1
 	return count
 
@@ -706,6 +723,11 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 	if cell.is_on_fire:
 		fire_extinguish_requested.emit(cell.coord)
 		return
+	# 化石=永久占位（纯难度件）：点不开也不清不掉，摇头反馈不吃 CD
+	# （必须早于下方 will_open 预判——预判不知道化石，会白吃一次 CD）
+	if cell.is_fossil:
+		cell.play_chord_deny()
+		return
 	# L4 障碍清除分流（设计 §9.9）：点击命中障碍 → 本击只清障不开格，吃 1 次 CD
 	# （黏液不阻断开/标，但点击命中的是障碍：先清后开，第二击再开格）
 	if cell.has_obstacle():
@@ -729,6 +751,10 @@ func _on_cell_right_clicked(cell: Cell) -> void:
 	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
+		return
+	# 化石上不能插旗：摇头反馈不吃 CD（同左键口径，早于 will_toggle 预判）
+	if cell.is_fossil:
+		cell.play_chord_deny()
 		return
 	# 锁格右键也走清锁：锁同时拦开与标，清除是唯一出路（计划 WP2.3）
 	if cell.is_locked and not cell.is_opened:
@@ -766,6 +792,7 @@ func _on_cell_double_clicked(cell: Cell) -> void:
 
 
 ## 和弦预判：数字格、已处理雷数匹配（口径同 chord）、且至少有一个可开邻格
+## 化石邻格不计入 openable（不可开；计入则出现「预判成立吃 CD、实际一格没开」的白耗）
 func _chord_would_open(cell: Cell) -> bool:
 	if not cell.is_opened or cell.adjacent_mines == 0:
 		return false
@@ -774,7 +801,7 @@ func _chord_would_open(cell: Cell) -> bool:
 	for n in get_neighbors(cell.coord):
 		if n.is_flagged or n.is_vein or n.is_collapsed or n.is_confirmed_mine:
 			flagged += 1
-		elif not n.is_opened:
+		elif not n.is_opened and not n.is_fossil:
 			openable += 1
 	return flagged == cell.adjacent_mines and openable > 0
 

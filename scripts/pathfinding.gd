@@ -79,6 +79,7 @@ static func spaced_targets(targets: Array, locked: Dictionary,
 
 
 ## 无限制 BFS（L4 敌虫用）：不受 walkable 限制（虫爬岩壁），全盘 4 向可走
+## 唯一的墙=化石（永久占位，虫也不能穿；否则虫当玩家面穿模，教学反效果）
 ## 返回从 start 走向 goal 的下一格（Vector2i），start==goal 或不可达返回 Vector2i(-9,-9)
 static func find_path_free_step(grid, start: Vector2i, goal: Vector2i) -> Vector2i:
 	if start == goal:
@@ -95,6 +96,8 @@ static func find_path_free_step(grid, start: Vector2i, goal: Vector2i) -> Vector
 				continue
 			if not grid.cells.has(n):
 				continue
+			if grid.cells[n].is_fossil:
+				continue  # 化石挡虫
 			came_from[n] = pos
 			queue.append(n)
 	if not came_from.has(goal):

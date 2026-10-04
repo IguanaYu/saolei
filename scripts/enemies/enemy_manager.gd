@@ -138,6 +138,11 @@ func _spawn_nests(grid) -> void:
 	sides.shuffle()
 	for i in range(2):
 		var coord := _random_edge_coord(sides[i], grid)
+		# 化石不落在盘边是数据约束，这里仍兜底重摇（巢长在化石上=视觉穿模）
+		for _attempt in 10:
+			if grid.cells.has(coord) and not grid.cells[coord].is_fossil:
+				break
+			coord = _random_edge_coord(sides[i], grid)
 		var nest: Nest = load(NEST_SCENE_PATH).instantiate()
 		add_child(nest)
 		nest.setup(coord, NEST_HP, grid)
@@ -171,7 +176,8 @@ func _place_preset_hazards(grid) -> void:
 		var c = grid.cells[coord]
 		if c.is_opened:
 			for n in grid.get_neighbors(coord):
-				if not n.is_opened and not n.is_flagged and not n.is_mine:
+				if not n.is_opened and not n.is_flagged and not n.is_mine \
+						and not n.is_fossil:  # 化石格叠锁永远清不掉，不发锁
 					frontier_closed.append(n)
 					break  # 每个已开格至多贡献一个 frontier 格，分散分布
 	# 打乱后逐个放置（apply 幂等失败自动顺延到下一个候选）

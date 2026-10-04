@@ -183,8 +183,10 @@ func _apply_playtest_level4(lvl: LevelData) -> void:
 	lvl.cooldown_after_purchase = -1.0
 	# 固定图（v2.3）：大片预开保底 + 玩家自放基地保留（fixed_base=(-1,-1) 同 L5 口径）；
 	# pests 开裂缝+预置虫害（main.gd 固定盘分支内布置）
+	# 化石(5,8)：永久 2×2 障碍（2026-10-04，安全格 216→212，胜利线 160 不动）
 	lvl.pests = true
 	lvl.fixed_mines.assign(FixedBoards.L4.mines)
+	lvl.fixed_fossils.assign(FixedBoards.L4.fossils)
 	lvl.fixed_base = Vector2i(-1, -1)
 	lvl.preopen_coords.assign(FixedBoards.L4.preopen)
 	lvl.shop_limits = {"guard": 1}  # 保安限购 1

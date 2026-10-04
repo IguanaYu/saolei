@@ -264,7 +264,7 @@ func _cast_lock(grid) -> void:
 	for coord in grid.cells:
 		var c: Cell = grid.cells[coord]
 		if not c.is_opened and not c.is_locked and not c.is_flagged \
-				and not c.is_confirmed_mine and not c.is_base:
+				and not c.is_confirmed_mine and not c.is_base and not c.is_fossil:
 			candidates.append(coord)
 	if candidates.is_empty():
 		return
