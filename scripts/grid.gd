@@ -387,12 +387,46 @@ func place_first_base(coord: Vector2i) -> bool:
 	# 预开安全区（直接设字段，不触发 cell_opened 信号，避免给奖励；视觉走波纹）
 	for sc in safe_coords:
 		cells[sc].is_opened = true
+	# 安全区内 0 格静默洪水连锁（2026-10-04 试玩反馈修复）：
+	# 预开不连锁会留下「0 格旁未开格」，且预开格点击不再触发洪水（open 对已开格
+	# 直接返回）——那片区域永远不会自己打开。固定盘关卡的预开在烘焙时就连好了
+	# 洪水（finder 脚本），随机盘路径（每日/高塔/L形）此前从未对齐这个体验。
+	var chain: Array = _preopen_cascade(safe_coords)
 	# 标记基地（波纹中心：立即显示，周围从它逐步凿开）
 	cells[coord].become_base()
 	GameState.register_base(coord)
 	GameState.set_game_phase("playing")
-	_schedule_reveal_wave(safe_coords, coord, REVEAL_WAVE_STEP_INTRO)
+	_schedule_reveal_wave(safe_coords + chain, coord, REVEAL_WAVE_STEP_INTRO)
 	return true
+
+
+## 预开区静默连锁：从 coords 中的 0 格洪水展开，直设字段不 emit 信号（不给奖励，
+## 同 apply_fixed_board/apply_random_board 预开口径）；返回新开格列表（波纹用）
+func _preopen_cascade(coords: Array) -> Array:
+	var opened: Array = []
+	var queue: Array[Vector2i] = []
+	for sc in coords:
+		var cell: Cell = cells.get(sc)
+		if cell != null and not cell.is_mine and cell.adjacent_mines == 0:
+			queue.append(sc)
+	var visited: Dictionary = {}
+	for c in queue:
+		visited[c] = true
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_front()
+		for o in MapGenerator.NEIGHBOR_OFFSETS:
+			var n: Vector2i = c + o
+			if visited.has(n) or not cells.has(n):
+				continue
+			visited[n] = true
+			var n_cell: Cell = cells[n]
+			if n_cell.is_opened or n_cell.is_flagged or n_cell.is_mine:
+				continue
+			n_cell.is_opened = true
+			opened.append(n)
+			if n_cell.adjacent_mines == 0:
+				queue.append(n)
+	return opened
 
 
 ## 固定盘面装载（试玩版教学关）：写雷位 → 化石占位 → 预开烘焙区 → 预置基地，跳过 placing_base 阶段
