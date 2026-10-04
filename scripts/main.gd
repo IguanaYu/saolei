@@ -969,7 +969,10 @@ func _find_spawn_spot_near_base() -> Vector2i:
 
 
 func _in_bounds(coord: Vector2i) -> bool:
-	return coord.x >= 0 and coord.x < grid.rows and coord.y >= 0 and coord.y < grid.cols
+	# 2026-10-04 修复：原实现把 rows/cols 写反（coord.x < grid.rows），方形盘无症状，
+	# 每日挑战非方形盘（cols>rows）右侧列放不了首基地。改为按实际存在格判断，
+	# 同时天然支持未来任意形状地图（调研 §6.1）。
+	return grid.cells.has(coord)
 
 
 # ---- 像素光标与悬停预览（素材：visual_v2/runtime/fx/，规格见盘点 v1）----

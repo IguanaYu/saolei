@@ -32,7 +32,7 @@ func _ready() -> void:
 ## 进关后启动：开局一句话，等首次有效动作推进
 func begin() -> void:
 	_exhausted_seen = false
-	var board_size := Vector2(_grid.rows * _grid.cell_size, _grid.cols * _grid.cell_size)
+	var board_size := Vector2(_grid.cols * _grid.cell_size, _grid.rows * _grid.cell_size)  # 2026-10-04 修复轴反(原rows/cols对调,方形盘无症状)
 	var tw := create_tween()
 	tw.tween_interval(0.5)
 	tw.tween_callback(func() -> void:
@@ -46,7 +46,7 @@ func _on_cd_exhausted() -> void:
 	if not GameState.game_active or GameState.current_level_id != "ch01_s01":
 		return
 	_exhausted_seen = true
-	var board_size := Vector2(_grid.rows * _grid.cell_size, _grid.cols * _grid.cell_size)
+	var board_size := Vector2(_grid.cols * _grid.cell_size, _grid.rows * _grid.cell_size)  # 2026-10-04 修复轴反(原rows/cols对调,方形盘无症状)
 	_guide.begin([
 		{"node": _grid, "size": board_size,
 			"text": COPY_EXHAUSTED, "event": "", "tip": "right"},
