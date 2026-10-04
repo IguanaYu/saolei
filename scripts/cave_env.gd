@@ -80,6 +80,30 @@ func layout_env() -> void:
 	var rect := Rect2(-FRAME_THICK, -FRAME_THICK,
 			size.x + FRAME_THICK * 2.0, size.y + FRAME_THICK * 2.0)
 
+	# 异形盘（2026-10-04 L形棋盘）：岩框沿形状边界逐格逐边拼段——每个形状内格子
+	# 检查四邻是否存在，缺失的一侧画一段框；段在拐角自然交汇，无需角件
+	if not grid.shape_rows.is_empty():
+		var cell_px: int = grid.cell_size
+		for y in grid.rows:
+			for x in grid.cols:
+				if not grid.shape_has(x, y):
+					continue
+				var px := x * cell_px
+				var py := y * cell_px
+				if not grid.shape_has(x, y - 1):
+					_add_frame_piece("SegT_%d_%d" % [x, y], FRAME_T,
+						Vector2(px, py - FRAME_THICK), Vector2(cell_px, FRAME_THICK), true, grid)
+				if not grid.shape_has(x, y + 1):
+					_add_frame_piece("SegB_%d_%d" % [x, y], FRAME_B,
+						Vector2(px, py + cell_px), Vector2(cell_px, FRAME_THICK), true, grid)
+				if not grid.shape_has(x - 1, y):
+					_add_frame_piece("SegL_%d_%d" % [x, y], FRAME_L,
+						Vector2(px - FRAME_THICK, py), Vector2(FRAME_THICK, cell_px), false, grid)
+				if not grid.shape_has(x + 1, y):
+					_add_frame_piece("SegR_%d_%d" % [x, y], FRAME_R,
+						Vector2(px + cell_px, py), Vector2(FRAME_THICK, cell_px), false, grid)
+		return
+
 	# 四边（tile 拉伸自适应长度）
 	_add_frame_piece("FrameTop", FRAME_T, Vector2(0.0, rect.position.y), Vector2(size.x, FRAME_THICK), true, grid)
 	_add_frame_piece("FrameBottom", FRAME_B, Vector2(0.0, size.y), Vector2(size.x, FRAME_THICK), true, grid)

@@ -320,6 +320,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
 		grid.wall_style = wall_style if wall_style != "" else chapter_style
+		grid.shape_rows = lvl.shape_mask.duplicate()  # 形状掩码（空=矩形，普通关不受影响）
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具（读的是已更新的棋盘位）

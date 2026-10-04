@@ -42,8 +42,8 @@ func _build() -> void:
 		ch.display_name = CHAPTER_NAMES[ch_idx]
 		ch.unlock_module = CHAPTER_MODULE[ch_idx]
 		ch.theme_color = CHAPTER_COLORS[ch_idx]
-		# ch01 含 6 关：s06=高塔关（竖向双视口地图原型，2026-10-04）
-		for s_idx in range(6 if ch_idx == 0 else 5):
+		# ch01 含 7 关：s06=高塔关（竖向双视口）、s07=L形关（异形盘原型，2026-10-04）
+		for s_idx in range(7 if ch_idx == 0 else 5):
 			var lvl := _make_level(ch_idx, s_idx)
 			if ch_idx == 0 and s_idx == 0:
 				_apply_playtest_level1(lvl)
@@ -57,6 +57,8 @@ func _build() -> void:
 				_apply_playtest_level5(lvl)
 			elif ch_idx == 0 and s_idx == 5:
 				_apply_playtest_level6(lvl)
+			elif ch_idx == 0 and s_idx == 6:
+				_apply_playtest_level7(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -291,6 +293,64 @@ func _apply_playtest_level6(lvl: LevelData) -> void:
 	lvl.short_name = "高塔"
 	lvl.intro_line = "矿区向深处延伸，滚轮或箭头上下巡视。"
 	lvl.mechanic_tags = ["长图", "视口滚动"]
+	lvl.first_clear_reward = RewardData.new()
+	lvl.first_clear_reward.ore = 200
+	lvl.repeat_reward = RewardData.new()
+	lvl.repeat_reward.ore = 50
+
+
+## L 形关（异形盘原型，2026-10-04）：16×16 包围盒去掉右上 8×9，剩 184 格；
+## 形状掩码建格 + 掩码布雷（雷数守恒）+ 岩框沿形状描边。玩家自放基地（落哪都行，
+## 洞区自动被 cells.has 拒绝）。数值为原型占位。调研报告 §3 / 调研文档同日。
+func _apply_playtest_level7(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(16, 16)
+	lvl.mine_count = 29               # 184 格 × ~15.8%
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
+	obj.target_value = 115            # 打折线 115/155 ≈ 74%（原型占位）
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 200.0
+	lvl.start_gold = 250
+	lvl.start_lives = 3
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.shop_limits = {}
+	lvl.shop_hidden = ["detector", "miner", "drone", "debug", "guard", "probe"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.base_price_flat = 80
+	lvl.time_bonus_per_sec = 3
+	lvl.meta_progression = true
+	lvl.allowed_modules = ["opener", "marker"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "L形"
+	lvl.intro_line = "这片矿区是弯的——右上没挖开。"
+	lvl.mechanic_tags = ["异形盘", "L形"]
+	# 掩码：行0-8 只有左 8 列（竖臂），行9-15 全 16 列（横臂）
+	lvl.shape_mask = [
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111100000000",
+		"1111111111111111",
+		"1111111111111111",
+		"1111111111111111",
+		"1111111111111111",
+		"1111111111111111",
+		"1111111111111111",
+		"1111111111111111",
+	]
 	lvl.first_clear_reward = RewardData.new()
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()

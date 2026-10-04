@@ -276,13 +276,32 @@ func _layout_board() -> void:
 	view_changed.emit(_view_top_px)
 
 
+## 形状掩码（2026-10-04 L形棋盘）：每行一个字符串，'1'=有格 '0'=洞/盘外；
+## 空 = 传统矩形全格。行数应=rows、行长应=cols（短了按缺格处理，长多忽略）。
+var shape_rows: Array = []
+
+
+## 掩码内是否有格（无掩码 = 矩形全有）
+func shape_has(x: int, y: int) -> bool:
+	if y < 0 or y >= shape_rows.size():
+		return shape_rows.is_empty() and x >= 0 and x < cols  # 掩码行数不足：越界按缺格
+	if shape_rows.is_empty():
+		return x >= 0 and x < cols
+	var row: String = shape_rows[y]
+	return x >= 0 and x < row.length() and x < cols and row[x] == '1'
+
+
 ## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成
+## 有 shape_rows 时只建掩码内的格子——下游（邻居/洪水/Solver/寻路/胜负）全靠
+## cells.has 判断边界，天然形状无关（调研报告 §3）
 func init_empty_grid() -> void:
 	for c in cells.values():
 		c.queue_free()
 	cells.clear()
 	for y in rows:
 		for x in cols:
+			if not shape_has(x, y):
+				continue
 			var coord := Vector2i(x, y)
 			var cell: Cell = CELL_SCENE.instantiate()
 			# coord/wall_style 必须在 add_child 前设置：Cell._ready 里要用它们切岩壁 atlas
@@ -358,8 +377,8 @@ func place_first_base(coord: Vector2i) -> bool:
 			var sc := coord + Vector2i(dx, dy)
 			if cells.has(sc):
 				safe_coords.append(sc)
-	# 在安全区外生成雷
-	var data: Dictionary = MapGenerator.generate_excluding(rows, cols, mine_count, safe_coords)
+	# 在安全区外生成雷（掩码形状：候选只含形状内格，雷数守恒不落洞）
+	var data: Dictionary = MapGenerator.generate_excluding(rows, cols, mine_count, safe_coords, shape_rows)
 	var mine_set: Dictionary = data.mine_set
 	var numbers: Dictionary = data.numbers
 	for c in cells:
