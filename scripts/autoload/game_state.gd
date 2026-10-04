@@ -32,6 +32,9 @@ var recharge_level: int = 0   # 点击恢复轨（玩家 CD 回充加速）
 # 继续挑战模式（胜利结算后回盘面：倒计时冻结/加分锁定/免命/分数累加）
 var continue_mode: bool = false
 
+# 挑战援助（P0.4）：本局开局是否吃到了待生效援助（连续未达标攒出，reset_state 消费）
+var assist_active: bool = false
+
 # 升级轨默认配置（关卡可用 LevelData 覆盖速度轨；折扣轨砍出试玩版，仅余价格）
 const DEFAULT_SPEED_PRICES := [50, 70, 100]
 const DEFAULT_SPEED_LEVELS := [2.0, 1.6, 1.3, 1.0]
@@ -87,6 +90,7 @@ var result_stats := {
 		"preopen_score": 0, "detector_score": 0, "combat_score": 0,
 		# 局末快照键（N12：提前清零防跨局残留旧值）
 		"crossing_elapsed": -1.0, "win_score": 0, "obj_final_text": "",
+		"obj_final_current": 0, "obj_final_total": 0,  # 局末目标数值快照（近失判定，P0.4）
 		# L4 除害关（敌人/探测，设计 §9.10）
 	"nest_cleared_elapsed": -1.0,   # 首巢摧毁时点（-1=未除）
 	"nests_destroyed": 0,           # 结算行「除巢数」
@@ -293,6 +297,12 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		time_left = 90.0
 		time_limit_cfg = 90.0
 		lives_cfg = 3
+	# 挑战援助（P0.4）：连续未达标攒出的一次性 +1 命，命中本关才消费（与 meta 开关无关；
+	# 无命限制关 lives=0 不吃援助，保持"无失败状态"承诺）
+	assist_active = false
+	if su.pop_assist(level_id) == "extra_life" and lives > 0:
+		lives += 1
+		assist_active = true
 	score = 0
 	elapsed = 0.0
 	game_active = false
@@ -319,6 +329,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"time_bonus": 0, "time_bonus_secs": 0, "first_upgrade_elapsed": -1.0,
 		"preopen_score": 0, "detector_score": 0, "combat_score": 0,
 		"crossing_elapsed": -1.0, "win_score": 0, "obj_final_text": "",
+		"obj_final_current": 0, "obj_final_total": 0,  # 局末目标数值快照（近失判定，P0.4）
 		"nest_cleared_elapsed": -1.0, "nests_destroyed": 0,
 		"guard_bought_elapsed": -1.0, "probe_used": 0, "probe_coords": "",
 		"enemy_kills_player": 0, "enemy_kills_guard": 0,

@@ -27,6 +27,11 @@ var first_clear_claimed: Dictionary = {}   # {"ch01_s01": true}
 var unlocked_chapters: Array = ["ch01"]
 var levels_entered: Dictionary = {}        # {"ch01_s03": true} 进关即记（间场「变强」高亮依据）
 
+# ---- 近失与挑战援助（v5，P0.4 差一点激励）----
+# 顶层字段走 data.get 默认值兜底（旧存档缺键即空，无需迁移）
+var fail_streaks: Dictionary = {}   # {"ch01_s03": 2} 同关连续未达标（timeout/lose）计数，win 清零、abandon 不计
+var pending_assist: Dictionary = {} # {"level_id": "ch01_s03", "kind": "extra_life"} 待开局消费的一次性援助
+
 # ---- 统计 / 每日挑战 / 签到（v4）----
 var stats := {
 	"total_games": 0, "wins": 0, "best_time": -1.0, "best_score": 0,
@@ -73,6 +78,8 @@ func load_game() -> void:
 	level_stars = data.get("level_stars", {})
 	first_clear_claimed = data.get("first_clear_claimed", {})
 	levels_entered = data.get("levels_entered", {})
+	fail_streaks = data.get("fail_streaks", {})
+	pending_assist = data.get("pending_assist", {})
 	var saved_chapters: Variant = data.get("unlocked_chapters", ["ch01"])
 	if typeof(saved_chapters) == TYPE_ARRAY and not saved_chapters.is_empty():
 		unlocked_chapters = saved_chapters
@@ -97,6 +104,7 @@ func save_game() -> void:
 		"first_clear_claimed": first_clear_claimed,
 		"unlocked_chapters": unlocked_chapters,
 		"levels_entered": levels_entered,
+		"fail_streaks": fail_streaks, "pending_assist": pending_assist,
 		"stats": stats, "daily": daily, "signin": signin,
 	}
 	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -193,6 +201,44 @@ func mark_level_entered(id: String) -> void:
 
 func has_entered_level(id: String) -> bool:
 	return levels_entered.has(id)
+
+
+# ---- 近失与挑战援助（P0.4 差一点激励）----
+
+## 关卡模式每局结算调用：win 清零；timeout/lose 累计 1；其他结果不动。返回累计值
+func record_level_fail_streak(level_id: String, result: String) -> int:
+	if level_id == "":
+		return 0
+	if result == "win":
+		if fail_streaks.has(level_id):
+			fail_streaks.erase(level_id)
+			save_game()
+	elif result == "timeout" or result == "lose":
+		fail_streaks[level_id] = int(fail_streaks.get(level_id, 0)) + 1
+		save_game()
+	return int(fail_streaks.get(level_id, 0))
+
+
+func get_level_fail_streak(level_id: String) -> int:
+	return int(fail_streaks.get(level_id, 0))
+
+
+## 授予一次性挑战援助（同关下次开局生效；重复授予覆盖旧值）
+func grant_assist(level_id: String, kind: String) -> void:
+	if level_id == "":
+		return
+	pending_assist = {"level_id": level_id, "kind": kind}
+	save_game()
+
+
+## 开局消费援助：命中同关返回 kind 并清空（一次性）；换关返回空串保留待下次
+func pop_assist(level_id: String) -> String:
+	if pending_assist.is_empty() or String(pending_assist.get("level_id", "")) != level_id:
+		return ""
+	var kind := String(pending_assist.get("kind", ""))
+	pending_assist = {}
+	save_game()
+	return kind
 
 
 # ==================== 日期工具（本地时区） ====================
@@ -380,6 +426,8 @@ func reset_all() -> void:
 	first_clear_claimed = {}
 	unlocked_chapters = ["ch01"]
 	levels_entered = {}
+	fail_streaks = {}
+	pending_assist = {}
 	stats = {"total_games": 0, "wins": 0, "best_time": -1.0, "best_score": 0,
 			"cur_streak": 0, "max_streak": 0, "total_play_sec": 0.0}
 	daily = {"today_key": "", "today_best": -1.0, "all_best": -1.0, "badges": {}, "chest_weeks": []}

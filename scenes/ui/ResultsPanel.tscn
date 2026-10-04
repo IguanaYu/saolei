@@ -141,6 +141,11 @@ theme_override_colors/font_color = Color(1, 0.9, 0.55, 1)
 custom_minimum_size = Vector2(170, 48)
 text = "重玩本关"
 
+[node name="PowerupButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
+visible = false
+custom_minimum_size = Vector2(170, 48)
+text = "变强商店"
+
 [node name="BackButton" type="Button" parent="Center/Panel/VBox/ButtonsRow"]
 custom_minimum_size = Vector2(170, 48)
 text = "返回选关"
