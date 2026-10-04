@@ -24,7 +24,7 @@ func _ready() -> void:
 	_guide = main.get_node("UILayer/TutorialGuide")
 	_hud = main.get_node("UILayer/HUD")
 	_shop = main.get_node("UILayer/Shop")
-	_grid = main.get_node("Grid")
+	_grid = main.get_node("BoardRoot/Grid")
 	GameState.upgrade_changed.connect(_on_upgrade_changed)
 	GameState.player_action_performed.connect(
 		func() -> void: _guide.notify_event("player_acted"))

@@ -10,7 +10,7 @@ var _last_ceil_sec: int = 999
 
 func _ready() -> void:
 	var main := get_parent()
-	var grid: Node = main.get_node("Grid")
+	var grid: Node = main.get_node("BoardRoot/Grid")
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	# 踩雷：玩家原调、机器人低沉（与开格音 pitch 惯例一致）

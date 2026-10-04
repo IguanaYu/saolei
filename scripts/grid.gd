@@ -72,8 +72,8 @@ func _ready() -> void:
 	_make_effects_layer()
 	GameSettings.setting_changed.connect(_on_setting_changed)
 	# 窗口变化的重居中由 main._relayout_play_area 统一驱动（需要扣除 HUD/商店后的可用区），
-	# 本节点只在初始时按全视口兜底居中（main 尚未设置 play_area）
-	_center_grid()
+	# 本节点只在初始时按全视口兜底布局（main 尚未设置 play_area）
+	_layout_board()
 	init_empty_grid()
 
 
@@ -177,7 +177,8 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 	mine_count = new_mines
 	rewarded_flags.clear()
 	board_generated = false
-	_center_grid()
+	_view_top_px = view_range_px()  # 高塔盘开局看底段；单屏盘 range=0 无影响
+	_layout_board()
 	init_empty_grid()
 
 
@@ -185,19 +186,94 @@ func configure(new_rows: int, new_cols: int, new_mines: int) -> void:
 ## 由 main._relayout_play_area 在进关与窗口变化时下发（P1-04：棋盘不再压商店）
 var _play_area: Rect2 = Rect2()
 
+# ---- 高塔地图视口系统（2026-10-04，实施计划见 docs/active/高塔地图-实施计划-v1.md）----
+## 盘高超过一屏时：BoardRoot 缩放让可视窗格恰好装进可用区，Grid.position.y 携带
+## 滚动偏移（网格本地 unscaled 单位）；视点离散（底段/上段），切换走补间。
+signal view_changed(view_top_px: float)
+const VISIBLE_WINDOW_PX := 25.0 * 28  # 目标可视高度（网格本地 px）= 25 行
+const SCROLL_TWEEN_SEC := 0.45
+var _view_top_px := 0.0
+var _view_tween: Tween = null
+
 
 func set_play_area(area: Rect2) -> void:
 	_play_area = area
-	_center_grid()
+	_layout_board()
 
 
-func _center_grid() -> void:
-	# 非正方形棋盘（每日挑战等）：宽=cols、高=rows 分别居中
+## 可视窗高（网格本地 px）：盘比目标矮 → 全盘可见
+func view_window_px() -> float:
+	return minf(rows * cell_size, VISIBLE_WINDOW_PX)
+
+
+## 可滚动范围（网格本地 px）；0 = 单屏盘，滚动 UI 不出现
+func view_range_px() -> float:
+	return maxf(0.0, rows * cell_size - view_window_px())
+
+
+func can_scroll_up() -> bool:
+	return _view_top_px > 0.5
+
+
+func can_scroll_down() -> bool:
+	return _view_top_px < view_range_px() - 0.5
+
+
+## dir=-1 向上看（视点上移=view_top 减小），+1 向下看；步长=一屏，两端钳制
+func scroll_view(dir: int, animate := true) -> void:
+	var target := clampf(_view_top_px + dir * view_window_px(), 0.0, view_range_px())
+	if is_equal_approx(target, _view_top_px):
+		return
+	_set_view_top(target, animate)
+
+
+## 保证 coord 所在行进入可视窗（首基地落位防"基地在屏外"）；已在窗内则不动
+func snap_view_to_coord(coord: Vector2i, animate := true) -> void:
+	var row_px := coord.y * cell_size
+	if row_px >= _view_top_px + 8.0 and row_px <= _view_top_px + view_window_px() - 8.0:
+		return
+	_set_view_top(clampf(row_px - view_window_px() * 0.35, 0.0, view_range_px()), animate)
+
+
+func _set_view_top(target: float, animate: bool) -> void:
+	if _view_tween != null and _view_tween.is_valid():
+		_view_tween.kill()
+	if not animate:
+		_view_top_px = target
+		_layout_board()
+		return
+	var from := _view_top_px
+	_view_tween = create_tween()
+	_view_tween.tween_method(func(t: float) -> void:
+		_view_top_px = lerpf(from, target, t)
+		_layout_board(), 0.0, 1.0, SCROLL_TWEEN_SEC)\
+			.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+
+
+## 布局三合一：BoardRoot 缩放适配 + Grid 视口锚定（替换旧 _center_grid 的"整盘居中"）。
+## s = min(1, 宽适配, 高适配)：高适配按「可视窗」而非整盘算——高塔盘只要求一屏装下；
+## 现有 16×16/每日挑战盘 s=1 且居中公式退化为原实现，渲染零变化。
+func _layout_board() -> void:
 	var w := cols * cell_size
 	var h := rows * cell_size
 	var area: Rect2 = _play_area if _play_area.size.x > 0.0 and _play_area.size.y > 0.0 \
 			else Rect2(Vector2.ZERO, get_viewport_rect().size)
-	position = area.position + (area.size - Vector2(w, h)) / 2.0
+	var window_h := view_window_px()
+	var s := 1.0
+	if w > 0.0 and window_h > 0.0:
+		s = minf(1.0, minf(area.size.x / w, area.size.y / window_h))
+	var parent2d := get_parent() as Node2D
+	if parent2d != null:
+		parent2d.scale = Vector2(s, s)  # BoardRoot：机器人/虫/Boss 同缩放
+	_view_top_px = clampf(_view_top_px, 0.0, view_range_px())
+	# 水平：整盘宽居中；垂直：单屏盘保持居中（原 _center_grid 行为），高塔盘可视窗顶对齐
+	var y_pos: float
+	if view_range_px() <= 0.0:
+		y_pos = area.position.y + (area.size.y / s - h) / 2.0
+	else:
+		y_pos = area.position.y / s - _view_top_px
+	position = Vector2(area.position.x + (area.size.x / s - w) / 2.0, y_pos)
+	view_changed.emit(_view_top_px)
 
 
 ## 创建空网格（全关闭），等待玩家放置第一个基地触发雷生成
@@ -626,15 +702,21 @@ func fx_tooth_at(coord: Vector2i) -> void:
 		_fx.fx_tooth_pulled(coord_to_world(coord))
 
 
+## 坐标 → 父容器(BoardRoot)本地像素（格中心）。
+## 调用方是 RobotManager/EnemyManager/BossManager 的子实体（同为 BoardRoot 子树），
+## 它们把返回值赋给自己的 position（本地属性）——语义自洽；BoardRoot 缩放由引擎复合。
+## 网格内部消费者（格子/特效 fx 是 Grid 子节点）不走此函数，用裸网格本地公式。
 func coord_to_world(coord: Vector2i) -> Vector2:
-	return global_position + Vector2(
+	return position + Vector2(
 		coord.x * cell_size + cell_size / 2.0,
 		coord.y * cell_size + cell_size / 2.0)
 
 
+## 屏幕/全局像素 → 网格坐标。走全局变换逆（正确处理 BoardRoot 缩放与视口滚动偏移）；
+## 盘外负坐标返回 (-1,-1) 类无效值，调用方用 cells.has/_in_bounds 兜底。
 func world_to_coord(world_pos: Vector2) -> Vector2i:
-	var local: Vector2 = world_pos - global_position
-	return Vector2i(int(local.x / cell_size), int(local.y / cell_size))
+	var local: Vector2 = global_transform.affine_inverse() * world_pos
+	return Vector2i(floori(local.x / cell_size), floori(local.y / cell_size))
 
 
 # ---- 扩散翻开波纹：逻辑瞬时、视觉延迟 ----

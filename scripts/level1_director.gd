@@ -22,7 +22,7 @@ func _ready() -> void:
 	_guide = main.get_node("UILayer/TutorialGuide")
 	_hud = main.get_node("UILayer/HUD")
 	_shop = main.get_node("UILayer/Shop")
-	_grid = main.get_node("Grid")
+	_grid = main.get_node("BoardRoot/Grid")
 	GameState.cd_exhausted.connect(_on_cd_exhausted)
 	GameState.cd_duration_changed.connect(_on_cd_duration_changed)
 	GameState.player_action_performed.connect(

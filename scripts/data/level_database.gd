@@ -42,7 +42,8 @@ func _build() -> void:
 		ch.display_name = CHAPTER_NAMES[ch_idx]
 		ch.unlock_module = CHAPTER_MODULE[ch_idx]
 		ch.theme_color = CHAPTER_COLORS[ch_idx]
-		for s_idx in range(5):
+		# ch01 含 6 关：s06=高塔关（竖向双视口地图原型，2026-10-04）
+		for s_idx in range(6 if ch_idx == 0 else 5):
 			var lvl := _make_level(ch_idx, s_idx)
 			if ch_idx == 0 and s_idx == 0:
 				_apply_playtest_level1(lvl)
@@ -54,6 +55,8 @@ func _build() -> void:
 				_apply_playtest_level4(lvl)
 			elif ch_idx == 0 and s_idx == 4:
 				_apply_playtest_level5(lvl)
+			elif ch_idx == 0 and s_idx == 5:
+				_apply_playtest_level6(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -255,6 +258,45 @@ func _apply_playtest_level5(lvl: LevelData) -> void:
 	lvl.preopen_coords.assign(FixedBoards.L5.preopen)
 
 
+## 高塔关（竖向双视口地图原型，2026-10-04）：40 行 × 25 列，开局只看底下 25 行，
+## 箭头/滚轮切换上段，0.45s 平滑过渡；玩家自放基地（落哪段就滚到哪段）。
+## 数值为原型占位——验证滚动体验后重调。规格：docs/active/高塔地图-实施计划-v1.md
+func _apply_playtest_level6(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(40, 25)   # Vector2i(rows, cols)
+	lvl.mine_count = 150               # 1000 格 × 15%
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
+	obj.target_value = 300             # 打折线 300/850 ≈ 35%（原型占位）
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 300.0
+	lvl.start_gold = 300
+	lvl.start_lives = 3
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.shop_limits = {}
+	lvl.shop_hidden = ["detector", "miner", "drone", "debug", "guard", "probe"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.base_price_flat = 80
+	lvl.time_bonus_per_sec = 3
+	lvl.meta_progression = true
+	lvl.allowed_modules = ["opener", "marker"]
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "高塔"
+	lvl.intro_line = "矿区向深处延伸，滚轮或箭头上下巡视。"
+	lvl.mechanic_tags = ["长图", "视口滚动"]
+	lvl.first_clear_reward = RewardData.new()
+	lvl.first_clear_reward.ore = 200
+	lvl.repeat_reward = RewardData.new()
+	lvl.repeat_reward.ore = 50
+
+
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:
 	var lvl := LevelData.new()
 	var ch_id := "ch%02d" % (ch_idx + 1)
@@ -264,9 +306,10 @@ func _make_level(ch_idx: int, s_idx: int) -> LevelData:
 
 	var density: float = CHAPTER_DENSITY[ch_idx]
 	lvl.density = density
-	lvl.ease_mult = WITHIN_EASE[s_idx]
+	var ease: float = WITHIN_EASE[mini(s_idx, WITHIN_EASE.size() - 1)]  # s06+ 越章沿用末档
+	lvl.ease_mult = ease
 	lvl.mine_count = clampi(
-		int(round(CELLS * density / WITHIN_EASE[s_idx])),
+		int(round(CELLS * density / ease)),
 		1, int(CELLS * MAX_DENSITY))
 
 	var is_boss := s_idx == 4

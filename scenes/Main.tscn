@@ -50,16 +50,20 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("11_cave_env")
 
-[node name="Grid" type="Node2D" parent="."]
+; 棋盘世界容器（2026-10-04 高塔地图）：统一承载缩放(BoardRoot.scale)——
+; 棋盘/机器人/虫/Boss 同缩放;Grid.position 携带视口滚动偏移(网格本地 unscaled 单位)
+[node name="BoardRoot" type="Node2D" parent="."]
+
+[node name="Grid" type="Node2D" parent="BoardRoot"]
 script = ExtResource("2_grid")
 
-[node name="RobotManager" type="Node2D" parent="."]
+[node name="RobotManager" type="Node2D" parent="BoardRoot"]
 script = ExtResource("3_rm")
 
-[node name="EnemyManager" type="Node2D" parent="."]
+[node name="EnemyManager" type="Node2D" parent="BoardRoot"]
 script = ExtResource("21_em")
 
-[node name="BossManager" type="Node2D" parent="."]
+[node name="BossManager" type="Node2D" parent="BoardRoot"]
 script = ExtResource("27_bm")
 
 [node name="UILayer" type="CanvasLayer" parent="."]

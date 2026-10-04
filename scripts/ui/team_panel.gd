@@ -18,7 +18,7 @@ const IDLE_REASON := {
 func _ready() -> void:
 	hide()
 	mouse_filter = MOUSE_FILTER_IGNORE
-	var rm := get_node("/root/Main/RobotManager")
+	var rm := get_node("/root/Main/BoardRoot/RobotManager")
 	GameState.robot_spawned.connect(func(_t): _refresh())
 	rm.robot_removed.connect(func(_r, _reason): _refresh())
 	var t := Timer.new()          # 状态随时变（idle↔moving），低频轮询即可
@@ -30,7 +30,7 @@ func _ready() -> void:
 
 
 func _refresh() -> void:
-	var rm := get_node("/root/Main/RobotManager")
+	var rm := get_node("/root/Main/BoardRoot/RobotManager")
 	var counts := {}
 	var idle := {}
 	for r in rm.robots:

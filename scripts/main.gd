@@ -2,10 +2,10 @@ extends Node
 ## 主场景控制器：负责游戏主循环、玩家输入路由、模块协调、关卡流程
 ## 以及全套页面串联（闪屏/暂停/设置/档案/每日/签到/引导/结算）
 
-@onready var grid: Grid = $Grid
-@onready var robot_manager: RobotManager = $RobotManager
-@onready var enemy_manager: EnemyManager = $EnemyManager
-@onready var boss_manager: BossManager = $BossManager
+@onready var grid: Grid = $BoardRoot/Grid
+@onready var robot_manager: RobotManager = $BoardRoot/RobotManager
+@onready var enemy_manager: EnemyManager = $BoardRoot/EnemyManager
+@onready var boss_manager: BossManager = $BoardRoot/BossManager
 @onready var hud = $UILayer/HUD
 @onready var shop = $UILayer/Shop
 @onready var main_menu = $UILayer/MainMenu
@@ -30,6 +30,11 @@ extends Node
 
 # 当前放置模式（"base"=建基地 / "probe"=探针；机器人已改直购直出，不走放置）
 var placing_mode: String = ""
+
+# ---- 高塔地图视口滚动（2026-10-04，docs/active/高塔地图-实施计划-v1.md §1.2）----
+var _scroll_up_btn: Button = null
+var _scroll_down_btn: Button = null
+var _play_area_rect: Rect2 = Rect2()
 
 # 试玩版第一/二/三/四关剧本控制器（_ready 时创建）
 var level1_director: Level1Director = null
@@ -112,6 +117,12 @@ func _ready() -> void:
 	# 窗口/F11 变化：统一重算棋盘可用区并联动重排（P1-04，本节点最后连接 =
 	# grid/cave_env/tutorial 的即时处理器之后运行，读到的是最新 UI 边界）
 	get_viewport().size_changed.connect(_relayout_play_area)
+	# 高塔地图（2026-10-04）：视口滚动时逐帧重投影实体 + 刷新箭头按钮
+	grid.view_changed.connect(_on_grid_view_changed)
+	_scroll_up_btn = _make_scroll_button("▲")
+	_scroll_down_btn = _make_scroll_button("▼")
+	_scroll_up_btn.pressed.connect(func() -> void: grid.scroll_view(-1))
+	_scroll_down_btn.pressed.connect(func() -> void: grid.scroll_view(1))
 	# 闪屏 → 主菜单（+ 每日首启签到弹窗）
 	splash.finished.connect(_on_splash_finished)
 	main_menu.hide()  # 闪屏期间藏住主菜单
@@ -376,8 +387,11 @@ func _maybe_start_tutorial() -> void:
 		return
 	tutorial_guide.reset_run()
 	# 每关教学单独记次：看过一次（含跳过）整段不再播；重看入口=设置里重置标记
-	if bool(GameSettings.get_value(
-			"tutorial_done_" + GameState.current_level_id)):
+	# 2026-10-04 修复：新关卡（如 ch01_s06）的标志键从未写入时 get_value 返回 null，
+	# bool(null) 在 4.x 是非法构造会报 SCRIPT ERROR——null 视同"未播过"，正常走教学判断
+	var tutorial_done: Variant = GameSettings.get_value(
+		"tutorial_done_" + GameState.current_level_id)
+	if tutorial_done == null or tutorial_done:
 		return
 	if GameState.current_level_id == "ch01_s01" and level1_director != null:
 		level1_director.begin()
@@ -435,12 +449,60 @@ func _relayout_play_area() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var top: float = hud.get_global_rect().end.y
 	var shop_top: float = shop.get_global_rect().position.y
-	grid.set_play_area(Rect2(0.0, top, vp.x, maxf(0.0, shop_top - top)))
+	_play_area_rect = Rect2(0.0, top, vp.x, maxf(0.0, shop_top - top))
+	grid.set_play_area(_play_area_rect)
 	robot_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
+	_update_scroll_buttons()
 	if tutorial_guide.visible:
 		tutorial_guide._relayout_current()
+
+
+## 高塔地图：滚动箭头按钮（半透明覆盖在棋盘可视窗顶/底中央，仅可滚方向显示）
+func _make_scroll_button(label_text: String) -> Button:
+	var b := Button.new()
+	b.text = label_text
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(96.0, 30.0)
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var style := StyleBoxFlat.new()
+		var alpha := 0.45 if state == "normal" else (0.75 if state == "hover" else 0.6)
+		style.bg_color = Color(0.07, 0.08, 0.11, alpha)
+		style.border_color = Color(0.85, 0.72, 0.45, 0.8)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(6)
+		if state == "pressed":
+			style.bg_color = Color(0.2, 0.16, 0.09, 0.85)
+		b.add_theme_stylebox_override(state, style)
+	b.add_theme_font_size_override("font_size", 16)
+	b.add_theme_color_override("font_color", Color(0.92, 0.85, 0.66))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.8))
+	$UILayer.add_child(b)
+	b.visible = false
+	return b
+
+
+func _on_grid_view_changed(_view_top_px: float) -> void:
+	# 滚动补间逐帧回调：实体重投影（管理器现成接口）+ 按钮态刷新
+	robot_manager.reproject_all(grid)
+	enemy_manager.reproject_all(grid)
+	boss_manager.on_grid_relaid(grid)
+	_update_scroll_buttons()
+
+
+func _update_scroll_buttons() -> void:
+	if _scroll_up_btn == null:
+		return
+	var scrollable: bool = grid != null and is_instance_valid(grid) and grid.view_range_px() > 0.0
+	var in_game: bool = GameState.game_active or GameState.game_phase == "placing_base"
+	var show_any: bool = scrollable and in_game and not get_tree().paused
+	var center_x: float = _play_area_rect.get_center().x - 48.0 if _play_area_rect.size.x > 0.0 \
+			else get_viewport().get_visible_rect().size.x / 2.0 - 48.0
+	_scroll_up_btn.visible = show_any and grid.can_scroll_up()
+	_scroll_down_btn.visible = show_any and grid.can_scroll_down()
+	_scroll_up_btn.position = Vector2(center_x, _play_area_rect.position.y + 4.0)
+	_scroll_down_btn.position = Vector2(center_x, _play_area_rect.end.y - 34.0)
 
 
 func _open_pause() -> void:
@@ -636,6 +698,7 @@ func _on_robot_removed(_robot, reason: String) -> void:
 
 func _process(delta: float) -> void:
 	if not GameState.game_active:
+		_update_scroll_buttons()  # 高塔：结算/退出局面收起箭头（game_active 翻转的那一帧）
 		return
 	# 引导=教学停摆：计时/CD/机器人/敌虫全冻结（todo 卡点三）。剧本步骤等的是玩家
 	# 输入事件（board_click 等，不经 _process），早退不影响推进；后续剧本若新增
@@ -681,6 +744,14 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _try_robot_shortcut(event.keycode):
 			get_viewport().set_input_as_handled()
+			return
+	# 高塔地图：滚轮滚动视口（与箭头按钮同一步长/补间；不可滚时是空操作）
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			grid.scroll_view(-1)
+			return
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			grid.scroll_view(1)
 			return
 	if GameState.game_phase == "placing_base":
 		if event is InputEventMouseButton and event.pressed \
@@ -772,6 +843,8 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 		return false
 	# 基地放完，激活游戏开始倒计时
 	GameState.game_active = true
+	# 高塔地图：基地落在当前视口外时平滑滚过去（防"基地在屏外"）
+	grid.snap_view_to_coord(coord)
 	# L4 pregen 关：局外赠机此时落位（基地格旁，同固定盘口径）
 	if not _pending_gifts.is_empty():
 		_gift_start_robots(_pending_gifts)

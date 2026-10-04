@@ -15,7 +15,7 @@ var _tweens: Array = []
 func _ready() -> void:
 	var main := get_parent()
 	_guide = main.get_node("UILayer/TutorialGuide")
-	_grid = main.get_node("Grid")
+	_grid = main.get_node("BoardRoot/Grid")
 
 
 ## 进关后启动：0.5s 后盘面聚光气泡（目标型玩法首见——"不用扫完"的核心认知）

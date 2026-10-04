@@ -90,7 +90,7 @@ func _validate_target(grid) -> void:
 
 ## 索敌：四类按优先级扫描，同类取 BFS 最近（walkable BFS 天然过滤未开区深处的障碍）
 func _acquire_target(grid) -> void:
-	var em: EnemyManager = get_node("/root/Main/EnemyManager")
+	var em: EnemyManager = get_node("/root/Main/BoardRoot/EnemyManager")
 	var enemy_coords: Array = []
 	for e in em.enemies:
 		if e.is_alive():
@@ -144,7 +144,7 @@ func _patrol(grid) -> void:
 func _fire(grid) -> void:
 	if _target_kind == "enemy":
 		if _target_enemy != null and _target_enemy.is_alive():
-			var em: EnemyManager = get_node("/root/Main/EnemyManager")
+			var em: EnemyManager = get_node("/root/Main/BoardRoot/EnemyManager")
 			em.kill_enemy(_target_enemy, "robot_guard")
 	else:
 		var cell = grid.get_cell(_target_coord)

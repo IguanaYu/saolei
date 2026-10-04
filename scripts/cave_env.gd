@@ -74,16 +74,17 @@ func layout_env() -> void:
 	var grid := _find_grid()
 	if grid == null:
 		return
-	var origin: Vector2 = grid.global_position
+	# 岩框挂进 Grid（2026-10-04 高塔地图）：网格本地坐标（原点=盘左上），z=-1 压在格子下，
+	# 随 BoardRoot 缩放与视口滚动一起动；旧实现的 global 坐标+屏幕层在 BoardRoot 恒等时等价
 	var size := Vector2i(grid.cols * grid.cell_size, grid.rows * grid.cell_size)
-	var rect := Rect2(origin.x - FRAME_THICK, origin.y - FRAME_THICK,
+	var rect := Rect2(-FRAME_THICK, -FRAME_THICK,
 			size.x + FRAME_THICK * 2.0, size.y + FRAME_THICK * 2.0)
 
 	# 四边（tile 拉伸自适应长度）
-	_add_frame_piece("FrameTop", FRAME_T, Vector2(origin.x, rect.position.y), Vector2(size.x, FRAME_THICK), true)
-	_add_frame_piece("FrameBottom", FRAME_B, Vector2(origin.x, origin.y + size.y), Vector2(size.x, FRAME_THICK), true)
-	_add_frame_piece("FrameLeft", FRAME_L, Vector2(rect.position.x, origin.y), Vector2(FRAME_THICK, size.y), false)
-	_add_frame_piece("FrameRight", FRAME_R, Vector2(origin.x + size.x, origin.y), Vector2(FRAME_THICK, size.y), false)
+	_add_frame_piece("FrameTop", FRAME_T, Vector2(0.0, rect.position.y), Vector2(size.x, FRAME_THICK), true, grid)
+	_add_frame_piece("FrameBottom", FRAME_B, Vector2(0.0, size.y), Vector2(size.x, FRAME_THICK), true, grid)
+	_add_frame_piece("FrameLeft", FRAME_L, Vector2(rect.position.x, 0.0), Vector2(FRAME_THICK, size.y), false, grid)
+	_add_frame_piece("FrameRight", FRAME_R, Vector2(size.x, 0.0), Vector2(FRAME_THICK, size.y), false, grid)
 	# 四角
 	for piece_name in ["FrameCornerTL", "FrameCornerTR", "FrameCornerBL", "FrameCornerBR"]:
 		var tex := load("res://visual_v2/runtime/tiles/frame_%s.png" % piece_name.substr("FrameCorner".length()))
@@ -103,20 +104,29 @@ func layout_env() -> void:
 		tr.texture = tex
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_frame_layer.add_child(tr)
+		tr.z_index = -1
+		grid.add_child(tr)
 
 	# V2 背景已经绘有完整的轨道、矿车和灯具；不再叠加随机漂浮道具。
 
 
 func _find_grid() -> Grid:
+	# Grid 在 BoardRoot 容器下（2026-10-04 高塔地图结构调整）：显式路径优先，递归一层兜底
 	var parent := get_parent()
+	var direct: Node = parent.get_node_or_null("BoardRoot/Grid")
+	if direct is Grid:
+		return direct
 	for child in parent.get_children():
 		if child is Grid:
 			return child
+		for grandchild in child.get_children():
+			if grandchild is Grid:
+				return grandchild
 	return null
 
 
-func _add_frame_piece(piece_name: String, tex: Texture2D, pos: Vector2, sz: Vector2, horizontal: bool) -> void:
+func _add_frame_piece(piece_name: String, tex: Texture2D, pos: Vector2, sz: Vector2,
+		horizontal: bool, board_layer: Node) -> void:
 	var tr := TextureRect.new()
 	tr.name = piece_name
 	tr.position = pos
@@ -125,7 +135,8 @@ func _add_frame_piece(piece_name: String, tex: Texture2D, pos: Vector2, sz: Vect
 	tr.stretch_mode = TextureRect.STRETCH_TILE
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame_layer.add_child(tr)
+	tr.z_index = -1
+	board_layer.add_child(tr)
 
 
 ## 外围随机撒矿洞道具（避开地图+边框区域，数量随可用面积）
