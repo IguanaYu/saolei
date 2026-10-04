@@ -73,7 +73,7 @@ const SPECIAL_BASE := preload("res://visual_v2/runtime/completion/tiles/special_
 const SPECIAL_FLAG := preload("res://visual_v2/runtime/completion/tiles/special_flag.png")
 const SPECIAL_VEIN := preload("res://visual_v2/runtime/completion/tiles/special_vein.png")
 const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/completion/tiles/special_collapse.png")
-const OVERLAY_LOCK := preload("res://visual_v2/runtime/completion/tiles/overlays/lock.png")
+const LOCKED_CELL_SEAL := preload("res://scripts/visuals/locked_cell_seal.gd")
 const OVERLAY_WEB := preload("res://visual_v2/runtime/completion/tiles/overlays/web.png")
 const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_wall.png")
 const OVERLAY_SLIME_FLOOR := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_floor.png")
@@ -98,6 +98,7 @@ var _floor_atlas: AtlasTexture
 var _deco_tex: TextureRect = null
 var _obstacle_mark: TextureRect = null
 var _slime_overlay: TextureRect = null
+var _locked_cell_seal: Node2D = null
 var _fire_frame := 0
 
 # 双击检测
@@ -136,6 +137,10 @@ func _setup_obstacle_mark() -> void:
 	_obstacle_mark = TextureRect.new()
 	_obstacle_mark.name = "ObstacleMark"
 	_configure_overlay(_obstacle_mark)
+	_locked_cell_seal = LOCKED_CELL_SEAL.new()
+	_locked_cell_seal.name = "LockedCellSeal"
+	_locked_cell_seal.visible = false
+	add_child(_locked_cell_seal)
 
 
 func _configure_overlay(node: TextureRect) -> void:
@@ -719,7 +724,7 @@ func refresh_visual() -> void:
 			# 化石置顶：与其他障碍互斥（不可叠锁/不预开/不web——铺设侧已保证）
 			_obstacle_mark.texture = _fossil_texture()
 		elif is_locked:
-			_obstacle_mark.texture = OVERLAY_LOCK
+			_obstacle_mark.texture = null  # 格子锁由固定链条层显示，避免与锁匠虫混淆。
 		elif is_on_fire:
 			_obstacle_mark.texture = _fire_texture()
 		elif is_webbed:
@@ -728,6 +733,8 @@ func refresh_visual() -> void:
 			_obstacle_mark.texture = OVERLAY_CONFIRMED
 		else:
 			_obstacle_mark.texture = null
+	if _locked_cell_seal != null:
+		_locked_cell_seal.visible = is_locked and not is_fossil
 	if is_slimed:
 		_slime_overlay.texture = OVERLAY_SLIME_FLOOR if is_opened else OVERLAY_SLIME_WALL
 	else:

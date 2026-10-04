@@ -5,6 +5,9 @@ extends Control
 
 signal close_requested
 
+const FACTION_MARKER := preload("res://scripts/visuals/faction_marker.gd")
+const LOCKED_CELL_SEAL := preload("res://scripts/visuals/locked_cell_seal.gd")
+
 @onready var close_button: Button = $Center/Panel/Margin/VBox/CloseButton
 @onready var legend_box: VBoxContainer = $Center/Panel/Margin/VBox/RulesScroll/RulesList/LegendBox
 
@@ -14,6 +17,10 @@ var _legend_built := false   # 图例含 load() 贴图，推迟到首次打开�
 ## 图例表：icon 为 null 的条目用文字代替（数字无贴图——格子上就是 Label）
 ## 贴图与 cell.gd 运行时同源（visual_v2/runtime），不复制文件
 const LEGEND := [
+	{"symbol": "ally", "name": "友军",
+		"desc": "青蓝轮廓 + 脚下底标", "act": "自动工作"},
+	{"symbol": "enemy", "name": "敌军",
+		"desc": "橙红轮廓 + 三角标记", "act": "点击虫子 / 虫巢除害"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/special_flag.png", "name": "旗",
 		"desc": "标记怀疑的雷", "act": "右键插 / 撤"},
 	{"icon": null, "num": "3", "name": "数字",
@@ -22,7 +29,7 @@ const LEGEND := [
 		"desc": "探测确认的雷位", "act": "不可再交互"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/web.png", "name": "蛛网",
 		"desc": "盖住数字，挡机器人推理", "act": "点击清除"},
-	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/lock.png", "name": "锁格",
+	{"symbol": "lock", "name": "锁格",
 		"desc": "锁死格子，无法开 / 标", "act": "点击清除"},
 	{"icon": "res://visual_v2/runtime/completion/tiles/overlays/fossil_tl.png", "name": "化石",
 		"desc": "嵌在岩层里的菊石，永久挡住 2×2", "act": "清不掉，绕过去"},
@@ -46,7 +53,22 @@ func _build_legend() -> void:
 		row.name = "Legend" + String(item["name"])
 		row.add_theme_constant_override("separation", 10)
 		var icon: Variant = item.get("icon")
-		if icon != null and String(icon).contains("res://"):
+		if item.has("symbol"):
+			var holder := Control.new()
+			holder.name = "SymbolIcon"
+			holder.custom_minimum_size = Vector2(28, 28)
+			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var symbol: Node2D
+			if item["symbol"] == "lock":
+				symbol = LOCKED_CELL_SEAL.new()
+			else:
+				symbol = FACTION_MARKER.new()
+				symbol.set("hostile", item["symbol"] == "enemy")
+			symbol.name = "LegendSymbol"
+			symbol.position = Vector2(14, 14)
+			holder.add_child(symbol)
+			row.add_child(holder)
+		elif icon != null and String(icon).contains("res://"):
 			var icon_rect := TextureRect.new()
 			icon_rect.name = "IconRect"
 			icon_rect.texture = load(icon)

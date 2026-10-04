@@ -8,6 +8,7 @@ var hp: int = 2
 const NEST_FULL := preload("res://visual_v2/runtime/completion/enemies/nest_0.png")
 const NEST_DAMAGED := preload("res://visual_v2/runtime/completion/enemies/nest_1.png")
 const NEST_BROKEN := preload("res://visual_v2/runtime/completion/enemies/nest_2.png")
+const FACTION_MARKER := preload("res://scripts/visuals/faction_marker.gd")
 
 signal damaged(nest: Nest)      # 受击未毁（剧本 #2「巢被点第一下」的触发源）
 signal destroyed(nest: Nest)    # 摧毁（埋点/波次联动）
@@ -18,6 +19,7 @@ func _ready() -> void:
 	$Body.visible = false
 	$IconLabel.visible = false
 	$Skin.texture = NEST_FULL
+	FACTION_MARKER.attach(self, $Skin, true)
 
 
 func setup(start_coord: Vector2i, start_hp: int, grid) -> void:

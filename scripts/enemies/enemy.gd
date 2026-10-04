@@ -13,6 +13,7 @@ var _harm_timer := 0.0
 var _alive := true
 
 const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
+const FACTION_MARKER := preload("res://scripts/visuals/faction_marker.gd")
 var _micro_loop := MICRO_ANIMATION.new()
 
 const SLIME_MOVE_SEC := 2.5  # 史莱姆步速（设计 §5.1，初值）
@@ -23,6 +24,7 @@ signal died(enemy: Enemy, by_actor: String)
 func _ready() -> void:
 	z_index = 10  # 高于 Cell 与 Robot，虫压在盘面上
 	_update_visual()
+	FACTION_MARKER.attach(self, $Skin, true)
 	# 出场动效：从巢里爬出来
 	scale = Vector2(0.1, 0.1)
 	var tw := create_tween()
@@ -162,11 +164,11 @@ func is_clickable(grid) -> bool:
 	return _near_opened(coord, grid)
 
 
-## 可点=常态 / 不可点=半透明压暗（Q2：纯视觉自解释，不占文案预算）
+## 不可点时仅压暗本体，敌军三角仍清晰；死亡淡出继续由父节点统一驱动。
 func _refresh_clickable_visual(grid) -> void:
 	if enemy_type != "slime":
 		return
-	modulate = Color.WHITE if is_clickable(grid) else Color(0.55, 0.55, 0.55, 0.65)
+	$Skin.self_modulate = Color.WHITE if is_clickable(grid) else Color(0.55, 0.55, 0.55, 0.65)
 
 
 func _neighbor_coords() -> Array:

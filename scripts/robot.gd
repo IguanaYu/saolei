@@ -15,6 +15,7 @@ var _state: String = "idle"  # "idle" | "moving" | "working"
 var _move_tween: Tween = null  # 当前移动动画（snap_to 震退时取消）
 
 const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
+const FACTION_MARKER := preload("res://scripts/visuals/faction_marker.gd")
 const FOOT_SHADOW_TEXTURE := preload("res://visual_v2/runtime/robots/shadow_blob.png")
 
 var _micro_loop := MICRO_ANIMATION.new()
@@ -25,6 +26,7 @@ signal action_performed(robot: Robot, action: String, cell_coord: Vector2i)
 func _ready() -> void:
 	_update_visual()
 	_add_foot_shadow()
+	FACTION_MARKER.attach(self, $Skin, false)
 
 
 ## 脚下接触影（两级羽化 blob，调研文档：docs/active/美术生产/调研-2D游戏脚下阴影-2026-10-02.md）
