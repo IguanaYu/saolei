@@ -98,6 +98,8 @@ func _ready() -> void:
 	results_panel.back_to_menu_requested.connect(_show_main_menu)
 	results_panel.next_level_requested.connect(_on_next_level)
 	results_panel.playtest_done_requested.connect(_open_playtest_done)
+	# 近失激励（P0.4）：结算页「变强商店」按钮直达矿石商店（与主菜单/选关页同口径）
+	results_panel.powerup_requested.connect(func(): ore_shop.open())
 	playtest_done.done_back_requested.connect(_on_back_to_level_select)
 	playtest_done.done_menu_requested.connect(_show_main_menu)
 	GameState.score_changed.connect(_on_score_changed)
@@ -312,6 +314,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	SaveSystem.mark_level_entered(id)  # 间场「变强」高亮依据（进关即记）
 	GameState.reset_state(id, lvl)
 	event_log_connector.clear_logs()  # 侧栏事件流随新局清空（重开/换关同口径）
+	if GameState.assist_active:
+		GameState.game_event_logged.emit("挑战援助生效：本关 +1 命", "player", "good")
 	_flag_count = 0
 	robot_manager.remove_all()
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
@@ -805,6 +809,9 @@ func _handle_escape() -> void:
 	if upgrade_panel.visible:
 		upgrade_panel.close()
 		return  # 局内升级浮层：ESC 先收它，再按原规则开暂停
+	if ore_shop.visible:
+		ore_shop.hide()
+		return  # 矿石商店浮层（主菜单/选关/结算页均可开）：ESC 只退一层先收它
 	if not _in_game():
 		return
 	if placing_mode != "":
@@ -1305,8 +1312,11 @@ func _end_game(result: String) -> void:
 		_apply_time_bonus()
 		# 结算分快照（继续挑战的增量口径，见 _leave_after_continue）
 		GameState.result_stats["win_score"] = GameState.score
-	# 局末目标快照（结算面板状态行「目标达成/未达成 + X/Y」）
+	# 局末目标快照（结算面板状态行「目标达成/未达成 + X/Y」+ 近失判定的数值口径，P0.4）
 	GameState.result_stats["obj_final_text"] = _update_objective_progress()
+	var pv := _objective_progress_values()
+	GameState.result_stats["obj_final_current"] = pv.x
+	GameState.result_stats["obj_final_total"] = pv.y
 	GameState.game_over.emit(result)
 
 
@@ -1348,6 +1358,18 @@ func _update_objective_progress() -> String:
 	if obj == null:
 		GameState.objective_progress_updated.emit("", 0, 0)
 		return ""
+	var v := _objective_progress_values()
+	var text: String = obj.build_progress_text(v.x, v.y)
+	GameState.objective_progress_updated.emit(text, v.x, v.y)
+	return text
+
+
+## 目标进度数值（current=已完成数，total=分母，0=该目标类型隐藏条）；
+## HUD 文本与局末近失快照（obj_final_current/total）共用一份口径
+func _objective_progress_values() -> Vector2i:
+	var obj := GameState.current_objective
+	if obj == null:
+		return Vector2i.ZERO
 	var current: int = 0
 	var total: int = 0   # 页面画细进度条的分母；0 = 该目标类型隐藏条
 	match obj.type:
@@ -1368,9 +1390,7 @@ func _update_objective_progress() -> String:
 		ObjectiveData.Type.FIND_ALL_MINES:
 			total = grid.mine_count
 			current = grid.count_processed_mines()
-	var text: String = obj.build_progress_text(current, total)
-	GameState.objective_progress_updated.emit(text, current, total)
-	return text
+	return Vector2i(current, total)
 
 
 ## L4 探测机器人：3×3 强制探雷（设计 §9.5）——雷位标「确认雷」

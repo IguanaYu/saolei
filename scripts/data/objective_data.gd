@@ -60,3 +60,46 @@ func short_label() -> String:
 		Type.ACTIVATE_N_TOWER: return "激活 %d 塔" % target_value
 		Type.FIND_ALL_MINES: return "拔光 %d 牙" % target_value
 	return ""
+
+
+# ---- 近失判定（P0.4 差一点激励）----
+# 到点/命尽未达标时"差一点就过"的判定与距离文案；纯函数便于单测。
+# current/total 为局末数值快照（main._end_game 存 result_stats.obj_final_current/total）。
+# 文案红线（设计 v1.2）：非失败框架，措辞用"还差/只差"，不出现失败字样。
+
+## 各目标类型的近失阈值：差距小于等于阈值即近失
+static func is_near_miss(type: Type, current: int, total: int, target_value: int) -> bool:
+	match type:
+		Type.REACH_SCORE:
+			return target_value > 0 and current < target_value \
+					and float(target_value - current) / float(target_value) <= 0.10
+		Type.CLEAR_ALL_SAFE:
+			var goal: int = target_value if target_value > 0 else total
+			return goal > 0 and current < goal and goal - current <= 5
+		Type.FIND_ALL_MINES:
+			var goal_teeth: int = target_value if target_value > 0 else total
+			return goal_teeth > 0 and current < goal_teeth and goal_teeth - current <= 3
+		Type.FLAG_N_MINES:
+			return target_value > 0 and current < target_value and target_value - current <= 3
+		Type.SURVIVE_TIME:
+			# current = 剩余秒快照；差一点 = 只剩 ≤20% 时长（即已存活 ≥80%）
+			return target_value > 0 and current > 0 and float(current) / float(target_value) <= 0.20
+	return false
+
+
+## 近失距离文案（结算页金色行）；调用方需先过 is_near_miss
+static func near_miss_gap_text(type: Type, current: int, total: int, target_value: int) -> String:
+	match type:
+		Type.REACH_SCORE:
+			return "差 %d 分就达成" % (target_value - current)
+		Type.CLEAR_ALL_SAFE:
+			var goal: int = target_value if target_value > 0 else total
+			return "还差 %d 格清完" % (goal - current)
+		Type.FIND_ALL_MINES:
+			var goal_teeth: int = target_value if target_value > 0 else total
+			return "还差 %d 颗牙" % (goal_teeth - current)
+		Type.FLAG_N_MINES:
+			return "还差 %d 面旗" % (target_value - current)
+		Type.SURVIVE_TIME:
+			return "只差 %d 秒" % current
+	return ""
