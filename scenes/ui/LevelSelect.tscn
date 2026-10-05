@@ -66,8 +66,13 @@ theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="LeftList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Body"]
+[node name="LeftScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/Body"]
 custom_minimum_size = Vector2(314, 0)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LeftList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Body/LeftScroll"]
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
