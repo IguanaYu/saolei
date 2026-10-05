@@ -262,7 +262,10 @@ func _on_state_changed_refresh_edges(_cell: Cell) -> void:
 		g.refresh_edges_around(coord)
 
 
-## 岩壁边缘：只在与"开侧"（已开格或地图外）交界的边显示碎裂描边
+## 岩壁描边（2026-10-06 拍板：岩块之间保留碎裂格线——「岩石块」观感，近远一致）：
+## 每格固定画自己的右/下两边；左/上仅在与开侧（已开格或地图外）交界时补画。
+## 相邻两墙的公共边只出一条线（左墙的右缘/上墙的下缘），不重复叠加；
+## 洞口朝向开区的碎裂边缘观感不变。
 func refresh_wall_edges() -> void:
 	if is_opened:
 		$WallEdgeTop.visible = false
@@ -272,9 +275,9 @@ func refresh_wall_edges() -> void:
 		return
 	var g := get_parent()
 	$WallEdgeTop.visible = _side_is_open_side(g, Vector2i(0, -1))
-	$WallEdgeBottom.visible = _side_is_open_side(g, Vector2i(0, 1))
+	$WallEdgeBottom.visible = true
 	$WallEdgeLeft.visible = _side_is_open_side(g, Vector2i(-1, 0))
-	$WallEdgeRight.visible = _side_is_open_side(g, Vector2i(1, 0))
+	$WallEdgeRight.visible = true
 
 
 func _side_is_open_side(g: Node, dir: Vector2i) -> bool:
