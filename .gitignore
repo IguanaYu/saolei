@@ -26,6 +26,13 @@ tmp/
 # Windows 试玩包与导出验证产物
 build/
 
+# 宣传物料（宣传片 MP4/封面/录制脚本），大体积二进制不入库
+marketing/
+
+# 试玩版实机验证的大体积截图证据目录（报告 .md 仍入库，截图仅本地留档）
+docs/active/试玩版内容/CUA实机验证-2026-10-05/
+docs/active/试玩版内容/敌虫领土规则实测证据-2026-10-05/
+
 # docs/tmp 下参考图的 Godot 导入缓存（图本身未入库，.import 不得单独入库）
 tmp/**/*.import
 docs/**/*.import

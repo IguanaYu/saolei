@@ -862,7 +862,8 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 
 ## L4/L5 敌害实体点击命中（几何测试：距实体中心 < 0.6 格即命中，Q9 初值）：
 ## 炸弹 > 虫/史莱姆 > 巢（设计 §7 点击优先级链；全部吃 1 CD，CD 检查与格子点击同口径）
-## L5 史莱姆可点条件：本体或邻 8 格含已开格（设计 §5.1 开路接近；不可点不耗 CD）
+## 可点条件（全虫种+巢统一，2026-10-05）：本体格或邻 8 格属玩家领土（基地沿已开格连通，
+## 设计 §5.1 开路接近）——隔空点杀被拦截、不耗 CD（压暗态自解释）
 func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	if not GameState.game_active:
 		return false
@@ -894,8 +895,8 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	# 先虫后巢（虫 z_index 更高、会压在巢上）
 	for e in enemy_manager.enemies:
 		if e.is_alive() and e.global_position.distance_to(world_pos) < hit_radius:
-			if e.enemy_type == "slime" and not e.is_clickable(grid):
-				return true  # 命中但隔墙点不死：拦截穿透、不耗 CD（Q2 视觉半透明自解释）
+			if not e.is_clickable(grid):
+				return true  # 命中但未开路接近：拦截穿透、不耗 CD（Q2 压暗态自解释）
 			if GameState.is_player_blocked():
 				GameState.cd_blocked.emit()
 				return true
@@ -904,6 +905,8 @@ func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 			return true
 	for n in enemy_manager.nests:
 		if n.is_alive() and n.global_position.distance_to(world_pos) < hit_radius:
+			if not n.is_clickable(grid):
+				return true  # 巢同口径：拆格扩散到盘边才能点（拦截穿透、不耗 CD）
 			if GameState.is_player_blocked():
 				GameState.cd_blocked.emit()
 				return true

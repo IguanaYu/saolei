@@ -162,13 +162,43 @@ func _run() -> void:
 	slime_host.clear_slime("player")
 	check(not g.is_slime_nearby(slime_host.coord), "清黏液后恢复")
 
-	# ---- M3：虫/巢/波次 ----
-	print("== M3：虫实体 + 巢 + 波次 ==")
+	# ---- M3：虫/巢/波次（2026-10-05 领土接近规则） ----
+	print("== M3：虫实体 + 巢 + 波次（领土接近） ==")
 	var em2: EnemyManager = main.enemy_manager
+	# 随机边侧的巢不可控（底边巢可能恰贴预开区）：先直击清场，换固定远位巢做确定性断言
+	for n in em2.nests.duplicate():
+		n.hit()
+		n.hit()
+	check(em2.nests.is_empty(), "清掉随机巢（直击绕过点击门）")
+	var nest: Nest = load("res://scenes/Nest.tscn").instantiate()
+	em2.add_child(nest)
+	nest.setup(Vector2i(0, 2), 2, g)
+	em2.nests.append(nest)
+	nest.destroyed.connect(em2._on_nest_destroyed)
+	# 远巢：开局不可点 → 拦截不伤不耗 CD → 拆路连通后 2 击摧毁
+	check(not nest.is_clickable(g), "盘边远巢开局不可点（未开路接近）")
+	var acts0: int = GameState.result_stats["player_actions"]
+	check(main._try_hit_enemy_at(g.coord_to_world(nest.coord)), "点远巢：命中被拦截（不穿透）")
+	check(nest.hp == 2, "拦截不伤巢 HP")
+	# 深处墙虫同口径：隔空点死被拦
+	var far_bug: Enemy = em2.spawn_enemy(Vector2i(0, 8), "web", g)
+	check(not far_bug.is_clickable(g), "深处墙虫不可点")
+	check(main._try_hit_enemy_at(g.coord_to_world(far_bug.coord)), "点远虫：命中被拦截")
+	check(far_bug.is_alive(), "远虫未死（不隔空点死）")
+	check(GameState.result_stats["player_actions"] == acts0, "拦截不耗 CD 次数")
+	em2.kill_enemy(far_bug, "robot_marker")  # 清场（不走点杀埋点）
+	_dig_to(Vector2i(0, 3))  # 从巢邻格向领土凿已开路（模拟玩家拆格扩散）
+	check(nest.is_clickable(g), "开路到巢边后巢可点")
+	check(main._try_hit_enemy_at(g.coord_to_world(nest.coord)), "点巢第一击")
+	check(nest.hp == 1, "巢 HP 2→1")
+	check(main._try_hit_enemy_at(g.coord_to_world(nest.coord)), "点巢第二击")
+	check(not em2.nests.has(nest), "巢被摧毁（从列表移除）")
+	check(int(GameState.result_stats["nests_destroyed"]) == 3, "除巢埋点（随机2+固定1）")
+	# 虫施害：织网虫盖数字
 	var bug := em2.spawn_enemy(Vector2i(8, 8), "web", g)
 	check(bug != null and bug.is_alive(), "虫出生")
 	check(GameState.get_nearest_base(Vector2i(8, 8)) != null, "虫有奔袭目标")
-	# 虫施害：织网虫盖数字
+	check(bug.is_clickable(g), "预开区（领土）上的虫可点")
 	bug._harm_timer = 99.0
 	bug._harm(g)
 	var webbed_after := 0
@@ -181,40 +211,19 @@ func _run() -> void:
 	await get_tree().process_frame
 	check(not em2.enemies.has(bug), "虫被点杀（从列表移除）")
 	check(int(GameState.result_stats["enemy_kills_player"]) == 1, "点杀埋点 +1")
-	# 巢：2 击摧毁
-	var nest: Nest = em2.nests[0]
-	var nest_world := g.coord_to_world(nest.coord)
-	check(main._try_hit_enemy_at(nest_world), "点巢第一击")
-	check(nest.hp == 1, "巢 HP 2→1")
-	check(main._try_hit_enemy_at(nest_world), "点巢第二击")
-	check(not em2.nests.has(nest), "巢被摧毁（从列表移除）")
-	check(int(GameState.result_stats["nests_destroyed"]) == 1, "除巢埋点")
-	# 双巢毁 → 波次取消
-	var nest2: Nest = em2.nests[0]
-	main._try_hit_enemy_at(g.coord_to_world(nest2.coord))
-	main._try_hit_enemy_at(g.coord_to_world(nest2.coord))
-	check(em2.nests.is_empty(), "双巢皆毁")
+	# 巢已全毁 → 波次取消
 	em2._elapsed = 200.0
 	em2.tick(1.0, g)
-	check(em2.enemies.is_empty(), "波次全部取消（无新虫）")
+	check(em2.enemies.is_empty(), "波次全部取消（无巢无新虫）")
 
-	# ---- M4：保安 ----
+	# ---- M4：保安（2026-10-02 直购直出：购买即从基地旁出生，不再手动放置） ----
 	print("== M4：保安机器人 ==")
 	GameState.add_money(500)
 	var shop: Control = main.shop
 	check(shop.buy_guard_button.visible, "L4 商店显示保安按钮")
 	check(shop.buy_probe_button.visible, "L4 商店显示探测按钮")
 	check(shop.lock_reason("guard") == "", "保安可买（未购）")
-	# 手动放置保安（绕开点击模拟）
-	main._enter_placing_mode("guard")
-	check(main.placing_mode == "guard", "进入 guard 放置模式")
-	var guard_spot: Cell = null
-	for c in g.cells.values():
-		if c.is_opened and not c.is_webbed and not g.get_neighbors(c.coord).is_empty() \
-				and not main.robot_manager.get_robot_positions().has(c.coord):
-			guard_spot = c
-			break
-	check(main._try_place_at(g.coord_to_world(guard_spot.coord)), "保安放置成功")
+	check(main._buy_and_spawn_robot("guard"), "直购买保安（基地旁出生）")
 	check(GameState.guard_count == 1, "保安计数 1")
 	check(shop.lock_reason("guard") == "已购满", "保安限购 1 生效")
 	var guard = main.robot_manager.robots[main.robot_manager.robots.size() - 1]
@@ -314,6 +323,37 @@ func _run() -> void:
 	check(not main.shop.buy_probe_button.visible, "L1 无探测按钮")
 
 	_finish()
+
+
+## 从 start 格向最近的已开格 BFS 凿一条已开路（避开雷/化石/网/锁），
+## 直写 is_opened 不走信号——同预开口径；模拟玩家拆格扩散到目标位
+func _dig_to(start: Vector2i) -> void:
+	var territory: Dictionary = g.player_territory()
+	var visited: Dictionary = {start: true}
+	var parent: Dictionary = {}
+	var queue: Array = [start]
+	var goal: Variant = null
+	while not queue.is_empty() and goal == null:
+		var c: Vector2i = queue.pop_front()
+		for o in MapGenerator.NEIGHBOR_OFFSETS:
+			var n: Vector2i = c + o
+			if visited.has(n) or not g.cells.has(n):
+				continue
+			var cell: Cell = g.cells[n]
+			if cell.is_mine or cell.is_fossil or cell.is_webbed or cell.is_locked:
+				continue
+			visited[n] = true
+			parent[n] = c
+			if territory.has(n):
+				goal = n
+				break
+			queue.append(n)
+	var cur: Variant = goal
+	while cur != null and parent.has(cur):
+		g.cells[cur].is_opened = true
+		cur = parent[cur]
+	if goal != null:
+		g.cells[start].is_opened = true  # 根格一并凿开（调用方保证非雷非化石）
 
 
 func _preopen_is_connected() -> bool:

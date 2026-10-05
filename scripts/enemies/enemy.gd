@@ -49,7 +49,7 @@ func setup(start_coord: Vector2i, type: String, grid) -> void:
 	enemy_type = type
 	position = grid.coord_to_world(start_coord)
 	_update_visual()
-	_refresh_clickable_visual(grid)
+	refresh_clickable_visual(grid)
 
 
 func is_alive() -> bool:
@@ -98,6 +98,7 @@ func _step(grid, target_base: Vector2i) -> void:
 	coord = next_coord
 	var tw := create_tween()
 	tw.tween_property(self, "position", grid.coord_to_world(coord), 0.3)
+	refresh_clickable_visual(grid)  # 虫每步重估可达性（L4 虫也受领土规则约束）
 
 
 ## 施害（Q4 初值：当前位置 8 邻+自身中第一个合格格，找不到则本次跳过）
@@ -148,7 +149,7 @@ func _slime_step(grid) -> void:
 	coord = pick_pool[0]
 	var tw := create_tween()
 	tw.tween_property(self, "position", grid.coord_to_world(coord), 0.3)
-	_refresh_clickable_visual(grid)
+	refresh_clickable_visual(grid)
 
 
 func _near_opened(c: Vector2i, grid) -> bool:
@@ -159,16 +160,27 @@ func _near_opened(c: Vector2i, grid) -> bool:
 	return false
 
 
-## 史莱姆可点击条件（设计 §5.1）：本体格或邻 8 格含已开格——必须开路接近，不能隔墙点死
+## 可点击条件（全虫种统一，2026-10-05）：本体格或邻 8 格属于玩家领土
+##（从基地沿已开格连通，见 Grid.player_territory）——必须拆格扩散到位才能点死，
+## 不能隔墙点死，也不能靠远处孤点一击"借道"（孤立已开格不算领土）
 func is_clickable(grid) -> bool:
-	return _near_opened(coord, grid)
+	return is_clickable_in(grid.player_territory())
+
+
+## 同上，接受预算好的领土集合（批量刷新视觉时免得每只虫各洪泛一次）
+func is_clickable_in(territory: Dictionary) -> bool:
+	if territory.has(coord):
+		return true
+	for o in MapGenerator.NEIGHBOR_OFFSETS:
+		if territory.has(coord + o):
+			return true
+	return false
 
 
 ## 不可点时仅压暗本体，敌军三角仍清晰；死亡淡出继续由父节点统一驱动。
-func _refresh_clickable_visual(grid) -> void:
-	if enemy_type != "slime":
-		return
-	$Skin.self_modulate = Color.WHITE if is_clickable(grid) else Color(0.55, 0.55, 0.55, 0.65)
+func refresh_clickable_visual(grid, territory: Dictionary = {}) -> void:
+	var t: Dictionary = territory if not territory.is_empty() else grid.player_territory()
+	$Skin.self_modulate = Color.WHITE if is_clickable_in(t) else Color(0.55, 0.55, 0.55, 0.65)
 
 
 func _neighbor_coords() -> Array:

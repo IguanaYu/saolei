@@ -705,6 +705,30 @@ func is_walkable(coord: Vector2i) -> bool:
 	return c.is_opened and c.path_blockers == 0
 
 
+## 玩家领土（点杀可达性判定，2026-10-05 敌虫隔空点杀修复）：
+## 从所有基地出发、仅沿已开格 8 连通洪泛得到的格集合（基地/坍塌/矿脉 is_opened=true 天然计入）。
+## 不与基地连通的孤立已开格（如远处孤点一击）不算领土——必须真的"拆格扩散到位"；
+## 无基地（放基地前）= 空集，虫/巢全压暗。每次调用重算（盘面 ≤ 数百格，点击级调用可忽略）
+func player_territory() -> Dictionary:
+	var territory := {}
+	var queue: Array[Vector2i] = []
+	for b in GameState.bases:
+		if cells.has(b) and cells[b].is_opened and not territory.has(b):
+			territory[b] = true
+			queue.append(b)
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_front()
+		for o in MapGenerator.NEIGHBOR_OFFSETS:
+			var n: Vector2i = c + o
+			if territory.has(n) or not cells.has(n):
+				continue
+			if not cells[n].is_opened:
+				continue
+			territory[n] = true
+			queue.append(n)
+	return territory
+
+
 ## 黏液减速判定（L4）：coord 的 3×3 内任一格有黏液 → 机器人间隔 ×2（布尔判定天然不叠乘）
 func is_slime_nearby(coord: Vector2i) -> bool:
 	for dy in range(-1, 2):

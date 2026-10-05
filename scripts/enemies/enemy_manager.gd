@@ -19,6 +19,7 @@ const HARM_INTERVAL := 8.0    # 途中每 ~8s 施害 1 次
 const NEST_HP := 2            # 巢 HP：玩家点击 2 次（各吃 1 CD）摧毁
 const PRESET_WEBS := 3        # 预置网：盖已开数字（保安开局即有活）
 const PRESET_LOCKS := 3       # 预置锁：锁 frontier 关闭格
+const CLICK_REFRESH_SEC := 0.5  # 可达性视觉刷新节流（领土随开格变化 ≤0.5s 反映）
 
 signal enemy_spawned(enemy: Enemy)   # 剧本 #3「首虫出场后」的触发源
 signal nest_damaged(nest: Nest)      # 剧本 #2「巢被点第一下」的触发源
@@ -34,6 +35,7 @@ var waves_enabled := true
 
 var _wave_idx := 0
 var _elapsed := 0.0
+var _click_refresh_timer := 0.0
 
 
 ## 进关时调用（放基地前即可见，剧本 #0）：裂缝×2 + 预置网×3 + 预置锁×3
@@ -63,6 +65,22 @@ func tick(delta: float, grid) -> void:
 		if target == null:
 			continue
 		e.tick(delta, grid, target)
+	# 可达性视觉节流刷新（领土随开格/放基地变化；点击判定走 is_clickable 实时算，不受节流影响）
+	_click_refresh_timer += delta
+	if _click_refresh_timer >= CLICK_REFRESH_SEC:
+		_click_refresh_timer = 0.0
+		refresh_click_visuals(grid)
+
+
+## 统一刷新虫/巢的「开路接近」压暗视觉：领土集合只洪泛一次，全体共享
+func refresh_click_visuals(grid) -> void:
+	var territory: Dictionary = grid.player_territory()
+	for e in enemies:
+		if is_instance_valid(e):
+			e.refresh_clickable_visual(grid, territory)
+	for n in nests:
+		if is_instance_valid(n):
+			n.refresh_clickable_visual(grid, territory)
 
 
 func spawn_enemy(start_coord: Vector2i, type: String, grid) -> Enemy:
@@ -102,6 +120,7 @@ func clear() -> void:
 	nests.clear()
 	_wave_idx = 0
 	_elapsed = 0.0
+	_click_refresh_timer = 0.0
 	waves_enabled = true  # 恢复默认（L4）；L5 进关时再关（实施计划 §5-2 回归点）
 
 

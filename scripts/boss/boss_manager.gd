@@ -74,6 +74,17 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE  # 场景暂停（面板）时随主场景停
 
 
+## BossManager 挂在 BoardRoot（无脚本）下，Main 的脚本属性不能经 get_parent() 取
+## （2026-10-05 修复：侧栏重构挪节点后 get_parent().enemy_manager/.robot_manager 断链，
+## 史莱姆出场/补位/火区赶机器人全部静默失效）——按兄弟节点路径解析
+func _enemy_manager() -> EnemyManager:
+	return get_parent().get_node("EnemyManager") as EnemyManager
+
+
+func _robot_manager() -> RobotManager:
+	return get_parent().get_node("RobotManager") as RobotManager
+
+
 ## 进关 setup（main 在 FIND_ALL_MINES 关调用）：盘外锚点定位 + 姿态初值
 func setup(grid, total_teeth: int) -> void:
 	clear()
@@ -230,11 +241,11 @@ func _cast_slime(grid) -> void:
 	if _beast != null:
 		_beast.play("claw", 1.5)
 	edge_walls.shuffle()
-	get_parent().enemy_manager.spawn_slime(edge_walls[0], grid)
+	_enemy_manager().spawn_slime(edge_walls[0], grid)
 
 
 func _alive_slimes() -> int:
-	return get_parent().enemy_manager.count_alive_type("slime")
+	return _enemy_manager().count_alive_type("slime")
 
 
 ## 单次出招分发（M2-M4 实现各 kind；未知 kind 静默跳过=安静 Boss 关可玩）
@@ -376,7 +387,7 @@ func _cast_bomb(atk: Dictionary, grid) -> bool:
 	if opened.size() < BOMB_MIN_OPENED:
 		return false
 	var robot_coords: Dictionary = {}
-	for r in get_parent().robot_manager.robots:
+	for r in _robot_manager().robots:
 		robot_coords[r.coord] = true
 	var pool: Array = opened.filter(func(c): return not robot_coords.has(c))
 	if pool.is_empty():
@@ -424,7 +435,7 @@ func ignite_fire_cross(center: Vector2i) -> void:
 		fire_cells[c] = FIRE_SEC
 		ignited.append(c)
 	if not ignited.is_empty():
-		get_parent().robot_manager.displace_robots_in(ignited, _grid)
+		_robot_manager().displace_robots_in(ignited, _grid)
 
 
 ## 灭火（grid.fire_extinguish_requested → main 转发）：点击格所在 4 向连通组整片熄灭
@@ -448,10 +459,12 @@ func extinguish_fire_group(coord: Vector2i) -> bool:
 		var cell = _grid.get_cell(c) if _grid != null else null
 		if cell != null:
 			cell.fire_out()
-		GameState.add_money(5, "player_combat")
-		GameState.add_score(5, "combat")
-		GameState.result_stats["fires_extinguished"] += 1
-		GameState.game_event_logged.emit("你 扑灭火焰 +5金", "player", "player")
+	# 奖励/埋点整片一次（设计 §5.2：1 CD +5 钱 +5 分；此前误放 per-cell 循环里，
+	# 十字火 5 格 = +25 钱分 +5 次埋点，奖励通胀 5 倍，2026-10-05 修正）
+	GameState.add_money(5, "player_combat")
+	GameState.add_score(5, "combat")
+	GameState.result_stats["fires_extinguished"] += 1
+	GameState.game_event_logged.emit("你 扑灭火焰 +5金", "player", "player")
 	return true
 
 
