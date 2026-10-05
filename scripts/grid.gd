@@ -316,6 +316,10 @@ func init_empty_grid() -> void:
 			cell.mouse_entered.connect(_on_cell_mouse_entered.bind(cell))
 			cell.mouse_exited.connect(_on_cell_mouse_exited.bind(cell))
 			cells[coord] = cell
+	# 全格建完后统一重算一遍岩壁描边：Cell._ready 时右/下邻居尚未入 cells，
+	# 会被当地图外=开侧，未开岩壁右/下面挂出假描边（2026-10-06 远岩金线 bug）
+	for c in cells.values():
+		c.refresh_wall_edges()
 	# 网格线覆盖层挪到最后，保证画在格子之上；重开新盘时清掉悬停预览
 	if _lines != null:
 		_lines.grid_size = Vector2i(rows, cols)
