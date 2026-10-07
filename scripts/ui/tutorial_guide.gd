@@ -38,6 +38,9 @@ var _flag_key := ""
 func _ready() -> void:
 	hide()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 气泡是纯展示层：不吃鼠标（菜单流聚光右上角 OreTag 时气泡会与「跳过」
+	# 重叠，默认 STOP 会把跳过键盖死点不动）；内部 NextButton 独立 STOP 仍可点
+	tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	next_button.pressed.connect(_advance)
 	skip_button.pressed.connect(_finish)
 	# 窗口变化的聚光重摆由 main._relayout_play_area 在棋盘重定位之后统一调用
@@ -64,7 +67,9 @@ func begin(step_defs: Array, flag_key := "") -> void:
 		flag_key = String(GameState.current_level_id)
 	_flag_key = flag_key
 	if _run_level != flag_key:
-		if bool(GameSettings.get_value("tutorial_done_" + flag_key)):
+		# null 视同"未播过"（未注册/从未写入的键 get_value 返回 null，
+		# bool(null) 是非法构造会报 SCRIPT ERROR——同 main._maybe_start_tutorial 口径）
+		if GameSettings.get_value("tutorial_done_" + flag_key) == true:
 			return
 		_run_level = flag_key
 	steps = step_defs
