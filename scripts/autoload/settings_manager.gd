@@ -24,6 +24,7 @@ const DEFAULTS := {
 	"tutorial_done_ch01_s03": false,
 	"tutorial_done_ch01_s04": false,
 	"tutorial_done_ch01_s05": false,
+	"tutorial_done_shop_guide": false,   # L2 通关后的局外商店引导（shop_guide_director）
 	"skip_pre_level": false,   # 重玩时跳过关前卡（首次通关前强制显示）
 	"feedback_url": "",        # 试玩反馈地址（空 = 反馈按钮隐藏，渠道定后配置启用）
 }

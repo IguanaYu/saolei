@@ -36,6 +36,9 @@ func _ready() -> void:
 
 ## 每次显示后由 main 调：按钮文字从存档推导，不能出现"继续"却回第一关
 func refresh() -> void:
+	# 矿石行一并兜底刷：首通 L2 时 add_ore(ore_changed) 先于 mark_cleared 到达
+	# 且后者不发信号，不在这里补刷的话「升级」按钮会一直隐藏到下次矿石变动
+	_refresh_ore()
 	var idx := _current_index()
 	continue_button.text = "开始试玩" if idx == 0 and not SaveSystem.is_level_cleared(PLAYTEST_IDS[0]) \
 			else "继续试玩 · 第 %d 关" % (idx + 1)

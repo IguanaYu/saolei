@@ -42,6 +42,8 @@ var level2_director: Level2Director = null
 var level3_director: Level3Director = null
 var level4_director: Level4Director = null
 var level5_director: Level5Director = null
+# 局外商店引导（L2 通关 → 结算/选关/主菜单聚光带去矿石商店买强化）
+var shop_guide_director: ShopGuideDirector = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -176,6 +178,10 @@ func _ready() -> void:
 	level5_director = Level5Director.new()
 	level5_director.name = "Level5Director"
 	add_child(level5_director)
+	# 局外商店引导（横跨结算/选关/主菜单/商店的换屏自愈流程）
+	shop_guide_director = ShopGuideDirector.new()
+	shop_guide_director.name = "ShopGuideDirector"
+	add_child(shop_guide_director)
 	# 音频连接器（旁听信号→AudioManager）
 	var audio_connector := AudioConnector.new()
 	audio_connector.name = "AudioConnector"
@@ -628,6 +634,7 @@ func _do_quit_to_select() -> void:
 func _on_tutorial_rewatch() -> void:
 	for i in range(1, 6):
 		GameSettings.set_value("tutorial_done_ch01_s0%d" % i, false)
+	GameSettings.set_value("tutorial_done_shop_guide", false)  # 局外商店引导一并重置（重置后仍需处于窗口期才会重播）
 	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 

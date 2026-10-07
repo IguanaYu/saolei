@@ -16,6 +16,9 @@ var _step_gen := 0
 # 本局已放行教学的关卡：每关教学只播一轮，但同一局内信号驱动的后续段
 # （如 L1 耗尽→商店）不因首段结束置了标记而被拦
 var _run_level := ""
+# 本次引导的一次性标记键：begin 时锁定（默认=当前关 id；局外流程传显式键，
+# 如商店引导 "shop_guide"——菜单页 current_level_id 是陈旧值，不能沿用）
+var _flag_key := ""
 
 @onready var dim_top: ColorRect = $DimTop
 @onready var dim_bottom: ColorRect = $DimBottom
@@ -52,15 +55,18 @@ func _relayout_current() -> void:
 
 
 ## 每关教学只播一轮：该关看过一次（标记已置）则整段剧本不再启动；
-## 同局内首段已放行后，后续段直接放行（否则首段结束置标记会拦掉 L1 的耗尽段）
-func begin(step_defs: Array) -> void:
+## 同局内首段已放行后，后续段直接放行（否则首段结束置标记会拦掉 L1 的耗尽段）。
+## flag_key：局外流程（菜单页教学）传显式键绕开关卡 id；键的放行/落笔同一套逻辑
+func begin(step_defs: Array, flag_key := "") -> void:
 	if step_defs.is_empty():
 		return
-	var lvl := String(GameState.current_level_id)
-	if _run_level != lvl:
-		if bool(GameSettings.get_value("tutorial_done_" + lvl)):
+	if flag_key == "":
+		flag_key = String(GameState.current_level_id)
+	_flag_key = flag_key
+	if _run_level != flag_key:
+		if bool(GameSettings.get_value("tutorial_done_" + flag_key)):
 			return
-		_run_level = lvl
+		_run_level = flag_key
 	steps = step_defs
 	_step_idx = 0
 	_step_gen += 1
@@ -186,7 +192,7 @@ func reset_run() -> void:
 func _finish() -> void:
 	_step_gen += 1
 	_pending_events.clear()
-	GameSettings.set_value("tutorial_done_" + GameState.current_level_id, true)
+	GameSettings.set_value("tutorial_done_" + _flag_key, true)
 	GameSettings.set_value("tutorial_done", true)  # 旧全局标记，兼容存档
 	hide()
 	finished.emit()

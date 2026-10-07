@@ -98,9 +98,6 @@ script = ExtResource("28_er")
 
 [node name="UpgradePanel" parent="UILayer" instance=ExtResource("6_up")]
 
-[node name="TutorialGuide" parent="UILayer" instance=ExtResource("12_tg")]
-visible = false
-
 [node name="ResultsPanel" parent="UILayer" instance=ExtResource("7_rp")]
 
 [node name="MainMenu" parent="UILayer" instance=ExtResource("8_mm")]
@@ -120,6 +117,13 @@ visible = false
 ; 变强商店置于主菜单/选关页之后（同名面板互斥，无叠层冲突）：
 ; 原位置在 MainMenu 树序之前，open 后被主菜单整层盖住，表现为点击无反应
 [node name="OreShop" parent="UILayer" instance=ExtResource("20_os")]
+
+; 教学聚光层挪到菜单区（Results/MainMenu/LevelSelect/OreShop）之后：
+; 局外商店引导（shop_guide_director）要给菜单按钮打聚光，原树序在这些
+; 不透明全屏面板之下会被整层盖住（同 OreShop 挪层先例）。局内教学与之
+; 互斥（进关/局末均 hide 教学层），无叠层冲突；Stats/确认框等更上层不受影响
+[node name="TutorialGuide" parent="UILayer" instance=ExtResource("12_tg")]
+visible = false
 
 [node name="StatsPanel" parent="UILayer" instance=ExtResource("15_stat")]
 visible = false
