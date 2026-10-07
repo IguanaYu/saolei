@@ -125,7 +125,7 @@ func lock_reason(robot_type: String) -> String:
 			return "矿工未解锁（通 3-5）"
 		if not GameState.is_module_allowed("miner"):
 			return "本关禁用矿工型"
-	# 关卡限购（教学关：opener/marker 各 1 台）
+	# 关卡限购（LevelData.shop_limits，空 = 不限；现用：L4/L5 保安限购 1）
 	if lvl != null and lvl.shop_limits.has(robot_type):
 		if GameState.get_robot_purchased_count(robot_type) >= int(lvl.shop_limits[robot_type]):
 			return "已购满"

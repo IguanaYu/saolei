@@ -7,7 +7,8 @@ class_name Level1Director
 const COPY_INTRO := "左键开格，右键标旗。"
 const COPY_EXHAUSTED := "指挥次数用完了。"
 const COPY_SHOP := "雇一台常驻机器人——它不占你的次数。"
-const COPY_SHOP_TIMEOUT := "机器人只要 50。"
+# 超时提示带实时价：局外「开局送机器人」会抬价格阶梯（翻倍价 50/100/200），写死 50 会误导
+const COPY_SHOP_TIMEOUT_FMT := "机器人只要 %d。"
 const COPY_RECOVERED := "次数恢复：3 秒/次。"
 
 var _guide: Control
@@ -47,12 +48,13 @@ func _on_cd_exhausted() -> void:
 		return
 	_exhausted_seen = true
 	var board_size := Vector2(_grid.cols * _grid.cell_size, _grid.rows * _grid.cell_size)  # 2026-10-04 修复轴反(原rows/cols对调,方形盘无症状)
+	var cheapest := mini(GameState.get_robot_price("opener"), GameState.get_robot_price("marker"))
 	_guide.begin([
 		{"node": _grid, "size": board_size,
 			"text": COPY_EXHAUSTED, "event": "", "tip": "right"},
 		{"node": _shop,
 			"text": COPY_SHOP, "event": "robot_bought",
-			"timeout_sec": 15.0, "timeout_text": COPY_SHOP_TIMEOUT,
+			"timeout_sec": 15.0, "timeout_text": COPY_SHOP_TIMEOUT_FMT % cheapest,
 			"tip": "below"},
 	])
 	# 免费阶段提前买过（robot_bought 已发生）：guide 竞态修复会用 pending 事件自动跳过商店步

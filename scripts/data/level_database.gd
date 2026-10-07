@@ -76,7 +76,9 @@ func _apply_playtest_level1(lvl: LevelData) -> void:
 	lvl.free_correct_flags = 5  # 或第 5 面正确旗耗尽（先到为准）
 	lvl.cooldown_sec = 30.0
 	lvl.cooldown_after_purchase = 3.0
-	lvl.shop_limits = {"opener": 1, "marker": 1}
+	# 2026-10-08 撤限购：原 {"opener":1,"marker":1} 会被局外「开局送机器人」赠机占满计数，
+	# 商店两键全「已购满」→ 教程商店步等 robot_bought 永不到来必卡死（tmp/auto_gift_tutorial_stuck.gd 复现）。
+	# 翻倍价（50/100/200）+ 有限资金即天然上限，无需显式限购
 	# 试玩五关均不可解锁 detector/miner（通2-5/3-5 在试玩范围外），教学关一并收起
 	lvl.shop_hidden = ["base", "detector", "miner", "drone", "upgrade", "debug"]
 	lvl.no_stars = true
