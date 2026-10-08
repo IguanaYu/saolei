@@ -162,7 +162,9 @@ func _run() -> void:
 	var base_coord := _pick_base_cell(g)
 	await _inject_click(g.cells[base_coord].global_position)
 	check(GS.game_active, "放基地后对局激活（base=%s）" % str(base_coord))
-	await _sec(0.5)
+	# 真实存档可能有「局外赠机」在放基地瞬间落位并起飞（错开 0.18s/台），
+	# 不等落定会撞进阶段 1/2 的飞行统计窗口（2026-10-08 实测 4 项假失败的根源）
+	await _sec(2.5)
 
 	# ---- 阶段 1：单买全链（扣钱→基地亮→飞图→落地弹入扬尘） ----
 	GS.add_money(1000, "test")
@@ -186,8 +188,8 @@ func _run() -> void:
 	var money3: int = GS.money
 	for t in ["opener", "marker", "opener"]:
 		check(main._buy_and_spawn_robot(t), "连买 %s 成功" % t)
-		await _sec(0.05)
-	await _sec(0.05)  # 第三台买入后 ~0.1s：三台都应在各自飞行途中（单台飞行 0.30s）
+	# 同帧检查（购买为同步调用，不 await）：三台 0.30s 飞行必然都在场；
+	# 中途 await 会因机器负载让首台落地、统计窗抖动（2026-10-08 实测）
 	var flying_mid: int = 0
 	var hidden_mid: int = 0
 	for r in rm.robots:
@@ -229,8 +231,16 @@ func _run() -> void:
 	await _sec(0.3)
 	var hud_node: Control = main.hud
 	GS.add_money(50, "test")
-	await _sec(0.08)
+	await process_frame
+	await process_frame
 	var popup: Label = hud_node.get_node_or_null("MoneyGainPopup")
+	if popup != null:
+		print("  [DIAG] popup.position=", popup.position,
+			" global_rect=", popup.get_global_rect(),
+			" visible_in_tree=", popup.is_visible_in_tree(),
+			" modulate=", popup.modulate,
+			" money_label.global_rect=", hud_node.money_label.get_global_rect(),
+			" font_size=", popup.get_theme_font_size("font_size"))
 	check(popup != null and popup.text == "+50", "进账弹 +50 浮字（%s）" % (popup.text if popup else "无"))
 	await _shot("06-gain-popup.png")
 	GS.add_money(30, "test")
