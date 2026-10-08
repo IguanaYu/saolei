@@ -80,7 +80,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_colors/font_color = Color(0.9, 0.82, 0.65, 1)
 
 [node name="SectionCBody" type="Label" parent="Center/Panel/Margin/VBox/RulesScroll/RulesList"]
-text = "资金买设备（不扣积分）；扫雷进度是过关目标；积分来自开格/标雷/采矿/剩余时间，只用于成绩。"
+text = "资金买设备（不扣积分）；扫雷进度是过关目标；积分来自开格/标雷/剩余时间，只用于成绩。"
 autowrap_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.85, 0.8, 0.7, 1)

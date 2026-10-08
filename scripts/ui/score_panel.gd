@@ -1,5 +1,5 @@
 extends PanelContainer
-## 右侧分项得分：让玩家看出"采矿是加分，扫雷是目标"
+## 右侧分项得分：让玩家看出"扫雷是目标，其余是分项"；零值行收起
 
 @onready var open_label: Label = $Margin/VBox/OpenScoreLabel
 @onready var flag_label: Label = $Margin/VBox/FlagScoreLabel
@@ -27,7 +27,10 @@ func _refresh() -> void:
 	var s: Dictionary = GameState.result_stats
 	open_label.text = "开格 %d" % int(s["open_score"])
 	flag_label.text = "标雷 %d" % int(s["flag_score"])
-	mine_label.text = "采矿 %d" % int(s.get("mine_score", 0))
+	var mine: int = int(s.get("mine_score", 0))
+	mine_label.text = "采矿 %d" % mine
+	# 采矿分项零值收起（矿工非常驻：仅未来矿工机制关会 >0，届时自然显示）
+	mine_label.visible = mine > 0
 	# P2-01 新来源行：零值收起（探测/战斗只在 L4/L5 出现；预开格只在 L3 有值）
 	var preopen: int = int(s.get("preopen_score", 0))
 	preopen_label.text = "预开格 %d" % preopen
