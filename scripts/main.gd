@@ -1031,7 +1031,8 @@ func _buy_and_spawn_robot(robot_type: String) -> bool:
 	var robot_price: int = GameState.get_robot_price(robot_type)  # 购前取价（阶梯在购买后抬升）
 	if not GameState.purchase_robot(robot_type):
 		return false
-	robot_manager.spawn_robot(spot, robot_type, grid)
+	# 出生演出从最新基地出发（与 _find_spawn_spot_near_base 的 BFS 起点同源）
+	robot_manager.spawn_robot(spot, robot_type, grid, GameState.bases.back())
 	GameState.game_event_logged.emit("购入 %s −%d金" % [
 		{"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
 			"guard": "保安"}.get(robot_type, robot_type), robot_price], "player", "player")
@@ -1125,15 +1126,17 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 			if spots.size() >= 4:
 				break
 	var gifted := []
+	var delay := 0.0  # 出生演出错开：开局连赠多台不叠成特效弹幕
 	for robot_type in gifts:
 		for i in int(gifts[robot_type]):
 			if spots.is_empty():
 				break
 			var coord: Vector2i = spots.pop_front()
 			GameState.gift_robot(robot_type)
-			robot_manager.spawn_robot(coord, robot_type, grid)
+			robot_manager.spawn_robot(coord, robot_type, grid, base_coord, delay)
 			GameState.robot_spawned.emit(robot_type)
 			gifted.append(robot_type)
+			delay += 0.18
 	if not gifted.is_empty():
 		var counts := {}
 		for t in gifted:

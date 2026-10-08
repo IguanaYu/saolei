@@ -142,6 +142,70 @@ func fx_unload(world_pos: Vector2, amount: int) -> void:
 		_fly_coin(local, target, 0.05 * i)
 
 
+# ---- 机器人出厂（购买/开局赠送；docs/active/机器人出生反馈-方案-v1.md）----
+
+## 基地短亮（"工厂开工"）；同 fx_unload 的基地亮语言
+func fx_base_flash(cell: Cell) -> void:
+	if cell == null:
+		return
+	var t := cell.create_tween()
+	t.tween_property(cell, "modulate", Color(1.5, 1.4, 1.1), 0.08)
+	t.tween_property(cell, "modulate", Color.WHITE, 0.10)
+
+
+## 皮肤首帧做飞行图标：Skin 是 hframes=3 的帧表整图，截当前帧为单帧 Atlas（零新素材）
+func robot_icon_texture(skin: Sprite2D) -> Texture2D:
+	if skin == null or skin.texture == null or skin.hframes < 2:
+		return null
+	var fw: int = skin.texture.get_width() / skin.hframes
+	return _frame(skin.texture, skin.frame, fw, skin.texture.get_height())
+
+
+## 出厂飞行：小机器人图标从基地飞落出生格，落地回调 on_land（机器人本体显现弹入）。
+## from_local/to_local 为 Grid 本地系坐标（coord_to_world 产出）。
+## 无图标或同格出生（开局赠送落在基地格）时退化为等价延迟后直接落地。
+## 两条路径都绑在临时节点上：clear_all 重开清场时回调随节点一起销毁，不会迟到触发。
+func fx_robot_deliver(from_local: Vector2, to_local: Vector2, icon: Texture2D,
+		delay_s: float, on_land: Callable) -> void:
+	var spr := Sprite2D.new()
+	spr.name = _name("RobotFly")
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if icon != null and from_local.distance_to(to_local) >= 1.0:
+		spr.texture = icon
+		spr.scale = Vector2(0.8, 0.8)
+		spr.position = from_local
+	else:
+		spr.visible = false  # 同格/无图：只当延迟计时器用
+	add_child(spr)
+	var t := spr.create_tween()
+	if delay_s > 0.0:
+		t.tween_interval(delay_s)
+	if spr.visible:
+		t.tween_property(spr, "position", to_local, 0.30).set_ease(Tween.EASE_IN)
+		t.parallel().tween_property(spr, "rotation", TAU * 0.9, 0.30)
+	else:
+		t.tween_interval(0.15)
+	t.tween_callback(on_land)
+	t.tween_callback(spr.queue_free)
+
+
+## 出生扬尘：复用插旗灰尘帧表，格底扩散（无插旗版的前置等待）
+func fx_spawn_dust(cell: Cell) -> void:
+	if cell == null:
+		return
+	var dust := Sprite2D.new()
+	dust.name = _name("SpawnDust")
+	dust.texture = _frame(DUST_SHEET, 0, 16, 12)
+	dust.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	dust.position = cell.position + Vector2(0, 6)
+	add_child(dust)
+	var t := dust.create_tween()
+	for i in 3:
+		t.tween_callback(func(): dust.texture = _frame(DUST_SHEET, i, 16, 12))
+		t.tween_interval(0.05)
+	t.tween_callback(dust.queue_free)
+
+
 # ---- 清理 ----
 
 ## 重开/切关时清空全部临时动效（由 Grid.init_empty_grid 调用）

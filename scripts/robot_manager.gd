@@ -19,7 +19,11 @@ var _all_idle_seconds: float = 0.0
 var _idle_warning_on: bool = false
 
 
-func spawn_robot(start_coord: Vector2i, robot_type: String, grid) -> Robot:
+## 机器人出生：from_coord 传来源基地格时播出厂演出（基地亮→飞图→落地弹入扬尘，
+## docs/active/机器人出生反馈-方案-v1.md）；delay_s 用于开局赠送多台错开。
+## 演出纯叠加：机器人逻辑立即生效，只有可见性被演出接管到落地时点
+func spawn_robot(start_coord: Vector2i, robot_type: String, grid,
+		from_coord := Vector2i(-1, -1), delay_s := 0.0) -> Robot:
 	var robot: Robot
 	match robot_type:
 		"detector": robot = load(DETECTOR_ROBOT_SCENE_PATH).instantiate()
@@ -33,7 +37,30 @@ func spawn_robot(start_coord: Vector2i, robot_type: String, grid) -> Robot:
 	robots.append(robot)
 	# 新机器人入场，清除空闲警告
 	_reset_idle_warning()
+	_play_spawn_presentation(robot, grid, start_coord, from_coord, delay_s)
 	return robot
+
+
+## 出生演出编排；EffectsLayer 缺失（异常兜底）时不隐藏本体，直接可见
+func _play_spawn_presentation(robot: Robot, grid, spot: Vector2i,
+		from_coord: Vector2i, delay_s: float) -> void:
+	var fx: EffectsLayer = grid.get_node_or_null("EffectsLayer") as EffectsLayer
+	if fx == null:
+		return
+	robot.visible = false
+	var origin: Vector2i = from_coord if from_coord != Vector2i(-1, -1) else spot
+	if from_coord != Vector2i(-1, -1) and delay_s == 0.0:
+		fx.fx_base_flash(grid.get_cell(from_coord))  # 连续赠送只在首台闪基地
+	var icon: Texture2D = fx.robot_icon_texture(robot.get_node_or_null("Skin"))
+	fx.fx_robot_deliver(grid.coord_to_world(origin), grid.coord_to_world(spot),
+		icon, delay_s,
+		func():
+			if not is_instance_valid(robot):
+				return
+			robot.visible = true
+			robot.play_spawn_drop()
+			fx.fx_spawn_dust(grid.get_cell(spot))
+			AudioManager.play_sfx("flag", 1.1))
 
 
 ## 移除机器人（detector 自爆时调用）

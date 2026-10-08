@@ -171,6 +171,21 @@ func _play_action_pulse() -> void:
 	tween.tween_property(self, "scale", Vector2.ONE, 0.14)
 
 
+## 出生落地：上方 7px 掉落 + 弹入（由 RobotManager 出生演出在落地时点调用；
+## 目标位置取当前 position，隐藏期已 tick 走位的极端情形也成立）
+func play_spawn_drop() -> void:
+	if _move_tween != null and _move_tween.is_valid():
+		_move_tween.kill()  # 掉落优先，下一移动 tick 自然校正
+	var target := position
+	position = target + Vector2(0, -7)
+	scale = Vector2(0.3, 0.3)
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(self, "position", target, 0.12).set_ease(Tween.EASE_IN)
+	t.tween_property(self, "scale", Vector2(1.2, 1.2), 0.12).set_ease(Tween.EASE_OUT)
+	t.chain().tween_property(self, "scale", Vector2.ONE, 0.10)
+
+
 func _move_to(target_coord: Vector2i, grid) -> void:
 	var world_pos: Vector2 = grid.coord_to_world(target_coord)
 	if _move_tween != null and _move_tween.is_valid():

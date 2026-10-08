@@ -4,6 +4,7 @@ extends Control
 const HEART_FULL := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
 const HEART_EMPTY := preload("res://visual_v2/runtime/ui/icons/icon_heart_empty.png")
 const MAX_HEARTS := 3
+const GOLD := Color(1.0, 0.753, 0.29)  # 矿金 #f0c04a，与盘面跳字同色
 
 signal pause_requested
 
@@ -25,6 +26,8 @@ signal pause_requested
 @onready var toast_label: Label = $ToastPanel/ToastLabel
 
 var _last_money: int = -1
+var _gain_popup: Label = null
+var _gain_tween: Tween = null
 
 
 func _ready() -> void:
@@ -77,13 +80,51 @@ func _on_money_changed(v: int) -> void:
 	money_label.text = str(v)
 	# 挣钱脉冲（教学关"标旗在挣钱"的可见性：数字放大+金色闪一下）
 	if _last_money >= 0 and v > _last_money:
+		_show_gain_popup(v - _last_money)
 		money_label.modulate = Color(1.0, 0.85, 0.3)
 		money_label.pivot_offset = money_label.size / 2.0
 		var t := create_tween()
 		t.tween_property(money_label, "scale", Vector2(1.35, 1.35), 0.08)
 		t.parallel().tween_property(money_label, "modulate", Color.WHITE, 0.35)
 		t.tween_property(money_label, "scale", Vector2.ONE, 0.15)
+	elif _last_money >= 0 and v < _last_money:
+		# 支出脉冲（购机/探针等扣费"钱出去了"可见；暗红短缩，与收入金放区分）
+		money_label.modulate = Color(1.0, 0.5, 0.4)
+		money_label.pivot_offset = money_label.size / 2.0
+		var t := create_tween()
+		t.tween_property(money_label, "scale", Vector2(0.88, 0.88), 0.06)
+		t.parallel().tween_property(money_label, "modulate", Color.WHITE, 0.30)
+		t.tween_property(money_label, "scale", Vector2.ONE, 0.12)
 	_last_money = v
+
+
+## 进账浮字：金币数字右侧弹「+N」上浮淡出（与盘面跳字同语言）；
+## 窗口期内连续进账合并累计并重挂淡出，不逐笔刷屏。挂 HUD 根节点而非
+## ResBox/MoneyPanel——容器会自动重排子节点，会顶乱现有资源条布局
+func _show_gain_popup(amount: int) -> void:
+	var anchor: Vector2 = get_global_transform().affine_inverse() \
+			* money_label.get_global_rect().end + Vector2(5.0, -2.0)
+	if _gain_popup == null or not is_instance_valid(_gain_popup):
+		_gain_popup = Label.new()
+		_gain_popup.name = "MoneyGainPopup"  # 显式命名，避免遍历误匹配
+		_gain_popup.add_theme_font_size_override("font_size", 13)
+		_gain_popup.add_theme_color_override("font_color", GOLD)
+		_gain_popup.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+		_gain_popup.add_theme_constant_override("outline_size", 3)
+		_gain_popup.set_meta("amount", 0)
+		add_child(_gain_popup)
+	elif _gain_tween != null and _gain_tween.is_valid():
+		_gain_tween.kill()
+	_gain_popup.position = anchor
+	_gain_popup.set_meta("amount", int(_gain_popup.get_meta("amount", 0)) + amount)
+	_gain_popup.text = "+%d" % int(_gain_popup.get_meta("amount"))
+	_gain_popup.modulate.a = 1.0
+	_gain_tween = _gain_popup.create_tween()
+	_gain_tween.tween_property(_gain_popup, "position:y", anchor.y - 10.0, 0.55)
+	_gain_tween.parallel().tween_property(_gain_popup, "modulate:a", 0.0, 0.55)
+	_gain_tween.tween_callback(func():
+		_gain_popup.queue_free()
+		_gain_popup = null)
 
 
 func _on_score_changed(v: int) -> void:
