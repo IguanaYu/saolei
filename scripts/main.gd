@@ -44,6 +44,10 @@ var level4_director: Level4Director = null
 var level5_director: Level5Director = null
 # 局外商店引导（L2 通关 → 结算/选关/主菜单聚光带去矿石商店买强化）
 var shop_guide_director: ShopGuideDirector = null
+# 第二章 2-1 激光关剧本控制器
+var ch02_s1_director: Ch02S1Director = null
+# 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
+var laser_manager: LaserManager = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -182,6 +186,18 @@ func _ready() -> void:
 	shop_guide_director = ShopGuideDirector.new()
 	shop_guide_director.name = "ShopGuideDirector"
 	add_child(shop_guide_director)
+	# 第二章 2-1 剧本 + 激光管理器（2-1 实施计划 WP3/WP8）
+	# LaserManager 先建：Ch02S1Director._ready 会 get_node 它连 laser_fired 信号
+	laser_manager = LaserManager.new()
+	laser_manager.name = "LaserManager"  # 显式命名，避免遍历误匹配
+	$BoardRoot.add_child(laser_manager)
+	laser_manager.setup(grid)
+	ch02_s1_director = Ch02S1Director.new()
+	ch02_s1_director.name = "Ch02S1Director"
+	add_child(ch02_s1_director)
+	grid.laser_fire_requested.connect(_on_laser_fire_requested)
+	grid.wall_damaged.connect(_on_wall_damaged)
+	grid.diamond_shattered.connect(_on_diamond_shattered)
 	# 音频连接器（旁听信号→AudioManager）
 	var audio_connector := AudioConnector.new()
 	audio_connector.name = "AudioConnector"
@@ -330,6 +346,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
 		grid.wall_style = wall_style if wall_style != "" else chapter_style
+		grid.laser_mode = lvl.laser_mode  # 第二章：左键改道激光发射（非激光关恒 false）
+		laser_manager.reset_for_level()
 		grid.shape_rows = lvl.shape_mask.duplicate()  # 形状掩码（空=矩形，普通关不受影响）
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
@@ -341,6 +359,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"preopen": lvl.preopen_coords,
 				"base": lvl.fixed_base,
 				"fossils": lvl.fixed_fossils,
+				"walls": lvl.reinforced_walls,  # 第二章 3 层加固墙（其余未开格默认 1 层）
 			})
 			# L4/L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
 			# 放完基地才 game_active（同 L4 口径，倒计时从放基地起算）
@@ -414,6 +433,8 @@ func _maybe_start_tutorial() -> void:
 		level4_director.begin()
 	elif GameState.current_level_id == "ch01_s05" and level5_director != null:
 		level5_director.begin()
+	elif GameState.current_level_id == "ch02_s01" and ch02_s1_director != null:
+		ch02_s1_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -439,6 +460,7 @@ func _in_game() -> bool:
 func _close_level_overlays() -> void:
 	upgrade_panel.close()
 	_exit_placing_mode()
+	grid.hide_laser_preview()
 
 
 ## 基地阶段提示：走商店提示行（底部固定区），不放 HUD 顶栏——顶栏下沿与
@@ -635,6 +657,7 @@ func _on_tutorial_rewatch() -> void:
 	for i in range(1, 6):
 		GameSettings.set_value("tutorial_done_ch01_s0%d" % i, false)
 	GameSettings.set_value("tutorial_done_shop_guide", false)  # 局外商店引导一并重置（重置后仍需处于窗口期才会重播）
+	GameSettings.set_value("tutorial_done_ch02_s01", false)    # 第二章 2-1 激光关教学
 	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 
@@ -1153,10 +1176,10 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 func _on_cell_opened(_cell, by_actor: String) -> void:
 	if by_actor == "drone":
 		return  # 无人机开的格子不给奖励
-	GameState.add_money(1, "player_open" if by_actor == "player"
+	GameState.add_money(1, "player_open" if by_actor == "player" or by_actor == "player_laser"
 			else "robot_open" if by_actor.begins_with("robot_") else "")
 	GameState.add_score(1, "open")
-	if by_actor == "player":
+	if by_actor == "player" or by_actor == "player_laser":
 		GameState.result_stats["player_ops"] += 1
 	elif by_actor.begins_with("robot_"):
 		GameState.result_stats["robot_ops"] += 1
@@ -1199,6 +1222,28 @@ func _on_obstacle_cleared(_cell, _kind: String, by_actor: String) -> void:
 		GameState.result_stats["obstacles_cleared_player"] += 1
 	elif by_actor == "robot_guard":
 		GameState.result_stats["obstacles_cleared_guard"] += 1
+
+
+# ---- 第二章激光矿场（2-1 WP3/WP4）----
+
+## 左键发射请求（grid 在 CD 拦截通过后转发）：基地格自身不发射不扣动作
+func _on_laser_fire_requested(coord: Vector2i) -> void:
+	if laser_manager == null or not laser_manager.is_laser_level():
+		return
+	if not laser_manager.try_fire(coord):
+		return
+	GameState.consume_player_action()  # 空射也扣（总纲 §5.1）；发射含奖励结算在 try_fire 内
+
+
+func _on_wall_damaged(_cell, _by_actor: String, _layers_left: int) -> void:
+	GameState.result_stats["layers_peeled"] += 1
+	tutorial_guide.notify_event("wall_damaged")
+
+
+func _on_diamond_shattered(_cell, _by_actor: String) -> void:
+	GameState.add_score(1, "shatter")  # +1 分 0 金不扣命（总纲 §8.1；add_score 已钳 >=0）
+	GameState.result_stats["diamonds_shattered"] += 1
+	tutorial_guide.notify_event("diamond_shattered")
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:
@@ -1356,9 +1401,12 @@ func _on_score_changed(_v: int) -> void:
 	_update_objective_progress()
 	var obj := GameState.current_objective
 	# 继续挑战中分数只累加，不再二次触发胜利（发奖/解锁/埋点只发生一次）
+	# 2026-10-09 激光关：call_deferred 等整轮射击结算完再判达标（总纲 §5.3——不能先弹
+	# 胜利再漏掉同枪后续格/同枪扣分；非激光关行为等价，_end_game 的 game_active 守卫防重入）
 	if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE \
-			and GameState.score >= obj.target_value and not GameState.continue_mode:
-		_end_game("win")
+			and GameState.score >= obj.target_value and not GameState.continue_mode \
+			and GameState.game_active:
+		call_deferred("_end_game", "win")
 
 
 func _on_time_changed(_v: float) -> void:

@@ -27,6 +27,10 @@ var pests: bool = false                     # true：进关布置裂缝+预置�
 var fixed_fossils: Array[Vector2i] = []     # 2×2 化石左上原点（永久多格障碍；约束见化石实施计划 §3）
 var shape_mask: Array = []                  # 形状掩码（L形等异形盘）：每行字符串 '1'=有格 '0'=洞；空=矩形
 
+# ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/）----
+var laser_mode: bool = false                # true：左键=发射激光（基地→点击格），右键/和弦照旧
+var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷位独立；其余未开格默认 1 层）
+
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽
 var free_correct_flags: int = 0     # >0：第 N 面正确旗触发耗尽（与上条先到为准）

@@ -7,7 +7,7 @@ const MAX_DENSITY := 0.16  # 雷密度上限，超过会变成猜雷（体验崩
 
 const CHAPTER_DENSITY := [0.10, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15, 0.155, 0.16, 0.16, 0.16, 0.16]
 const CHAPTER_MODULE := ["opener_marker", "detector", "miner", "tower", "drone", "", "", "", "", "", "", ""]
-const CHAPTER_NAMES := ["新手村", "矿脉谷", "产业链", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
+const CHAPTER_NAMES := ["新手村", "激光矿场", "产业链", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
 # 章内 5 关"舒适度"乘子（spike-valley 模板）：越高越简单
 # 关1 爽 → 关2 顺 → 关3 Spike 卡关 → 关4 Valley 碾压 → 关5 Boss 难度尖峰
 const WITHIN_EASE := [1.20, 1.00, 0.85, 1.05, 0.65]
@@ -59,6 +59,10 @@ func _build() -> void:
 				_apply_playtest_level6(lvl)
 			elif ch_idx == 0 and s_idx == 6:
 				_apply_playtest_level7(lvl)
+			# 第二章「激光矿场」五关（2026-10-09 起；设计=docs/active/玩法设计/第二章-激光矿场/）：
+			# s02-s05 由各自实施计划落地时再接（现为默认模板占位）
+			elif ch_idx == 1 and s_idx == 0:
+				_apply_laser_s1(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -357,6 +361,49 @@ func _apply_playtest_level7(lvl: LevelData) -> void:
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()
 	lvl.repeat_reward.ore = 50
+
+
+## 第二章 2-1「激光开矿」：直射/多层墙/钻石标记教学关（2026-10-09 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/2-1-激光开矿-设计文档.md §2
+## 实施：同目录 2-1-激光开矿-实施计划.md WP5 参数表
+func _apply_laser_s1(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(12, 12)
+	lvl.mine_count = 18   # 钻石数（第二章"雷"改叫钻石，机制沿用雷位）
+	var obj := ObjectiveData.new()  # ch02_s01 默认模板是 CLEAR_ALL_SAFE，覆写为限时积分
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 140
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 180.0
+	lvl.start_gold = 100
+	lvl.start_lives = 0            # 无命关：碎钻不扣命，本章不展示生命栏（总纲 §8.1）
+	lvl.free_clicks = 5            # 激光发射=动作，沿 L2-L5 预算（5 免费 + 3s 补 1，上限 7）
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "guard", "probe", "debug"]
+	lvl.shop_limits = {}
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]     # 沿第一章价格与升级轨（总纲 §8.2）
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false   # 盲测口径冷启动（承 L1/L2 先例；Q3 待定正式版）
+	lvl.preopen_scores = false     # 预开不计分（总纲 §8.1）
+	lvl.allow_continue = true      # 与 L3 同口径（Q4：实测后可关）
+	lvl.allowed_modules = ["opener", "marker"]
+	lvl.start_robots = {"opener": 1, "marker": 1}
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80       # 商店隐藏 base，仅留数值口径
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "激光"
+	lvl.intro_line = "先护住钻石，再选一条值得发射的线。"
+	lvl.mechanic_tags = ["激光", "多层墙", "钻石"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S1.mines)
+	lvl.fixed_base = FixedBoards.CH2_S1.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S1.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S1.walls)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

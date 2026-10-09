@@ -7,6 +7,7 @@ extends PanelContainer
 @onready var preopen_label: Label = $Margin/VBox/PreopenScoreLabel
 @onready var detector_label: Label = $Margin/VBox/DetectorScoreLabel
 @onready var combat_label: Label = $Margin/VBox/CombatScoreLabel
+@onready var shatter_label: Label = $Margin/VBox/ShatterScoreLabel
 
 
 func _ready() -> void:
@@ -41,5 +42,9 @@ func _refresh() -> void:
 	var combat: int = int(s.get("combat_score", 0))
 	combat_label.text = "战斗/清障 %d" % combat
 	combat_label.visible = combat > 0
+	# 第二章碎钻行：零值收起（2-1 起有值；全对标记的玩家永远看不到本行）
+	var shatter: int = int(s.get("shatter_score", 0))
+	shatter_label.text = "碎钻 %d" % shatter
+	shatter_label.visible = shatter > 0
 	# 引导/面板压暗层都在本栏之上（Main.tscn 侧栏置底），无需让路隐藏
 	visible = GameState.game_active

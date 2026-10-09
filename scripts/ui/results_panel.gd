@@ -282,6 +282,8 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 		_add_row(ICON_COIN, "探测分", str(int(s.get("detector_score", 0))))
 	if int(s.get("combat_score", 0)) > 0:
 		_add_row(ICON_COIN, "战斗/清障分", str(int(s.get("combat_score", 0))))
+	if int(s.get("shatter_score", 0)) > 0:
+		_add_row(ICON_COIN, "碎钻分", str(int(s.get("shatter_score", 0))))
 	var total_ops: int = int(s["player_ops"]) + int(s["robot_ops"])
 	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
 	_add_row(ICON_STAR, "你的扫雷操作",
@@ -297,6 +299,14 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 				int(s.get("enemy_kills_player", 0)) + int(s.get("enemy_kills_guard", 0)),
 				int(s.get("obstacles_cleared_player", 0)) + int(s.get("obstacles_cleared_guard", 0))])
 		_add_row(ICON_STAR, "探测", "%d 次" % int(s.get("probe_used", 0)))
+	# 第二章激光关：节奏观察行（总纲 §11——发射数/削层/碎钻/均束长）
+	if GameState.current_level_id.begins_with("ch02"):
+		var fired: int = int(s.get("shots_fired", 0))
+		var avg_beam: float = float(s.get("beam_cells_total", 0)) / float(fired) if fired > 0 else 0.0
+		_add_row(ICON_STAR, "激光",
+			"发射 %d 次 · 削层 %d · 碎钻 %d · 均束 %.1f 格" % [
+				fired, int(s.get("layers_peeled", 0)),
+				int(s.get("diamonds_shattered", 0)), avg_beam])
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",

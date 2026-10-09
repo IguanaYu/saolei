@@ -50,6 +50,11 @@ signal vein_depleted(coord: Vector2i)
 signal obstacle_cleared(cell, kind: String, by_actor: String)  # L4 障碍清除（埋点/剧本转发）
 signal processed_mines_changed(current: int)  # L5 牙数变化：旗→矿脉/确认雷/坍塌任一来源
 signal fire_extinguish_requested(coord: Vector2i)  # L5 灭火：点任一火格 → 连通组熄灭（组逻辑在 BossManager）
+## 第二章激光矿场（2-1 WP3）：左键发射请求（laser_mode 关卡在点击分流处改道）、
+## 多层墙被削一层（不开格）、未标钻石被打碎（+1 分 0 金不扣命，不走 mine_stepped）
+signal laser_fire_requested(target: Vector2i)
+signal wall_damaged(cell, by_actor: String, layers_left: int)
+signal diamond_shattered(cell, by_actor: String)
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 ## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
@@ -58,6 +63,9 @@ signal cell_unhovered(cell)
 
 # 已发过正确旗奖励的格子（coord→true）：同一格奖励仅首次发放、撤旗不退分（设计 §5，防刷）
 var rewarded_flags: Dictionary = {}
+
+# 第二章激光矿场：true 时左键=发射激光（基地→点击格），右键/和弦照旧（LevelData.laser_mode）
+var laser_mode := false
 
 # 和弦防抖（双击检测 + 左右同按手势混用时，同格短窗内只触发一次）
 var _last_chord_coord := Vector2i(-999, -999)
@@ -90,6 +98,9 @@ func _make_effects_layer() -> void:
 	cell_flagged.connect(func(cell, _a, _c, _f): _fx.fx_flag_dust(cell))
 	cell_unflagged.connect(func(cell, _a): _fx.fx_flag_pull(cell))
 	cargo_unloaded.connect(func(pos, amt): _fx.fx_unload(pos, amt))
+	# 第二章：削层岩屑（打墙看得见）/ 碎钻特效（奖励跳字在 main 结算侧出）
+	wall_damaged.connect(func(cell, _a, _l): _fx.fx_wall_crack(cell))
+	diamond_shattered.connect(func(cell, _a): _fx.fx_diamond_shatter(cell))
 
 
 ## 悬停/落点预览覆盖层：单精灵复用，z_index 压过格子与网格线
@@ -114,6 +125,60 @@ class ProbePreview extends Node2D:
 var _probe_preview: ProbePreview = null
 
 
+## 第二章激光预览（2-1 WP3）：悬停时高亮整条束穿格 + 束线虚影——只画公开几何，
+## 预览格集与实际命中同源（都走 LaserGeometry.beam_cells，总纲 §4.5"预览不泄雷"）
+class LaserPreview extends Node2D:
+	var cells: Array = []      # Vector2i 列表
+	var from_px := Vector2.ZERO
+	var to_px := Vector2.ZERO
+	var has_line := false
+	var cell_px := 28
+
+	func set_shot(cells_list: Array, from_local: Vector2, to_local: Vector2) -> void:
+		cells = cells_list
+		from_px = from_local
+		to_px = to_local
+		has_line = true
+		queue_redraw()
+
+	func clear_shot() -> void:
+		cells = []
+		has_line = false
+		queue_redraw()
+
+	func _draw() -> void:
+		for c in cells:
+			var r := Rect2(Vector2(c.x * cell_px + 2.0, c.y * cell_px + 2.0),
+					Vector2(cell_px - 4.0, cell_px - 4.0))
+			draw_rect(r, Color(1.0, 0.42, 0.15, 0.13), true)
+			draw_rect(r, Color(1.0, 0.55, 0.25, 0.55), false, 1.0)
+		if has_line:
+			draw_line(from_px, to_px, Color(1.0, 0.78, 0.45, 0.45), 2.0)
+
+
+var _laser_preview: LaserPreview = null
+
+
+## 激光预览公开入口：cells 为 LaserGeometry.beam_cells 输出（LaserManager 计算后喂入）
+func show_laser_preview(target: Vector2i, cells: Array) -> void:
+	if _laser_preview == null:
+		return
+	_laser_preview.set_shot(cells, _cell_center_px(target),
+			_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target))
+	_laser_preview.visible = true
+
+
+func hide_laser_preview() -> void:
+	if _laser_preview != null:
+		_laser_preview.clear_shot()
+		_laser_preview.visible = false
+
+
+func _cell_center_px(coord: Vector2i) -> Vector2:
+	return Vector2(coord.x * cell_size + cell_size / 2.0,
+			coord.y * cell_size + cell_size / 2.0)
+
+
 func _make_hover_overlay() -> void:
 	_hover_tex = {
 		"normal": load("res://visual_v2/runtime/fx/tile_hover.png"),
@@ -132,6 +197,12 @@ func _make_hover_overlay() -> void:
 	_probe_preview.z_index = 39  # 压过格子，低于悬停角框
 	_probe_preview.visible = false
 	add_child(_probe_preview)
+	_laser_preview = LaserPreview.new()
+	_laser_preview.cell_px = cell_size
+	_laser_preview.name = "LaserPreview"  # 显式命名，避免遍历误匹配
+	_laser_preview.z_index = 38  # 低于探测预览与悬停角框
+	_laser_preview.visible = false
+	add_child(_laser_preview)
 
 
 ## 探测范围预览：show_it=false 或中心不在盘内则隐藏；范围与 _trigger_probe 一致（get_cell 截断）
@@ -330,6 +401,9 @@ func init_empty_grid() -> void:
 		_hover_overlay.visible = false
 	if _probe_preview != null:
 		_probe_preview.visible = false
+	if _laser_preview != null:
+		_laser_preview.visible = false
+		_laser_preview.clear_shot()
 	if _fx != null:
 		_fx.clear_all()  # 重开新盘清空岩屑/跳字/飞币等临时动效
 
@@ -391,6 +465,7 @@ func place_first_base(coord: Vector2i) -> bool:
 	# 预开安全区（直接设字段，不触发 cell_opened 信号，避免给奖励；视觉走波纹）
 	for sc in safe_coords:
 		cells[sc].is_opened = true
+		cells[sc].wall_hp = 0
 	# 安全区内 0 格静默洪水连锁（2026-10-04 试玩反馈修复）：
 	# 预开不连锁会留下「0 格旁未开格」，且预开格点击不再触发洪水（open 对已开格
 	# 直接返回）——那片区域永远不会自己打开。固定盘关卡的预开在烘焙时就连好了
@@ -427,6 +502,7 @@ func _preopen_cascade(coords: Array) -> Array:
 			if n_cell.is_opened or n_cell.is_flagged or n_cell.is_mine:
 				continue
 			n_cell.is_opened = true
+			n_cell.wall_hp = 0
 			opened.append(n)
 			if n_cell.adjacent_mines == 0:
 				queue.append(n)
@@ -435,7 +511,8 @@ func _preopen_cascade(coords: Array) -> Array:
 
 ## 固定盘面装载（试玩版教学关）：写雷位 → 化石占位 → 预开烘焙区 → 预置基地，跳过 placing_base 阶段
 ## data 结构见 FixedBoards：{"mines": [Vector2i...], "preopen": [Vector2i...], "base": Vector2i,
-##                           "fossils": [Vector2i...]（可选，2×2 左上原点）}
+##                           "fossils": [Vector2i...]（可选，2×2 左上原点）,
+##                           "walls": [Vector2i...]（可选，第二章 3 层加固墙；其余未开格默认 1 层）}
 func apply_fixed_board(data: Dictionary) -> void:
 	var mine_set: Dictionary = {}
 	for m in data.mines:
@@ -447,10 +524,16 @@ func apply_fixed_board(data: Dictionary) -> void:
 	for c in mine_set:
 		for n in get_neighbors(c):
 			n.adjacent_mines += 1
+	# 第二章多层墙：加固墙 3 层（与雷位/预开独立铺设——外壳不从钻石真值决定，总纲 §4.4）
+	for w in data.get("walls", []):
+		if cells.has(w):
+			cells[w].wall_hp = 3
+			cells[w].refresh_visual()  # 直设字段同预开写法；层数角标需手动刷
 	# 预开（直接设字段，不触发 cell_opened 信号，不给奖励；视觉走波纹统一翻开）
 	for sc in data.preopen:
 		if cells.has(sc):
 			cells[sc].is_opened = true
+			cells[sc].wall_hp = 0
 	# 化石最后铺设（透明口径：不改雷位不改数字，只是永久占位）；
 	# 与雷/预开重叠=数据配置错误：拒铺该格并大声警告，防半开半挡的脏状态
 	for origin in data.get("fossils", []):
@@ -521,6 +604,7 @@ func apply_random_board() -> void:
 			if n_cell.is_opened or n_cell.is_flagged or n_cell.is_mine:
 				continue
 			n_cell.is_opened = true
+			n_cell.wall_hp = 0
 			if n_cell.adjacent_mines == 0:
 				queue.append(n)
 	board_generated = true
@@ -606,14 +690,23 @@ func get_neighbors(coord: Vector2i) -> Array:
 
 
 ## extra_reveal_delay：波纹整体推迟量（和弦震波按角度错峰用；其余调用方不传=原行为）
+## 多层墙统一入口（2-1 WP2）：hp>1 的未开格先削一层不开格（激光/和弦/开墙机器人同走
+## 此口径）；hp<=1 视为破墙开格。ch01 全场 hp 恒 1 → 恒走开格分支，逐行为不变
 func open_cell(coord: Vector2i, by_actor: String, extra_reveal_delay := 0.0) -> void:
 	if not cells.has(coord):
 		return
 	var cell: Cell = cells[coord]
+	if cell.wall_hp > 1 and not cell.is_opened and not cell.is_flagged:
+		if cell.damage_wall(1):
+			wall_damaged.emit(cell, by_actor, cell.wall_hp)
+		return
 	if not cell.open(by_actor):
 		return
 
 	if cell.is_mine:
+		if laser_mode:
+			_shatter_diamond(cell, by_actor)  # 未标钻石被打碎：+1 分不扣命（第二章 §8.1）
+			return
 		cell.collapse()
 		refresh_processed_mines()  # L5 牙数：踩塌 = 疼着拔一颗牙
 		fx_tooth_at(coord)
@@ -635,6 +728,17 @@ func open_cell(coord: Vector2i, by_actor: String, extra_reveal_delay := 0.0) -> 
 
 	# 批次结束事件：起点汇总跳字（岩屑已并入波纹调度）
 	cell_open_batch.emit(cell, by_actor, chain)
+
+
+## 碎钻（第二章：未标钻石被激光命中，总纲 §4.2/§8.1）——坍塌态复用（processed 口径，
+## 周围数字含义不变），不走 mine_stepped/扣命链；+1 分 0 金由 main 接信号结算
+func _shatter_diamond(cell: Cell, by_actor: String) -> void:
+	cell.is_collapsed = true
+	cell.is_opened = true
+	cell.wall_hp = 0
+	cell.refresh_visual()
+	refresh_processed_mines()
+	diamond_shattered.emit(cell, by_actor)
 
 
 func toggle_flag(coord: Vector2i, by_actor: String) -> void:
@@ -850,6 +954,8 @@ func _flood_open(start: Vector2i, by_actor: String) -> Array:
 			var n_cell: Cell = cells[n]
 			if n_cell.is_opened or n_cell.is_flagged:
 				continue
+			if n_cell.wall_hp > 1:
+				continue  # 多层墙：零连开停在耐久前（总纲 §5.2，ch01 恒 false 行为不变）
 			if not n_cell.open(by_actor):
 				continue  # 锁格等开格失败：不发事件（否则虚假收益/动效）
 			cell_opened.emit(n_cell, by_actor)
@@ -880,6 +986,11 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 	board_clicked.emit()
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
+		return
+	# 第二章激光关（2-1 WP3）：左键改道发射（空射/只削墙也吃 1 动作；CD 拦截同口径在上方）。
+	# 点基地格自身（束长 0）不发射不扣动作，由 LaserManager.try_fire 判定
+	if laser_mode:
+		laser_fire_requested.emit(cell.coord)
 		return
 	# L5 灭火优先（设计 §5.2 + Q8：火 > 其他障碍）：点任一火格 = 整片连通火熄灭，吃 1 CD
 	# （连通组与奖励在 BossManager；本击只灭火，不做开格）

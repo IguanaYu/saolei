@@ -27,6 +27,11 @@ var is_on_fire: bool = false    # 火=通路阻断：机器人禁入，8s 退散
 var bomb_masked: bool = false   # 炸弹压格=显示遮罩：数字被挡（口径同网，玩家与机器人同盲）
 var path_blockers: int = 0      # 通路阻断计数（火/触手 +1/-1）：is_walkable 判定，0=不阻断
 
+# ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/00-核心思路与章节总纲.md §5.2）----
+# 未开格的墙层数：普通墙 1（ch01 全场默认，行为不变）、加固墙 3（ch02 reinforced_walls）。
+# 唯一削层入口 Grid.open_cell（>1 层先削不开格），零连开/和弦/机器人/激光同走该入口
+var wall_hp: int = 1
+
 # ---- 化石（2×2 永久多格障碍；调研 §4 定调：纯难度件，不可清除，透明口径不改数字）----
 var is_fossil: bool = false                 # 永久占位：不可开/不可标/机器人虫子皆不可入
 var fossil_origin: Vector2i = Vector2i(-9, -9)  # 所属 2×2 化石左上原点（贴图取象限用）
@@ -344,6 +349,7 @@ func open(by_actor: String) -> bool:
 	if is_base:
 		return false  # 基地格不可被开
 	is_opened = true
+	wall_hp = 0  # 破墙开格（多层墙的"最后一层"由 Grid.open_cell 削到 1 后走到这里）
 	refresh_visual()
 	return true
 
@@ -351,6 +357,7 @@ func open(by_actor: String) -> bool:
 func become_base() -> void:
 	is_base = true
 	is_opened = true  # 基地视为已开（机器人可走）
+	wall_hp = 0
 	refresh_visual()
 
 
@@ -359,6 +366,7 @@ func become_vein(resources: int) -> void:
 	vein_resources = resources
 	is_opened = true  # 矿脉视为已开（机器人可走）
 	is_flagged = false  # 取消旗子状态
+	wall_hp = 0
 	refresh_visual()
 
 
@@ -497,8 +505,43 @@ func confirm_mine() -> void:
 func collapse() -> void:
 	is_collapsed = true
 	is_opened = true  # 视为已开，机器人可走
+	wall_hp = 0
 	refresh_visual()
 	_play_collapse_flicker()
+
+
+# ---- 第二章激光矿场：多层墙 ----
+
+## 削层（不开格、不露内容——总纲 §5.2"前两层只显示裂纹"）。剩余层数最低为 1：
+## 削到 0 = 破墙开格，只能走 open()（经由 Grid.open_cell 的统一入口）。
+## 只对未开且未插旗的格生效；返回 true 表示本次真的削了一层
+func damage_wall(layers: int = 1) -> bool:
+	if is_opened or is_flagged or is_collapsed or is_fossil or is_base:
+		return false
+	if wall_hp <= 1:
+		return false  # 1 层墙的"削"=破墙开格，不在本函数
+	wall_hp = maxi(1, wall_hp - layers)
+	refresh_visual()
+	return true
+
+
+## 多层墙层数角标（程序占位：WP9 素材批换裂纹贴图；显式命名防遍历误匹配）
+var _wall_badge: Label = null
+
+
+func _ensure_wall_badge() -> void:
+	if _wall_badge != null and is_instance_valid(_wall_badge):
+		return
+	_wall_badge = Label.new()
+	_wall_badge.name = "WallHpBadge"
+	_wall_badge.add_theme_font_size_override("font_size", 9)
+	_wall_badge.add_theme_color_override("font_color", Color(1.0, 0.86, 0.7))
+	_wall_badge.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.04, 0.9))
+	_wall_badge.add_theme_constant_override("outline_size", 3)
+	_wall_badge.position = Vector2(-4, -14)
+	_wall_badge.size = Vector2(8, 8)
+	_wall_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_wall_badge)
 
 
 # ---- 动效 ----
@@ -744,4 +787,11 @@ func refresh_visual() -> void:
 		_slime_overlay.texture = null
 	if is_on_fire:
 		bg.color = bg.color.lerp(Color(0.85, 0.30, 0.10), 0.55)  # 火：橙红炙烤
+	# 多层墙层数角标：仅未开格且 hp>1 显示（ch01 恒 1 层 → 永不显示，视觉零变化）
+	if not is_opened and wall_hp > 1:
+		_ensure_wall_badge()
+		_wall_badge.text = "×%d" % wall_hp
+		_wall_badge.visible = true
+	elif _wall_badge != null and is_instance_valid(_wall_badge):
+		_wall_badge.visible = false
 	cell_state_changed.emit(self)

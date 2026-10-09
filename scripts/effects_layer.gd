@@ -206,6 +206,65 @@ func fx_spawn_dust(cell: Cell) -> void:
 	t.tween_callback(dust.queue_free)
 
 
+# ---- 第二章激光矿场（2-1 WP3/WP4；程序绘制占位，素材批后可换贴图）----
+
+## 激光束闪光：外层粗半透明辉光 + 内层亮芯（暖橙），0.18s 淡出。
+## from/to 为 Grid 本地系（coord_to_world 产出）；挂本层吃 clear_all 重开清场
+func fx_laser_flash(from_local: Vector2, to_local: Vector2) -> void:
+	var beam := LaserBeamFx.new()
+	beam.name = _name("LaserBeam")
+	beam.length_px = from_local.distance_to(to_local)
+	beam.position = from_local
+	beam.rotation = (to_local - from_local).angle()
+	add_child(beam)
+	var t := beam.create_tween()
+	t.tween_interval(0.04)  # 先亮一拍再淡出
+	t.tween_property(beam, "modulate:a", 0.0, 0.14)
+	t.tween_callback(beam.queue_free)
+
+
+## 束本体：双层画线（辉光+亮芯），z 压过格子（随 EffectsLayer z=45）
+class LaserBeamFx extends Node2D:
+	var length_px := 0.0
+
+	func _draw() -> void:
+		var end := Vector2(length_px, 0)
+		draw_line(Vector2.ZERO, end, Color(1.0, 0.40, 0.12, 0.30), 9.0)
+		draw_line(Vector2.ZERO, end, Color(1.0, 0.78, 0.42, 0.95), 3.0)
+		draw_circle(Vector2.ZERO, 4.0, Color(1.0, 0.9, 0.6, 0.9))  # 炮口亮斑
+
+
+## 削层岩屑：打墙看得见（不加分不加跳字，纯命中反馈）
+func fx_wall_crack(cell: Cell) -> void:
+	if cell == null:
+		return
+	_fx_shards(cell, 2)
+	var t := cell.create_tween()
+	t.tween_property(cell, "modulate", Color(1.35, 1.2, 1.0, 1.0), 0.05)
+	t.tween_property(cell, "modulate", Color.WHITE, 0.10)
+
+
+## 碎钻：青蓝岩屑（区别于岩壁岩屑的暖色）+ 低收益 +1 跳字（+1 由 main 结算侧入账）
+func fx_diamond_shatter(cell: Cell) -> void:
+	if cell == null:
+		return
+	for i in 3:
+		var s := Sprite2D.new()
+		s.name = _name("DiamondShard")
+		s.texture = _frame(SHARD_SHEET, i % 3, 8, 8)
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.modulate = Color(0.45, 0.85, 1.0)
+		s.position = cell.position + Vector2(randf_range(-3, 3), randf_range(-3, 3))
+		add_child(s)
+		var dir := Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+		var t := s.create_tween()
+		t.set_parallel(true)
+		t.tween_property(s, "position", s.position + dir * randf_range(5.0, 12.0), 0.16)
+		t.tween_property(s, "modulate:a", 0.0, 0.16)
+		t.chain().tween_callback(s.queue_free)
+	_fx_jump_text(cell.position + Vector2(10, -12), "+1")
+
+
 # ---- 清理 ----
 
 ## 重开/切关时清空全部临时动效（由 Grid.init_empty_grid 调用）
