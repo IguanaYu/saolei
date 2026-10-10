@@ -35,6 +35,7 @@ var preset_refractor: Dictionary = {}      # 2-3 预设折光驻点 {coord: Vect
 var builder_wall_sequence: Array = []       # 新墙耐久序列；空 = [1]（2-3 起覆写 [1,1,3]）
 var chain_nodes: Array[Vector2i] = []       # 2-4 连爆节点（预开安全格上的中立设施；空=无）
 var light_pillar: Vector2i = Vector2i(-9, -9)  # 2-5 引光柱（预开安全格；(-9,-9)=无）
+var special_ores: Array[Dictionary] = []    # 改版 2-3 特殊矿石 [{origin: Vector2i}]；空=无（足迹须全在预开安全格）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽

@@ -127,6 +127,10 @@ func _update_visual() -> void:
 		body.color = Color(0.85, 0.55, 0.25)
 		lbl.text = "✳"
 		lbl.modulate = Color.WHITE
+	elif robot_type == "overload":
+		body.color = Color(0.92, 0.30, 0.18)
+		lbl.text = "⚡"
+		lbl.modulate = Color.WHITE
 	else:
 		body.color = Color(0.95, 0.80, 0.15)
 		lbl.text = "⚑"

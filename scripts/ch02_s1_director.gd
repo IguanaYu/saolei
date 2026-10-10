@@ -10,12 +10,16 @@ const COPY_WALL := "三层墙，要打三次。"
 const COPY_FLAG := "钻石先标记，收益更高。"
 const COPY_SHATTER := "未标记打碎，只有少量分。"
 const COPY_FIRST_FIRE := "点得越远，影响的格子越多。"   # 首次发射 toast（束闪光自解释）
+const COPY_CHARGE := "激光扫过机器人：6 秒内干活翻倍。"  # 改版 2026-10-10：充能教学前移 2-1
+const COPY_FLAG_SAFE := "旗格不受激光与爆炸影响。"      # 改版 2026-10-10：旗格免疫立规（附1）
 
 var _guide: Control
 var _hud: Control
 var _grid: Node2D
 var _shatter_toasted := false
 var _first_fire_toasted := false
+var _charge_toasted := false
+var _flag_safe_toasted := false
 
 
 func _ready() -> void:
@@ -24,6 +28,7 @@ func _ready() -> void:
 	_hud = main.get_node("UILayer/HUD")
 	_grid = main.get_node("BoardRoot/Grid")
 	main.get_node("BoardRoot/LaserManager").laser_fired.connect(_on_laser_fired)
+	main.get_node("BoardRoot/LaserManager").robots_charged.connect(_on_robots_charged)
 	_grid.cell_flagged.connect(_on_cell_flagged)
 	_grid.diamond_shattered.connect(_on_diamond_shattered)
 
@@ -31,6 +36,8 @@ func _ready() -> void:
 func begin() -> void:
 	_shatter_toasted = false
 	_first_fire_toasted = false
+	_charge_toasted = false
+	_flag_safe_toasted = false
 	var board_size := Vector2(_grid.cols * _grid.cell_size, _grid.rows * _grid.cell_size)
 	var tw := create_tween()
 	tw.tween_interval(0.5)
@@ -59,6 +66,23 @@ func _on_laser_fired(_target: Vector2i) -> void:
 func _on_cell_flagged(_cell, _by_actor: String, correct: bool, first_time: bool) -> void:
 	if correct and first_time:
 		_guide.notify_event("first_correct_flag")
+		# 旗格免疫立规：首次正确旗时机（聚光句「先标记」落地后接规则句，toast 不占聚光步）
+		if not _flag_safe_toasted:
+			_flag_safe_toasted = true
+			_hud.show_toast(COPY_FLAG_SAFE, 3.0)
+
+
+## 充能教学前移（机制 2-1 已生效，这里补教学）：首次充能 toast。
+## 首充常与首次发射同帧（开局机器人都在基地旁）——首发 toast 已占屏，错峰 3.6s 再播
+func _on_robots_charged(_robots: Array) -> void:
+	if not _in_level() or _charge_toasted:
+		return
+	_charge_toasted = true
+	var tw := create_tween()
+	tw.tween_interval(3.6)
+	tw.tween_callback(func() -> void:
+		if _in_level():
+			_hud.show_toast(COPY_CHARGE, 3.0))
 
 
 func _on_diamond_shattered(_cell, _by_actor: String) -> void:

@@ -11,6 +11,7 @@ signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（�
 @onready var buy_probe_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyProbeButton
 @onready var buy_refractor_wide_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorWideButton
 @onready var buy_refractor_scatter_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorScatterButton
+@onready var buy_overload_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOverloadButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BuildRow/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton
@@ -47,6 +48,7 @@ func _ready() -> void:
 	upgrade_button.icon = BUTTON_ICONS.upgrade
 	buy_refractor_wide_button.icon = BUTTON_ICONS.guard  # 程序占位：暂借保安图标
 	buy_refractor_scatter_button.icon = BUTTON_ICONS.guard
+	buy_overload_button.icon = BUTTON_ICONS.guard  # 改版 2-4：程序占位，素材批后换
 	build_base_button.icon = BUTTON_ICONS.base
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
@@ -56,6 +58,8 @@ func _ready() -> void:
 	buy_probe_button.pressed.connect(_on_buy_probe)
 	buy_refractor_wide_button.pressed.connect(func(): _buy_refractor("refractor_wide"))
 	buy_refractor_scatter_button.pressed.connect(func(): _buy_refractor("refractor_scatter"))
+	# 改版 2-4 过载机器人：直购直出基地出厂（不走放置流，拍板 #10）
+	buy_overload_button.pressed.connect(func(): _buy("overload"))
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
 	rules_button.pressed.connect(func():
@@ -174,6 +178,7 @@ func _refresh_prices() -> void:
 		buy_probe_button.disabled = GameState.money < GameState.PROBE_PRICE
 	_refresh_one(buy_refractor_wide_button, "refractor_wide", "折光·宽束")
 	_refresh_one(buy_refractor_scatter_button, "refractor_scatter", "折光·散射")
+	_refresh_one(buy_overload_button, "overload", "过载")
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
@@ -210,3 +215,4 @@ func _apply_level_shop_config() -> void:
 	buy_probe_button.visible = extra.has("probe") and not hidden.has("probe")
 	buy_refractor_wide_button.visible = extra.has("refractor_wide") and not hidden.has("refractor_wide")
 	buy_refractor_scatter_button.visible = extra.has("refractor_scatter") and not hidden.has("refractor_scatter")
+	buy_overload_button.visible = extra.has("overload") and not hidden.has("overload")

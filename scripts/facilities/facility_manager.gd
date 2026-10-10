@@ -1,13 +1,15 @@
 class_name FacilityManager
 extends Node2D
-## 第二章中立设施总控（2-4 连爆节点 + 2-5 引光柱；总纲 §6.3/§6.4）。
+## 第二章中立设施总控（2-4 连爆节点 + 2-5 引光柱 + 2-3 特殊矿石；总纲 §6.3/§6.4）。
 ## 阵营归中立不挂 EnemyManager；三链接线照 robot/enemy/boss 管理器惯例（2-4 实施计划 WP1）：
 ## 清理链 clear（main._start_level_with） / 窗口重排 reproject_all（main._relayout_play_area）/
 ## 高塔滚动 on_grid_relaid（main._on_grid_view_changed）。
 ## 占格：存活设施格进 grid.facility_cells（is_walkable 门；消耗后解除=格恢复普通）。
+## 矿石例外：不可破坏（consumed 概念不适用），足迹恒占格；结算跳过由 LaserManager 负责。
 
 var chain_nodes: Array = []   # Array[ChainNode]
 var pillar: LightPillar = null   # 2-5 引光柱（唯一；无则 null）
+var ores: Array = []             # Array[SpecialOre]（2-3；不可破坏恒存活）
 var _grid = null
 
 
@@ -20,6 +22,10 @@ func clear() -> void:
 		if is_instance_valid(pillar):
 			pillar.queue_free()
 		pillar = null
+	for o in ores:
+		if is_instance_valid(o):
+			o.queue_free()
+	ores.clear()
 	if _grid != null and is_instance_valid(_grid):
 		_grid.facility_cells.clear()
 
@@ -30,6 +36,10 @@ func reproject_all(grid) -> void:
 			n.position = grid.coord_to_world(n.coord)
 	if pillar != null and is_instance_valid(pillar):
 		pillar.position = grid.coord_to_world(pillar.coord)
+	for o in ores:
+		if is_instance_valid(o):
+			o.position = grid.coord_to_world(o.origin) + Vector2(grid.cell_size / 2.0,
+					grid.cell_size / 2.0)
 
 
 ## 高塔滚动/窗口变化同源：设施是驻点实体，按缓存 coord 重写世界坐标即可
@@ -115,6 +125,39 @@ func on_pillar_broken(grid) -> void:
 	_sync_occupancy()
 
 
+## 2-3 特殊矿石装载（main._start_level_with 盘面分支后调用；defs = [{"origin": Vector2i}]，
+## 足迹须全在预开安全格——finder 烘焙保证，越界格整块警告跳过）
+func setup_ores(grid, defs: Array) -> void:
+	_grid = grid
+	for d in defs:
+		var o_coord: Vector2i = d.get("origin", Vector2i(-9, -9))
+		var ok := true
+		for dy in SpecialOre.SIZE:
+			for dx in SpecialOre.SIZE:
+				if not grid.cells.has(o_coord + Vector2i(dx, dy)):
+					ok = false
+					break
+		if not ok:
+			push_warning("特殊矿石 %s 足迹越界，整块跳过（检查盘面数据）" % str(o_coord))
+			continue
+		var ore := SpecialOre.new()
+		ore.name = "SpecialOre%02d" % (ores.size() + 1)  # 显式命名防遍历误匹配
+		add_child(ore)
+		ore.setup(o_coord, grid)
+		ores.append(ore)
+	_sync_occupancy()
+
+
+## 足迹命中查询（束截停/结算跳过/触发判定共用；null=无矿石）
+func ore_at(coord: Vector2i) -> SpecialOre:
+	for o in ores:
+		if is_instance_valid(o) and coord.x >= o.origin.x \
+				and coord.x < o.origin.x + o.SIZE \
+				and coord.y >= o.origin.y and coord.y < o.origin.y + o.SIZE:
+			return o
+	return null
+
+
 ## 存活设施占格表重建（grid.is_walkable 门的数据源；clear/setup/consume 后同步）
 func _sync_occupancy() -> void:
 	if _grid == null or not is_instance_valid(_grid):
@@ -125,3 +168,7 @@ func _sync_occupancy() -> void:
 			_grid.facility_cells[n.coord] = true
 	if pillar != null and is_instance_valid(pillar) and pillar.is_alive:
 		_grid.facility_cells[pillar.coord] = true
+	for o in ores:
+		if is_instance_valid(o):
+			for c in o.footprint():
+				_grid.facility_cells[c] = true

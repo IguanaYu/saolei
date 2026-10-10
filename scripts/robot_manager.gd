@@ -9,6 +9,7 @@ const DETECTOR_ROBOT_SCENE_PATH := "res://scenes/DetectorRobot.tscn"
 const MINER_ROBOT_SCENE_PATH := "res://scenes/MinerRobot.tscn"
 const GUARD_ROBOT_SCENE_PATH := "res://scenes/GuardRobot.tscn"
 const REFRACTOR_SCENE_PATH := "res://scenes/RefractorRobot.tscn"
+const OVERLOAD_SCENE_PATH := "res://scenes/OverloadRobot.tscn"
 const IDLE_WARNING_THRESHOLD := 3.0  # 所有机器人连续 idle 超过这个秒数就报警
 
 signal idle_warning_changed(show: bool)
@@ -33,6 +34,8 @@ func spawn_robot(start_coord: Vector2i, robot_type: String, grid,
 		"refractor_wide", "refractor_scatter":
 			robot = load(REFRACTOR_SCENE_PATH).instantiate()
 			robot.config = "wide" if robot_type == "refractor_wide" else "scatter"
+		"overload":
+			robot = load(OVERLOAD_SCENE_PATH).instantiate()
 		_: robot = load(ROBOT_SCENE_PATH).instantiate()
 	add_child(robot)
 	robot.robot_type = robot_type

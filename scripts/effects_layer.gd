@@ -288,14 +288,64 @@ func fx_chain_blast_at(n: ChainNode, grid, delay: float) -> void:
 	t.tween_callback(frame.queue_free)
 
 
-## 连爆 3×3 亮框本体：半透明暖橙填充 + 亮边（随延迟淡入淡出，编排在上方法）
+## 连爆 3×3 亮框本体：半透明暖橙填充 + 亮边（随延迟淡入淡出，编排在上方法）；
+## fill/edge 色可注入（改版矿石/过载复用同一本体，默认值=连爆原色零影响）
 class ChainBlastFrame extends Node2D:
 	var rects: Array = []
+	var fill_color := Color(1.0, 0.45, 0.15, 0.20)
+	var edge_color := Color(1.0, 0.65, 0.30, 0.65)
 
 	func _draw() -> void:
 		for r in rects:
-			draw_rect(r, Color(1.0, 0.45, 0.15, 0.20), true)
-			draw_rect(r, Color(1.0, 0.65, 0.30, 0.65), false, 1.5)
+			draw_rect(r, fill_color, true)
+			draw_rect(r, edge_color, false, 1.5)
+
+
+## 改版 2-3 特殊矿石爆发演出：爆发格青蓝短亮框（Grid 本地，边界内裁切）+
+## 足迹心跳一拍（不可破坏=不播放消耗动画，与节点收缩消失语义区分）
+func fx_ore_burst(ore: SpecialOre, cells: Array, grid) -> void:
+	var frame := ChainBlastFrame.new()
+	frame.name = _name("OreBlast")
+	frame.fill_color = Color(0.30, 0.85, 0.95, 0.22)
+	frame.edge_color = Color(0.65, 0.95, 1.0, 0.70)
+	for c in cells:
+		var cell: Cell = grid.get_cell(c)
+		if cell == null:
+			continue
+		frame.rects.append(Rect2(cell.position - Vector2(grid.cell_size / 2.0,
+				grid.cell_size / 2.0), Vector2(grid.cell_size, grid.cell_size)))
+	add_child(frame)
+	frame.modulate.a = 0.0
+	var t := frame.create_tween()
+	t.tween_property(frame, "modulate:a", 1.0, 0.03)
+	t.tween_property(frame, "modulate:a", 0.0, 0.30)
+	t.tween_callback(frame.queue_free)
+	var tw := ore.create_tween()
+	tw.tween_property(ore, "scale", Vector2(1.18, 1.18), 0.07)
+	tw.tween_property(ore, "scale", Vector2.ONE, 0.16)
+
+
+## 改版 2-4 过载爆炸演出：13 格短亮框 + 本体脉冲一拍（爆后存活：闪不缩）
+func fx_overload_blast(r: OverloadRobot, grid) -> void:
+	var frame := ChainBlastFrame.new()
+	frame.name = _name("OverloadBlast")
+	frame.fill_color = Color(0.95, 0.35, 0.20, 0.22)
+	frame.edge_color = Color(1.0, 0.60, 0.35, 0.70)
+	for c in r.blast_cells(grid):
+		var cell: Cell = grid.get_cell(c)
+		if cell == null:
+			continue
+		frame.rects.append(Rect2(cell.position - Vector2(grid.cell_size / 2.0,
+				grid.cell_size / 2.0), Vector2(grid.cell_size, grid.cell_size)))
+	add_child(frame)
+	frame.modulate.a = 0.0
+	var t := frame.create_tween()
+	t.tween_property(frame, "modulate:a", 1.0, 0.03)
+	t.tween_property(frame, "modulate:a", 0.0, 0.25)
+	t.tween_callback(frame.queue_free)
+	var tw := r.create_tween()
+	tw.tween_property(r, "scale", Vector2(1.35, 1.35), 0.06)
+	tw.tween_property(r, "scale", Vector2.ONE, 0.16)
 
 
 ## 2-5 引光柱破碎：暖玉碎块飞散 + 「-50」暗红大跳字（扣分在 laser_manager 结算侧入账）

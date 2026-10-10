@@ -421,6 +421,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		# 2-5 引光柱装载（(-9,-9)=无柱；占格同节点口径）
 		if lvl.light_pillar != Vector2i(-9, -9):
 			facility_manager.setup_pillar(grid, lvl.light_pillar)
+		# 改版 2-3 特殊矿石装载（空列表=no-op，非本章关零影响）
+		facility_manager.setup_ores(grid, lvl.special_ores)
 		# L5 Boss 关（FIND_ALL_MINES 目标 = 有 Boss 的关）：实体+阶段机就位（安静 Boss 关
 		# 的招式表在 M2-M4 逐阶段填实；盘外锚点定位不依赖基地摆放）
 		var obj0 = lvl.objectives[0] if not lvl.objectives.is_empty() else null
@@ -1159,7 +1161,7 @@ func _buy_and_spawn_robot(robot_type: String) -> bool:
 	GameState.game_event_logged.emit("购入 %s −%d金" % [
 		{"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
 			"guard": "保安", "refractor_wide": "折光·宽束",
-			"refractor_scatter": "折光·散射"}.get(robot_type, robot_type), robot_price], "player", "player")
+			"refractor_scatter": "折光·散射", "overload": "过载"}.get(robot_type, robot_type), robot_price], "player", "player")
 	GameState.robot_spawned.emit(robot_type)
 	# L4 埋点：保安购买时点（-1=未买）
 	if robot_type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
@@ -1291,7 +1293,7 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 		for t in counts:
 			parts.append("%s×%d" % [{"opener": "开墙", "marker": "标雷", "detector": "检测",
 				"miner": "矿工", "guard": "保安", "refractor_wide": "折光·宽束",
-				"refractor_scatter": "折光·散射"}.get(t, t), counts[t]])
+				"refractor_scatter": "折光·散射", "overload": "过载"}.get(t, t), counts[t]])
 		GameState.game_event_logged.emit("开局赠送 " + " ".join(parts), "player", "good")
 
 

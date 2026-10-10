@@ -53,6 +53,7 @@ var miner_count: int = 0
 var guard_count: int = 0
 var refractor_wide_count: int = 0    # 2-3 折光（宽束）
 var refractor_scatter_count: int = 0 # 2-3 折光（散射）
+var overload_count: int = 0          # 改版 2-4 过载（100 金限购 1，折光商店位）
 
 # 建筑状态
 var bases: Array[Vector2i] = []
@@ -118,6 +119,7 @@ var result_stats := {
 	"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
 	"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 	"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,  # 2-5 引光柱（总纲 §11）
+	"ore_bursts": 0, "overload_blasts": 0,  # 改版 2-3/2-4 特殊矿石爆发/过载爆炸次数
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -350,6 +352,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
 		"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 		"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,
+		"ore_bursts": 0, "overload_blasts": 0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
@@ -375,6 +378,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	guard_count = 0
 	refractor_wide_count = 0
 	refractor_scatter_count = 0
+	overload_count = 0
 	bases.clear()
 	base_count = 0
 	locked_targets.clear()
@@ -469,6 +473,7 @@ func get_robot_price(robot_type: String) -> int:
 		"guard": count = guard_count; base = 80  # L4 保安：限购 1 下无翻倍问题
 		"refractor_wide": count = refractor_wide_count; base = 100   # 限购 1 平价（2-3）
 		"refractor_scatter": count = refractor_scatter_count; base = 100
+		"overload": count = overload_count; base = 100  # 改版 2-4：折光位平价（拍板 #9）
 	base *= 1 << count
 	var discount: float = [1.0, 0.75, 0.5][discount_level]
 	return int(base * discount)
@@ -483,6 +488,7 @@ func get_robot_purchased_count(robot_type: String) -> int:
 		"guard": return guard_count
 		"refractor_wide": return refractor_wide_count
 		"refractor_scatter": return refractor_scatter_count
+		"overload": return overload_count
 	return 0
 
 
@@ -499,6 +505,7 @@ func purchase_robot(robot_type: String) -> bool:
 		"guard": guard_count += 1
 		"refractor_wide": refractor_wide_count += 1
 		"refractor_scatter": refractor_scatter_count += 1
+		"overload": overload_count += 1
 	# 首购恢复 CD（教学关：30s → 3s，立刻恢复一次次数）
 	if cd_phase != "off" and cd_after_purchase >= 0.0 and not cd_purchase_boosted:
 		cd_purchase_boosted = true
@@ -519,6 +526,7 @@ func gift_robot(robot_type: String) -> void:
 		"guard": guard_count += 1
 		"refractor_wide": refractor_wide_count += 1
 		"refractor_scatter": refractor_scatter_count += 1
+		"overload": overload_count += 1
 
 
 ## 移动间隔（opener/marker 走移动轨等级；detector/miner 单间隔同表）
