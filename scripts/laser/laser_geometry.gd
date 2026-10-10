@@ -69,6 +69,30 @@ static func octant_dir(from: Vector2i, to: Vector2i) -> Vector2i:
 	return Vector2i(sx, sy)      # 斜向
 
 
+## 宽束走廊（2-3 WP2）：origin 沿 dir8 前 length 格的 3 宽走廊（主轴 + 垂直 ±1 平行线，
+## 各线不含 origin 自身；含斜向走廊——垂直向量 (x,y)→(-y,x) 仍是八方向）。合并去重保序
+static func corridor_cells(origin: Vector2i, dir8: Vector2i, length := 6) -> Array[Vector2i]:
+	var perp := Vector2i(-dir8.y, dir8.x)
+	var out: Array[Vector2i] = []
+	for off in [Vector2i.ZERO, perp, -perp]:
+		var start: Vector2i = origin + off
+		var line := beam_cells(start, start + dir8 * length)
+		for c in line:
+			if not out.has(c):
+				out.append(c)
+	return out
+
+
+## 散射三束（2-3 WP2）：dir8 主轴 + 八向旋转 ±45° 各一条，每条长 length（不含 origin）
+static func scatter_cells(origin: Vector2i, dir8: Vector2i, length := 6) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for d in [dir8, rotate_octant(dir8, 1), rotate_octant(dir8, -1)]:
+		for c in beam_cells(origin, origin + d * length):
+			if not out.has(c):
+				out.append(c)
+	return out
+
+
 ## 八向旋转 ±45°（octant ± 1）：dir8 必须是八方向单位向量（分量 ∈ {-1,0,1}，非零）
 static func rotate_octant(dir8: Vector2i, steps: int) -> Vector2i:
 	const OCT := [

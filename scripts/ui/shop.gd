@@ -9,6 +9,8 @@ signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（�
 @onready var buy_miner_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyMinerButton
 @onready var buy_guard_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyGuardButton
 @onready var buy_probe_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyProbeButton
+@onready var buy_refractor_wide_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorWideButton
+@onready var buy_refractor_scatter_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorScatterButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BuildRow/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton
@@ -43,6 +45,8 @@ func _ready() -> void:
 	buy_guard_button.icon = BUTTON_ICONS.guard
 	buy_probe_button.icon = BUTTON_ICONS.probe
 	upgrade_button.icon = BUTTON_ICONS.upgrade
+	buy_refractor_wide_button.icon = BUTTON_ICONS.guard  # 程序占位：暂借保安图标
+	buy_refractor_scatter_button.icon = BUTTON_ICONS.guard
 	build_base_button.icon = BUTTON_ICONS.base
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
@@ -50,6 +54,8 @@ func _ready() -> void:
 	buy_miner_button.pressed.connect(_on_buy_miner)
 	buy_guard_button.pressed.connect(_on_buy_guard)
 	buy_probe_button.pressed.connect(_on_buy_probe)
+	buy_refractor_wide_button.pressed.connect(func(): _buy_refractor("refractor_wide"))
+	buy_refractor_scatter_button.pressed.connect(func(): _buy_refractor("refractor_scatter"))
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
 	rules_button.pressed.connect(func():
@@ -80,6 +86,16 @@ func _on_buy_miner() -> void:
 
 func _on_buy_guard() -> void:
 	_buy("guard")
+
+
+## 2-3 折光机器人：购买=进放置模式选驻点（已开安全格），确认落位才扣钱
+func _buy_refractor(robot_type: String) -> void:
+	if lock_reason(robot_type) != "":
+		return
+	if GameState.money < GameState.get_robot_price(robot_type):
+		return
+	var main := get_node("/root/Main")
+	main.call("_enter_placing_mode", robot_type)
 
 
 ## 探测不是实体机器人：不进 purchase_robot 价格阶梯，直接进放置模式（瞬发 100/次）
@@ -156,6 +172,8 @@ func _refresh_prices() -> void:
 	_refresh_one(buy_guard_button, "guard", "保安")
 	if buy_probe_button.visible:
 		buy_probe_button.disabled = GameState.money < GameState.PROBE_PRICE
+	_refresh_one(buy_refractor_wide_button, "refractor_wide", "折光·宽束")
+	_refresh_one(buy_refractor_scatter_button, "refractor_scatter", "折光·散射")
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
@@ -190,3 +208,5 @@ func _apply_level_shop_config() -> void:
 	buy_miner_button.visible = not hidden.has("miner")
 	buy_guard_button.visible = extra.has("guard") and not hidden.has("guard")
 	buy_probe_button.visible = extra.has("probe") and not hidden.has("probe")
+	buy_refractor_wide_button.visible = extra.has("refractor_wide") and not hidden.has("refractor_wide")
+	buy_refractor_scatter_button.visible = extra.has("refractor_scatter") and not hidden.has("refractor_scatter")

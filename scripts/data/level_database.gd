@@ -65,6 +65,8 @@ func _build() -> void:
 				_apply_laser_s1(lvl)
 			elif ch_idx == 1 and s_idx == 1:
 				_apply_laser_s2(lvl)
+			elif ch_idx == 1 and s_idx == 2:
+				_apply_laser_s3(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -450,6 +452,53 @@ func _apply_laser_s2(lvl: LevelData) -> void:
 	lvl.fixed_base = FixedBoards.CH2_S2.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S2.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S2.walls)
+
+
+## 第二章 2-3「折光机器人」：新单位=输出形状选择（2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/2-3-折光机器人-设计文档.md §2
+func _apply_laser_s3(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 24
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 250
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 210.0
+	lvl.start_gold = 180
+	lvl.start_lives = 0
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true
+	lvl.builders = true
+	lvl.builder_wall_sequence = [1, 1, 3]   # 2-3 起新墙按固定序列循环（总纲 §7）
+	lvl.preset_refractor = {"coord": FixedBoards.CH2_S3.refractor, "config": "wide"}
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
+	lvl.shop_limits = {"guard": 1, "refractor_wide": 1, "refractor_scatter": 1}
+	lvl.shop_extra = ["guard", "refractor_wide", "refractor_scatter"]
+	lvl.allowed_modules = ["opener", "marker", "guard",
+			"refractor_wide", "refractor_scatter"]
+	lvl.start_robots = {"opener": 1, "marker": 1, "refractor_wide": 1}  # 落预设驻点
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.allow_continue = true
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "折光"
+	lvl.intro_line = "射中折光机器人，激光变宽或散开。"
+	lvl.mechanic_tags = ["激光", "折光", "筑墙工"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S3.mines)
+	lvl.fixed_base = FixedBoards.CH2_S3.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S3.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S3.walls)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

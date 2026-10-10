@@ -160,12 +160,16 @@ class LaserPreview extends Node2D:
 var _laser_preview: LaserPreview = null
 
 
-## 激光预览公开入口：cells 为 LaserGeometry.beam_cells 输出（LaserManager 计算后喂入）
-func show_laser_preview(target: Vector2i, cells: Array) -> void:
+## 激光预览公开入口：cells 为 LaserGeometry 输出（LaserManager/折光放置预览喂入）
+## placement=true 折光驻点预览（不画束线，只画出射格集）
+func show_laser_preview(target: Vector2i, cells: Array, placement := false) -> void:
 	if _laser_preview == null:
 		return
-	_laser_preview.set_shot(cells, _cell_center_px(target),
-			_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target))
+	if placement:
+		_laser_preview.set_shot(cells, Vector2.ZERO, Vector2.ZERO)
+	else:
+		_laser_preview.set_shot(cells, _cell_center_px(target),
+				_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target))
 	_laser_preview.visible = true
 
 

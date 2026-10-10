@@ -51,6 +51,8 @@ var marker_count: int = 0
 var detector_count: int = 0
 var miner_count: int = 0
 var guard_count: int = 0
+var refractor_wide_count: int = 0    # 2-3 折光（宽束）
+var refractor_scatter_count: int = 0 # 2-3 折光（散射）
 
 # 建筑状态
 var bases: Array[Vector2i] = []
@@ -369,6 +371,8 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	detector_count = 0
 	miner_count = 0
 	guard_count = 0
+	refractor_wide_count = 0
+	refractor_scatter_count = 0
 	bases.clear()
 	base_count = 0
 	locked_targets.clear()
@@ -461,6 +465,8 @@ func get_robot_price(robot_type: String) -> int:
 		"detector": count = detector_count; base = 80
 		"miner": count = miner_count; base = 60
 		"guard": count = guard_count; base = 80  # L4 保安：限购 1 下无翻倍问题
+		"refractor_wide": count = refractor_wide_count; base = 100   # 限购 1 平价（2-3）
+		"refractor_scatter": count = refractor_scatter_count; base = 100
 	base *= 1 << count
 	var discount: float = [1.0, 0.75, 0.5][discount_level]
 	return int(base * discount)
@@ -473,6 +479,8 @@ func get_robot_purchased_count(robot_type: String) -> int:
 		"detector": return detector_count
 		"miner": return miner_count
 		"guard": return guard_count
+		"refractor_wide": return refractor_wide_count
+		"refractor_scatter": return refractor_scatter_count
 	return 0
 
 
@@ -487,6 +495,8 @@ func purchase_robot(robot_type: String) -> bool:
 		"detector": detector_count += 1
 		"miner": miner_count += 1
 		"guard": guard_count += 1
+		"refractor_wide": refractor_wide_count += 1
+		"refractor_scatter": refractor_scatter_count += 1
 	# 首购恢复 CD（教学关：30s → 3s，立刻恢复一次次数）
 	if cd_phase != "off" and cd_after_purchase >= 0.0 and not cd_purchase_boosted:
 		cd_purchase_boosted = true
@@ -505,6 +515,8 @@ func gift_robot(robot_type: String) -> void:
 		"detector": detector_count += 1
 		"miner": miner_count += 1
 		"guard": guard_count += 1
+		"refractor_wide": refractor_wide_count += 1
+		"refractor_scatter": refractor_scatter_count += 1
 
 
 ## 移动间隔（opener/marker 走移动轨等级；detector/miner 单间隔同表）

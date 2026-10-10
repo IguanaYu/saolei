@@ -48,6 +48,8 @@ var shop_guide_director: ShopGuideDirector = null
 var ch02_s1_director: Ch02S1Director = null
 # 第二章 2-2 充能拆敌关剧本控制器
 var ch02_s2_director: Ch02S2Director = null
+# 第二章 2-3 折光关剧本控制器
+var ch02_s3_director: Ch02S3Director = null
 # 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
 var laser_manager: LaserManager = null
 
@@ -200,6 +202,11 @@ func _ready() -> void:
 	ch02_s2_director = Ch02S2Director.new()
 	ch02_s2_director.name = "Ch02S2Director"
 	add_child(ch02_s2_director)
+	ch02_s3_director = Ch02S3Director.new()
+	ch02_s3_director.name = "Ch02S3Director"
+	add_child(ch02_s3_director)
+	laser_manager.refractor_activated.connect(
+		func(_r): tutorial_guide.notify_event("refractor_activated"))
 	laser_manager.robots_charged.connect(
 		func(_rs): tutorial_guide.notify_event("robots_charged"))
 	enemy_manager.builder_now.connect(func(_b): tutorial_guide.notify_event("builder_spawned"))
@@ -449,6 +456,8 @@ func _maybe_start_tutorial() -> void:
 		ch02_s1_director.begin()
 	elif GameState.current_level_id == "ch02_s02" and ch02_s2_director != null:
 		ch02_s2_director.begin()
+	elif GameState.current_level_id == "ch02_s03" and ch02_s3_director != null:
+		ch02_s3_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -673,6 +682,7 @@ func _on_tutorial_rewatch() -> void:
 	GameSettings.set_value("tutorial_done_shop_guide", false)  # 局外商店引导一并重置（重置后仍需处于窗口期才会重播）
 	GameSettings.set_value("tutorial_done_ch02_s01", false)    # 第二章 2-1 激光关教学
 	GameSettings.set_value("tutorial_done_ch02_s02", false)    # 第二章 2-2 充能拆敌关教学
+	GameSettings.set_value("tutorial_done_ch02_s03", false)    # 第二章 2-3 折光关教学
 	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 
@@ -973,6 +983,8 @@ func _enter_placing_mode(mode: String) -> void:
 		return
 	if mode == "probe" and GameState.money < GameState.PROBE_PRICE:
 		return
+	if mode.begins_with("refractor") and GameState.money < GameState.get_robot_price(mode):
+		return
 	placing_mode = mode
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
 	shop.set_placing_hint(true, _placing_hint_text(mode))
@@ -994,6 +1006,9 @@ func _placing_hint_text(mode: String) -> String:
 					% GameState.get_base_price()
 		"probe":
 			return "探测 ¥%d：点目标格，确认其周围 3×3 的雷 · 右键/ESC 取消" % GameState.PROBE_PRICE
+		"refractor_wide", "refractor_scatter":
+			var nm := "宽束" if mode == "refractor_wide" else "散射"
+			return "折光·%s ¥%d：点已开空格放驻点（悬停看出射范围）· 右键/ESC 取消" 					% [nm, GameState.get_robot_price(mode)]
 		_:
 			return ""
 
@@ -1012,6 +1027,22 @@ func place_block_reason(coord: Vector2i) -> String:
 		if cell.is_collapsed:
 			return "坍塌格不能建基地"
 		if GameState.money < GameState.get_base_price():
+			return "金币不够"
+		return ""
+
+	# 2-3 折光驻点：已开安全空格（不占资源/覆盖墙/基地/其他单位当前格）
+	if placing_mode.begins_with("refractor"):
+		if cell == null:
+			return "盘外"
+		if not cell.is_opened:
+			return "驻点要放在已开格"
+		if cell.is_base or cell.is_vein or cell.is_collapsed:
+			return "这格已被占用"
+		if cell.cover_wall_hp > 0:
+			return "覆盖墙上不能放"
+		if robot_manager.get_robot_positions().has(coord):
+			return "有单位站在这里"
+		if GameState.money < GameState.get_robot_price(placing_mode):
 			return "金币不够"
 		return ""
 
@@ -1051,6 +1082,20 @@ func _try_place_at(world_pos: Vector2) -> bool:
 		grid.place_base(coord)
 		return true
 
+	# 2-3 折光机器人：落位=出生（含出生演出），随后才扣钱（确认前不扣，非法落点不吞单位）
+	if placing_mode.begins_with("refractor"):
+		var r_type := placing_mode
+		var r_price: int = GameState.get_robot_price(r_type)
+		_exit_placing_mode()
+		if not GameState.purchase_robot(r_type):
+			hud.show_toast("金币不足", 1.5)
+			return false
+		robot_manager.spawn_robot(coord, r_type, grid, GameState.bases.back())
+		GameState.game_event_logged.emit("部署 折光·%s −%d金" % [
+			"宽束" if r_type == "refractor_wide" else "散射", r_price], "player", "player")
+		GameState.robot_spawned.emit(r_type)
+		return true
+
 	# L4 探测机器人：一次性瞬发；3×3 雷位标「确认雷」（机器人视同旗/不计分/穿锁）；
 	# 不吃 CD（Q3：放置类口径）
 	if placing_mode == "probe":
@@ -1077,7 +1122,8 @@ func _buy_and_spawn_robot(robot_type: String) -> bool:
 	robot_manager.spawn_robot(spot, robot_type, grid, GameState.bases.back())
 	GameState.game_event_logged.emit("购入 %s −%d金" % [
 		{"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工",
-			"guard": "保安"}.get(robot_type, robot_type), robot_price], "player", "player")
+			"guard": "保安", "refractor_wide": "折光·宽束",
+			"refractor_scatter": "折光·散射"}.get(robot_type, robot_type), robot_price], "player", "player")
 	GameState.robot_spawned.emit(robot_type)
 	# L4 埋点：保安购买时点（-1=未买）
 	if robot_type == "guard" and float(GameState.result_stats.get("guard_bought_elapsed", -1.0)) < 0.0:
@@ -1146,6 +1192,17 @@ func _on_grid_cell_hovered(cell: Cell) -> void:
 		grid.set_hover_overlay(cell.coord,
 			"valid" if can_place_at(cell.coord) else "invalid")
 		grid.set_probe_preview(placing_mode == "probe", cell.coord)
+		# 折光驻点预览：出射范围轮廓（公开几何；方向=基地→落点入射，Q2 决策口径）
+		if placing_mode.begins_with("refractor") and can_place_at(cell.coord) 				and not GameState.bases.is_empty():
+			var dir8 := LaserGeometry.octant_dir(GameState.bases[0], cell.coord)
+			var out_cells: Array = []
+			if placing_mode == "refractor_wide":
+				out_cells = LaserGeometry.corridor_cells(cell.coord, dir8)
+			else:
+				out_cells = LaserGeometry.scatter_cells(cell.coord, dir8)
+			grid.show_laser_preview(cell.coord, out_cells, true)
+		else:
+			grid.hide_laser_preview()
 	elif not cell.is_opened:
 		grid.set_hover_overlay(cell.coord, "normal")
 	else:
@@ -1161,6 +1218,17 @@ func _on_grid_cell_unhovered(_cell: Cell) -> void:
 func _gift_start_robots(gifts: Dictionary) -> void:
 	var base_coord: Vector2i = GameState.bases[0] if not GameState.bases.is_empty() \
 			else Vector2i(grid.rows / 2, grid.cols / 2)
+	# 2-3 预设驻点赠送：折光机器人落烘焙坐标（不走 BFS 找位；设计 §4 预设宽束驻点）
+	var lvl := GameState.get_current_level()
+	if lvl != null and not lvl.preset_refractor.is_empty():
+		var p_coord: Vector2i = lvl.preset_refractor.get("coord", Vector2i(-9, -9))
+		var p_type := "refractor_" + String(lvl.preset_refractor.get("config", "wide"))
+		if int(gifts.get(p_type, 0)) > 0 and grid.cells.has(p_coord):
+			gifts[p_type] = int(gifts[p_type]) - 1
+			GameState.gift_robot(p_type)
+			robot_manager.spawn_robot(p_coord, p_type, grid, base_coord)
+			GameState.robot_spawned.emit(p_type)
+			GameState.game_event_logged.emit("预设驻点就位：折光·" 					+ ("宽束" if p_type == "refractor_wide" else "散射"), "player", "good")
 	var spots: Array = [base_coord]
 	for n in grid.get_neighbors(base_coord):
 		if n.is_opened and not n.is_base:
@@ -1186,7 +1254,8 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 		var parts := []
 		for t in counts:
 			parts.append("%s×%d" % [{"opener": "开墙", "marker": "标雷", "detector": "检测",
-				"miner": "矿工", "guard": "保安"}.get(t, t), counts[t]])
+				"miner": "矿工", "guard": "保安", "refractor_wide": "折光·宽束",
+				"refractor_scatter": "折光·散射"}.get(t, t), counts[t]])
 		GameState.game_event_logged.emit("开局赠送 " + " ".join(parts), "player", "good")
 
 

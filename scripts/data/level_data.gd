@@ -31,6 +31,7 @@ var shape_mask: Array = []                  # 形状掩码（L形等异形盘）
 var laser_mode: bool = false                # true：左键=发射激光（基地→点击格），右键/和弦照旧
 var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷位独立；其余未开格默认 1 层）
 var builders: bool = false                  # 2-2 起筑墙工（12s 首出/25s 补/上限 2）
+var preset_refractor: Dictionary = {}      # 2-3 预设折光驻点 {coord: Vector2i, config: "wide"|"scatter"}；空=无（赠送落此处不走 BFS）
 var builder_wall_sequence: Array = []       # 新墙耐久序列；空 = [1]（2-3 起覆写 [1,1,3]）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----

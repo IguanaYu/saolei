@@ -119,6 +119,14 @@ func _update_visual() -> void:
 		body.color = Color(0.25, 0.55, 0.60)
 		lbl.text = "🛡"
 		lbl.modulate = Color.WHITE
+	elif robot_type == "refractor_wide":
+		body.color = Color(0.55, 0.35, 0.85)
+		lbl.text = "◫"
+		lbl.modulate = Color.WHITE
+	elif robot_type == "refractor_scatter":
+		body.color = Color(0.85, 0.55, 0.25)
+		lbl.text = "✳"
+		lbl.modulate = Color.WHITE
 	else:
 		body.color = Color(0.95, 0.80, 0.15)
 		lbl.text = "⚑"
