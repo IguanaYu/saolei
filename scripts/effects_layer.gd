@@ -265,6 +265,75 @@ func fx_diamond_shatter(cell: Cell) -> void:
 	_fx_jump_text(cell.position + Vector2(10, -12), "+1")
 
 
+## 2-4 连爆节点消耗演出：3×3 短亮框（Grid 本地，边界内裁切）+ 节点本体错峰收缩
+## （play_consume）；奖励跳字只在真实开格/拆墙/击杀时出现（设计 §5"节点自身 0 分"）
+func fx_chain_blast_at(n: ChainNode, grid, delay: float) -> void:
+	n.play_consume(delay)
+	var frame := ChainBlastFrame.new()
+	frame.name = _name("ChainBlast")
+	for dy in 3:
+		for dx in 3:
+			var c: Vector2i = n.coord + Vector2i(dx - 1, dy - 1)
+			var cell: Cell = grid.get_cell(c)
+			if cell == null:
+				continue
+			frame.rects.append(Rect2(cell.position - Vector2(grid.cell_size / 2.0,
+					grid.cell_size / 2.0), Vector2(grid.cell_size, grid.cell_size)))
+	add_child(frame)
+	frame.modulate.a = 0.0
+	var t := frame.create_tween()
+	t.tween_interval(delay)
+	t.tween_property(frame, "modulate:a", 1.0, 0.03)
+	t.tween_property(frame, "modulate:a", 0.0, 0.25)
+	t.tween_callback(frame.queue_free)
+
+
+## 连爆 3×3 亮框本体：半透明暖橙填充 + 亮边（随延迟淡入淡出，编排在上方法）
+class ChainBlastFrame extends Node2D:
+	var rects: Array = []
+
+	func _draw() -> void:
+		for r in rects:
+			draw_rect(r, Color(1.0, 0.45, 0.15, 0.20), true)
+			draw_rect(r, Color(1.0, 0.65, 0.30, 0.65), false, 1.5)
+
+
+## 2-5 引光柱破碎：暖玉碎块飞散 + 「-50」暗红大跳字（扣分在 laser_manager 结算侧入账）
+func fx_pillar_broken(cell: Cell) -> void:
+	if cell == null:
+		return
+	for i in 5:
+		var s := Sprite2D.new()
+		s.name = _name("PillarShard")
+		s.texture = _frame(SHARD_SHEET, i % 3, 8, 8)
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.modulate = Color(0.95, 0.88, 0.6)
+		s.position = cell.position + Vector2(randf_range(-4, 4), randf_range(-8, 4))
+		add_child(s)
+		var dir := Vector2(randf_range(-1, 1), randf_range(-1.2, 0.2)).normalized()
+		var t := s.create_tween()
+		t.set_parallel(true)
+		t.tween_property(s, "position", s.position + dir * randf_range(8.0, 18.0), 0.30)
+		t.tween_property(s, "modulate:a", 0.0, 0.30)
+		t.chain().tween_callback(s.queue_free)
+	var node := Node2D.new()
+	node.name = _name("PillarPenalty")
+	var lbl := Label.new()
+	lbl.text = "-50"
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	lbl.add_theme_constant_override("outline_size", 3)
+	node.add_child(lbl)
+	node.position = cell.position + Vector2(-10, -18)
+	add_child(node)
+	var t2 := node.create_tween()
+	t2.set_parallel(true)
+	t2.tween_property(node, "position:y", node.position.y - 14.0, 0.55)
+	t2.tween_property(node, "modulate:a", 0.0, 0.55)
+	t2.chain().tween_callback(node.queue_free)
+
+
 # ---- 清理 ----
 
 ## 重开/切关时清空全部临时动效（由 Grid.init_empty_grid 调用）

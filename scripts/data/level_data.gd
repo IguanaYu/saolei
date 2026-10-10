@@ -33,6 +33,8 @@ var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷�
 var builders: bool = false                  # 2-2 起筑墙工（12s 首出/25s 补/上限 2）
 var preset_refractor: Dictionary = {}      # 2-3 预设折光驻点 {coord: Vector2i, config: "wide"|"scatter"}；空=无（赠送落此处不走 BFS）
 var builder_wall_sequence: Array = []       # 新墙耐久序列；空 = [1]（2-3 起覆写 [1,1,3]）
+var chain_nodes: Array[Vector2i] = []       # 2-4 连爆节点（预开安全格上的中立设施；空=无）
+var light_pillar: Vector2i = Vector2i(-9, -9)  # 2-5 引光柱（预开安全格；(-9,-9)=无）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽

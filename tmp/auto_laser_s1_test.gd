@@ -104,6 +104,8 @@ func FixedBoards_preopen() -> Array:
 
 
 func _shot(fname: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # 无渲染层：截图跳过（逻辑断言不受影响）
 	await RenderingServer.frame_post_draw
 	var img := root.get_texture().get_image()
 	img.save_png(EVIDENCE + fname)
@@ -112,6 +114,8 @@ func _shot(fname: String) -> void:
 
 ## 格中心裁剪 ×6 放大（像素验证用：角标/裂纹等小元素）
 func _shot_cell(coord: Vector2i, fname: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # 无渲染层：截图跳过（逻辑断言不受影响）
 	await RenderingServer.frame_post_draw
 	var cell = g.cells.get(coord)
 	if cell == null:

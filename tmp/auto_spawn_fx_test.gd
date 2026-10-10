@@ -96,6 +96,8 @@ func _click_button(text_part: String) -> bool:
 
 
 func _shot(fname: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # 无渲染层：截图跳过（逻辑断言不受影响）
 	await RenderingServer.frame_post_draw
 	var img := root.get_texture().get_image()
 	img.save_png(EVIDENCE + fname)

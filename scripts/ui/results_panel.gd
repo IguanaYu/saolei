@@ -312,6 +312,13 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 				"击破筑墙工 %d · 拆覆盖墙 %d" % [
 					int(s.get("builders_killed", 0)),
 					int(s.get("cover_walls_destroyed", 0))])
+		# 2-5 引光柱行：零值收起（无柱的关永隐藏）；破碎一次性 -50 已入总分
+		if int(s.get("pillar_hits", 0)) > 0:
+			var broken_txt := " · 已破碎（-50）" if int(s.get("pillar_broken", 0)) > 0 else ""
+			_add_row(ICON_STAR, "引光柱",
+				"命中 %d 次 · 最低耐久 %d%s" % [
+					int(s.get("pillar_hits", 0)),
+					int(s.get("pillar_lowest_hp", 6)), broken_txt])
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",

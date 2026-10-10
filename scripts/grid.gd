@@ -68,6 +68,10 @@ var rewarded_flags: Dictionary = {}
 # 第二章激光矿场：true 时左键=发射激光（基地→点击格），右键/和弦照旧（LevelData.laser_mode）
 var laser_mode := false
 
+# 2-4 中立设施占格表（coord → true；FacilityManager 是唯一写入方）：
+# 存活连爆节点/引光柱格不可走不可放；设施消耗后由管理器解除=格恢复普通
+var facility_cells: Dictionary = {}
+
 # 和弦防抖（双击检测 + 左右同按手势混用时，同格短窗内只触发一次）
 var _last_chord_coord := Vector2i(-999, -999)
 var _last_chord_at := -1.0
@@ -127,16 +131,23 @@ var _probe_preview: ProbePreview = null
 
 
 ## 第二章激光预览（2-1 WP3）：悬停时高亮整条束穿格 + 束线虚影——只画公开几何，
-## 预览格集与实际命中同源（都走 LaserGeometry.beam_cells，总纲 §4.5"预览不泄雷"）
+## 预览格集与实际命中同源（都走 LaserGeometry.beam_cells，总纲 §4.5"预览不泄雷"）。
+## 2-4 WP3：mark_cells 为本次可引爆的节点格（束 ∪ 整条链格集里的启动位），
+## 专属青色双描边与普通束格区分（设计 §4"画出本次整条链的范围"）
 class LaserPreview extends Node2D:
 	var cells: Array = []      # Vector2i 列表
+	var marks: Array = []      # 节点格（专属描边；链格已在 cells 里按普通样式画）
+	var pillar: Dictionary = {}  # 2-5 本次将命中的柱 {coord, hp}（空=不涉及）
 	var from_px := Vector2.ZERO
 	var to_px := Vector2.ZERO
 	var has_line := false
 	var cell_px := 28
 
-	func set_shot(cells_list: Array, from_local: Vector2, to_local: Vector2) -> void:
+	func set_shot(cells_list: Array, from_local: Vector2, to_local: Vector2,
+			mark_cells: Array = [], pillar_info: Dictionary = {}) -> void:
 		cells = cells_list
+		marks = mark_cells
+		pillar = pillar_info
 		from_px = from_local
 		to_px = to_local
 		has_line = true
@@ -144,32 +155,62 @@ class LaserPreview extends Node2D:
 
 	func clear_shot() -> void:
 		cells = []
+		marks = []
+		pillar = {}
 		has_line = false
 		queue_redraw()
 
 	func _draw() -> void:
+		var low_pillar: bool = not pillar.is_empty() and int(pillar.get("hp", 6)) <= 2
 		for c in cells:
 			var r := Rect2(Vector2(c.x * cell_px + 2.0, c.y * cell_px + 2.0),
 					Vector2(cell_px - 4.0, cell_px - 4.0))
-			draw_rect(r, Color(1.0, 0.42, 0.15, 0.13), true)
-			draw_rect(r, Color(1.0, 0.55, 0.25, 0.55), false, 1.0)
+			# 2-5：柱耐久 ≤2 时整段束格预览变暗红（射前理解代价，设计 §4）
+			var fill := Color(1.0, 0.42, 0.15, 0.13) if not low_pillar else Color(0.85, 0.18, 0.12, 0.16)
+			var border := Color(1.0, 0.55, 0.25, 0.55) if not low_pillar else Color(1.0, 0.35, 0.28, 0.7)
+			draw_rect(r, fill, true)
+			draw_rect(r, border, false, 1.0)
+		for c in marks:
+			# 节点启动位：亮青外框 + 内缩角标线（读作「打这里启动整条链」）
+			var ro := Rect2(Vector2(c.x * cell_px + 1.0, c.y * cell_px + 1.0),
+					Vector2(cell_px - 2.0, cell_px - 2.0))
+			draw_rect(ro, Color(0.45, 0.95, 1.0, 0.9), false, 2.0)
+			var ri := Rect2(Vector2(c.x * cell_px + 5.0, c.y * cell_px + 5.0),
+					Vector2(cell_px - 10.0, cell_px - 10.0))
+			draw_rect(ri, Color(0.45, 0.95, 1.0, 0.35), false, 1.0)
+		if not pillar.is_empty():
+			var pc: Vector2i = pillar.get("coord", Vector2i(-9, -9))
+			# 柱格预警描边（玉色=将损耗；hp≤2 已由束段暗红表达）
+			var rp := Rect2(Vector2(pc.x * cell_px + 1.0, pc.y * cell_px + 1.0),
+					Vector2(cell_px - 2.0, cell_px - 2.0))
+			draw_rect(rp, Color(0.98, 0.9, 0.55, 0.95), false, 2.0)
+			if int(pillar.get("hp", 6)) <= 1:
+				# 剩 1 点：线上弹出破碎代价文案（设计 §4「本次命中将破碎，-50 分」）
+				draw_string(ThemeDB.fallback_font,
+						Vector2(pc.x * cell_px - 20.0, pc.y * cell_px - 6.0),
+						"本次命中将破碎，-50 分", HORIZONTAL_ALIGNMENT_LEFT, 130.0, 11,
+						Color(1.0, 0.35, 0.28))
 		if has_line:
-			draw_line(from_px, to_px, Color(1.0, 0.78, 0.45, 0.45), 2.0)
+			draw_line(from_px, to_px,
+					Color(1.0, 0.78, 0.45, 0.45) if not low_pillar else Color(1.0, 0.4, 0.3, 0.55), 2.0)
 
 
 var _laser_preview: LaserPreview = null
 
 
 ## 激光预览公开入口：cells 为 LaserGeometry 输出（LaserManager/折光放置预览喂入）
-## placement=true 折光驻点预览（不画束线，只画出射格集）
-func show_laser_preview(target: Vector2i, cells: Array, placement := false) -> void:
+## placement=true 折光驻点预览（不画束线，只画出射格集）；mark_cells 节点启动位描边（2-4）；
+## pillar_info 本次将命中的柱预警（2-5）
+func show_laser_preview(target: Vector2i, cells: Array, placement := false,
+		mark_cells: Array = [], pillar_info: Dictionary = {}) -> void:
 	if _laser_preview == null:
 		return
 	if placement:
 		_laser_preview.set_shot(cells, Vector2.ZERO, Vector2.ZERO)
 	else:
 		_laser_preview.set_shot(cells, _cell_center_px(target),
-				_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target))
+				_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target),
+				mark_cells, pillar_info)
 	_laser_preview.visible = true
 
 
@@ -812,8 +853,10 @@ func is_walkable(coord: Vector2i) -> bool:
 		return false
 	var c: Cell = cells[coord]
 	# 坍塌格视为已开；L5 火区/触手占格 = 通路阻断（path_blockers 0 时与原判定逐字节等价）；
-	# 2-2 覆盖墙=已开格上的动态墙（阻挡通行，ch01 恒 0 行为不变）
-	return c.is_opened and c.path_blockers == 0 and c.cover_wall_hp <= 0
+	# 2-2 覆盖墙=已开格上的动态墙（阻挡通行，ch01 恒 0 行为不变）；
+	# 2-4 存活中立设施占格（连爆节点/引光柱，消耗后自动恢复通行）
+	return c.is_opened and c.path_blockers == 0 and c.cover_wall_hp <= 0 \
+			and not facility_cells.has(coord)
 
 
 ## 玩家领土（点杀可达性判定，2026-10-05 敌虫隔空点杀修复）：

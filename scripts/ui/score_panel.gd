@@ -9,6 +9,7 @@ extends PanelContainer
 @onready var combat_label: Label = $Margin/VBox/CombatScoreLabel
 @onready var shatter_label: Label = $Margin/VBox/ShatterScoreLabel
 @onready var cover_label: Label = $Margin/VBox/CoverScoreLabel
+@onready var pillar_label: Label = $Margin/VBox/PillarScoreLabel
 
 
 func _ready() -> void:
@@ -51,5 +52,9 @@ func _refresh() -> void:
 	var cover: int = int(s.get("cover_wall_score", 0))
 	cover_label.text = "拆墙 %d" % cover
 	cover_label.visible = cover > 0
+	# 2-5 引光柱行：破碎 -50 一次性入 pillar_score；零值收起（无柱的关永隐藏）
+	var pillar: int = int(s.get("pillar_score", 0))
+	pillar_label.text = "引光柱 %d" % pillar
+	pillar_label.visible = pillar != 0
 	# 引导/面板压暗层都在本栏之上（Main.tscn 侧栏置底），无需让路隐藏
 	visible = GameState.game_active

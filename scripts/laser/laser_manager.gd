@@ -12,6 +12,8 @@ signal laser_fired(target: Vector2i)          # 已发射（含空射；director
 signal laser_resolved(target: Vector2i)       # 整轮结算完成（后续关的达标检查挂点）
 signal robots_charged(robots: Array)          # 2-2：本轮充能的机器人（director 视觉自解释用）
 signal refractor_activated(r)               # 2-3：本轮主束命中折光（director 首增幅句挂点）
+signal chain_triggered(nodes: Array)        # 2-4：本轮引爆的连爆节点（快照 BFS 序）
+signal pillar_broken                          # 2-5：引光柱本轮破碎（-50 已入账）
 
 var grid: Grid = null
 var enemy_manager: EnemyManager = null
@@ -71,10 +73,21 @@ func refractor_at(c: Vector2i) -> RefractorRobot:
 	return null
 
 
+## 2-4：中立设施管理器（连爆节点；无则 null）
+func facility_manager() -> FacilityManager:
+	return get_node_or_null("../FacilityManager") as FacilityManager
+
+
 ## 一次射击的公开几何（预览与结算唯一同源，总纲 §4.5/§11）：
 ## 主束 base→target 超覆盖推进，遇第一台折光即止；折光按入射八向出射副束
 ## （wide=3 宽×6 走廊 / scatter=±45° 三束各 6）；副束不再激活其他折光（总纲 §6.2）。
-## 返回 {cells/main/sub/refractor}
+## 2-5 强制定向（总纲 §6.4，以射击开始的柱存活态为准——快照固化，破碎从下轮生效）：
+## 柱存活时折光出射主轴必指向柱——wide=折光→柱完整线段的 3 宽走廊；
+## scatter=中束连至柱 + 柱轴 ±45° 侧束各长 6；柱格必在命中集（每轮增幅必实际扣柱耐久）。
+## 2-4 连爆链（快照阶段整链展开，总纲 §5.3/§6.3）：束格（主+副）命中未消耗节点入队，
+## 队首节点 3×3 并入总命中集（走同一去重：格已在集=本轮已削过），范围内新节点续入队
+## ——束格与爆炸格合并成一个总命中集后才进逐格结算，链序只用于表现。
+## 返回 {cells/main/sub/refractor/chain_nodes/chain_cells/pillar}
 func compute_shot_geometry(base: Vector2i, target: Vector2i) -> Dictionary:
 	var main_cells: Array = []
 	var refractor: RefractorRobot = null
@@ -86,26 +99,77 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i) -> Dictionary:
 			break
 	var cells: Array = main_cells.duplicate()
 	var sub_cells: Array = []
+	var fm := facility_manager()
+	var pillar_coord := Vector2i(-9, -9)
+	if fm != null:
+		pillar_coord = fm.pillar_coord_alive()
 	if refractor != null:
-		var prev: Vector2i = main_cells[main_cells.size() - 2] 				if main_cells.size() >= 2 else base
-		var dir8 := LaserGeometry.octant_dir(prev, refractor.coord)
-		for c in refractor.outgoing_cells(dir8):
-			if not cells.has(c):
-				cells.append(c)
-				sub_cells.append(c)
-	return {"cells": cells, "main": main_cells, "sub": sub_cells, "refractor": refractor}
+		if pillar_coord != Vector2i(-9, -9):
+			# 2-5 定向：轴=折光→柱超覆盖线（不受 6 长限制，终止于柱、含柱格）
+			var axis := LaserGeometry.beam_cells(refractor.coord, pillar_coord)
+			var axis_dir := LaserGeometry.octant_dir(refractor.coord, pillar_coord)
+			if refractor.config == "wide":
+				var perp := Vector2i(-axis_dir.y, axis_dir.x)
+				for off in [Vector2i.ZERO, perp, -perp]:
+					for c in LaserGeometry.beam_cells(refractor.coord + off, pillar_coord + off):
+						if not cells.has(c):
+							cells.append(c)
+							sub_cells.append(c)
+			else:
+				for c in axis:
+					if not cells.has(c):
+						cells.append(c)
+						sub_cells.append(c)
+				for side in [LaserGeometry.rotate_octant(axis_dir, 1),
+						LaserGeometry.rotate_octant(axis_dir, -1)]:
+					for c in LaserGeometry.beam_cells(refractor.coord,
+							refractor.coord + side * 6):
+						if not cells.has(c):
+							cells.append(c)
+							sub_cells.append(c)
+		else:
+			var prev: Vector2i = main_cells[main_cells.size() - 2] 					if main_cells.size() >= 2 else base
+			var dir8 := LaserGeometry.octant_dir(prev, refractor.coord)
+			for c in refractor.outgoing_cells(dir8):
+				if not cells.has(c):
+					cells.append(c)
+					sub_cells.append(c)
+	var chain_nodes: Array = []
+	var chain_cells: Array = []
+	if fm != null:
+		var triggered: Dictionary = {}
+		var queue: Array = []
+		for c in cells:
+			var n := fm.node_at(c)
+			if n != null and not triggered.has(c):
+				triggered[c] = true
+				queue.append(n)
+		while not queue.is_empty():
+			var n: ChainNode = queue.pop_front()
+			chain_nodes.append(n)
+			for b in n.blast_cells(grid):
+				if not cells.has(b):
+					cells.append(b)
+					chain_cells.append(b)
+				var n2 := fm.node_at(b)
+				if n2 != null and not triggered.has(b):
+					triggered[b] = true
+					queue.append(n2)
+	return {"cells": cells, "main": main_cells, "sub": sub_cells, "refractor": refractor,
+			"chain_nodes": chain_nodes, "chain_cells": chain_cells, "pillar": pillar_coord}
 
 
-## 一次射击的完整结算（2-3 版）：compute_shot_geometry 快照 → 逐格结算（同格本轮一次）
-## ——未开格走 grid.open_cell（削层/破墙开格/碎钻，旗格跳过光束继续）；
-## 已开格：削覆盖墙 / 充能作业机器人 / 伤筑墙工（同轮各对象至多一次）；
-## 折光格本身无格层副作用（已开格），主束在它身上终止
+## 一次射击的完整结算（2-4 版）：compute_shot_geometry 快照（含连爆链整链展开）
+## → 逐格结算（总命中集内同格本轮一次）——未开格走 grid.open_cell（削层/破墙开格/碎钻，
+## 旗格/化石跳过照穿）；已开格：削覆盖墙 / 伤筑墙工（同轮各对象至多一次）；
+## → 充能例外（总纲 §6.3"爆炸不充能"）：只认束格（主/副原始格集），爆炸格不给充能
+## → 节点消耗（置 consumed + 占格解除 + 错峰演出）→ 信号/埋点
 func fire(base: Vector2i, target: Vector2i) -> void:
 	var geo := compute_shot_geometry(base, target)
-	var beam: Array = geo.cells
+	var hit: Array = geo.cells
 	var charged_robots: Array = []
 	var hit_builders: Dictionary = {}
-	for c in beam:
+	for c in hit:
 		var cell: Cell = grid.get_cell(c)
 		if cell == null:
 			continue
@@ -116,25 +180,48 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 				grid.damage_cover_wall_at(c, 1)
 			if enemy_manager != null:
 				for b in enemy_manager.builders:
-					if is_instance_valid(b) and b.is_alive() and b.coord == c 							and not hit_builders.has(c):
+					if is_instance_valid(b) and b.is_alive() and b.coord == c 						and not hit_builders.has(c):
 						hit_builders[c] = true
 						b.take_hit("player_laser")
-			var rm = get_node_or_null("../RobotManager")
-			if rm != null:
-				for r in rm.robots:
-					if (r.robot_type == "opener" or r.robot_type == "marker") 							and r.coord == c and not charged_robots.has(r):
-						r.apply_charge(6.0)
-						charged_robots.append(r)
 			continue
 		grid.open_cell(c, "player_laser")
+	# 充能只认束格：主束 + 副束原始格集（机器人只站已开格，此处无需再判开闭）
+	var beam_only: Array = geo.main.duplicate()
+	for c in geo.sub:
+		if not beam_only.has(c):
+			beam_only.append(c)
+	var rm = get_node_or_null("../RobotManager")
+	if rm != null:
+		for c in beam_only:
+			for r in rm.robots:
+				if (r.robot_type == "opener" or r.robot_type == "marker") 					and r.coord == c and not charged_robots.has(r):
+					r.apply_charge(6.0)
+					charged_robots.append(r)
+	# 2-4 节点消耗：同轮触发标记已在快照 BFS 保证一次；消耗后格恢复普通（Q2）
+	var fm := facility_manager()
+	if fm != null and not geo.chain_nodes.is_empty():
+		fm.consume_chain(geo.chain_nodes, grid)
+	# 2-5 引光柱受击（结算序 ③：致命判定在全部奖励之后、达标判定之前；陈旧的
+	# 延迟胜利由 main._end_game 的分数线复核拦下——350+20-50=320 不判胜）。
+	# 来源汇总（同轮去重后合计扣 1）：定向轴命中 / 直射束穿柱格 / 爆炸 3×3 波及
+	if fm != null and fm.pillar != null and is_instance_valid(fm.pillar) and hit.has(fm.pillar.coord):
+		var fatal := fm.pillar.take_hit()
+		GameState.result_stats["pillar_hits"] += 1
+		if fatal:
+			GameState.add_score(-50, "pillar")
+			GameState.result_stats["pillar_broken"] += 1
+			fm.on_pillar_broken(grid)
+			pillar_broken.emit()
 	_register_recent_opened(geo.main)
 	_play_beam_fx(base, target, geo)
 	if geo.get("refractor", null) != null:
 		refractor_activated.emit(geo.refractor)
 	if not charged_robots.is_empty():
 		robots_charged.emit(charged_robots)
+	if not geo.chain_nodes.is_empty():
+		chain_triggered.emit(geo.chain_nodes)
 	GameState.result_stats["shots_fired"] += 1
-	GameState.result_stats["beam_cells_total"] += beam.size()
+	GameState.result_stats["beam_cells_total"] += hit.size()
 	laser_fired.emit(target)
 	laser_resolved.emit(target)
 
@@ -176,7 +263,18 @@ func _on_cell_hovered(cell: Cell) -> void:
 	if base == Vector2i(-1, -1) or base == cell.coord:
 		grid.hide_laser_preview()
 		return
-	grid.show_laser_preview(cell.coord, compute_shot_geometry(base, cell.coord).cells)
+	# 2-4 WP3：预览=束格 ∪ 整条链格集（同一 BFS 公开几何），节点格用专属描边；
+	# 2-5 WP2：本次将命中柱 → 柱格预警描边；hp≤2 束段变暗红、hp==1 弹「将破碎」文案
+	var geo := compute_shot_geometry(base, cell.coord)
+	var marks: Array = []
+	for n in geo.chain_nodes:
+		marks.append(n.coord)
+	var pillar_info: Dictionary = {}
+	var fm := facility_manager()
+	if fm != null and fm.pillar != null and is_instance_valid(fm.pillar) \
+			and fm.pillar.is_alive and geo.cells.has(fm.pillar.coord):
+		pillar_info = {"coord": fm.pillar.coord, "hp": fm.pillar.hp}
+	grid.show_laser_preview(cell.coord, geo.cells, false, marks, pillar_info)
 
 
 func _on_cell_unhovered(_cell: Cell) -> void:

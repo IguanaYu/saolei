@@ -59,14 +59,17 @@ func _build() -> void:
 				_apply_playtest_level6(lvl)
 			elif ch_idx == 0 and s_idx == 6:
 				_apply_playtest_level7(lvl)
-			# 第二章「激光矿场」五关（2026-10-09 起；设计=docs/active/玩法设计/第二章-激光矿场/）：
-			# s03-s05 由各自实施计划落地时再接（现为默认模板占位）
+			# 第二章「激光矿场」五关（2026-10-09 起；设计=docs/active/玩法设计/第二章-激光矿场/）
 			elif ch_idx == 1 and s_idx == 0:
 				_apply_laser_s1(lvl)
 			elif ch_idx == 1 and s_idx == 1:
 				_apply_laser_s2(lvl)
 			elif ch_idx == 1 and s_idx == 2:
 				_apply_laser_s3(lvl)
+			elif ch_idx == 1 and s_idx == 3:
+				_apply_laser_s4(lvl)
+			elif ch_idx == 1 and s_idx == 4:
+				_apply_laser_s5(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -499,6 +502,103 @@ func _apply_laser_s3(lvl: LevelData) -> void:
 	lvl.fixed_base = FixedBoards.CH2_S3.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S3.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S3.walls)
+
+
+## 第二章 2-4「连爆节点」：中立建筑连爆=引爆时机与范围风险（2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/2-4-连爆节点-设计文档.md §2
+func _apply_laser_s4(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(16, 16)
+	lvl.mine_count = 32
+	var obj := ObjectiveData.new()  # ch02_s04 默认模板是 CLEAR_ALL_SAFE，覆写为限时积分
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 320
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 210.0
+	lvl.start_gold = 180
+	lvl.start_lives = 0
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true
+	lvl.builders = true
+	lvl.builder_wall_sequence = [1, 1, 3]   # 沿 2-3
+	lvl.preset_refractor = {"coord": FixedBoards.CH2_S4.refractor, "config": "wide"}
+	lvl.chain_nodes.assign(FixedBoards.CH2_S4.nodes)   # 6 座两组（教学组+工作面组）
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
+	lvl.shop_limits = {"guard": 1, "refractor_wide": 1, "refractor_scatter": 1}
+	lvl.shop_extra = ["guard", "refractor_wide", "refractor_scatter"]
+	lvl.allowed_modules = ["opener", "marker", "guard",
+			"refractor_wide", "refractor_scatter"]
+	lvl.start_robots = {"opener": 1, "marker": 1, "refractor_wide": 1}  # 落预设驻点（同 2-3）
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.allow_continue = true
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "连爆"
+	lvl.intro_line = "先护住钻石，再引爆整片节点。"
+	lvl.mechanic_tags = ["激光", "连爆", "筑墙工"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S4.mines)
+	lvl.fixed_base = FixedBoards.CH2_S4.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S4.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S4.walls)
+
+
+## 第二章 2-5「引光与节制」：强制定向 + 易损中立目标=增幅节奏管理（2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/2-5-引光与节制-设计文档.md §2
+func _apply_laser_s5(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(16, 16)
+	lvl.mine_count = 32
+	var obj := ObjectiveData.new()  # ch02_s05 默认模板是 SURVIVE_TIME+禁标雷，覆写
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 360
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 240.0
+	lvl.start_gold = 200
+	lvl.start_lives = 0
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true
+	lvl.builders = true
+	lvl.builder_wall_sequence = [1, 1, 3]
+	lvl.preset_refractor = {"coord": FixedBoards.CH2_S5.refractor, "config": "wide"}
+	lvl.chain_nodes.assign(FixedBoards.CH2_S5.nodes)   # 3 座 1 组（组合用，不再教学）
+	lvl.light_pillar = FixedBoards.CH2_S5.pillar       # 折光出射主轴必指向（耐久 6/恢复 6s+3s）
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
+	lvl.shop_limits = {"guard": 1, "refractor_wide": 1, "refractor_scatter": 1}
+	lvl.shop_extra = ["guard", "refractor_wide", "refractor_scatter"]
+	lvl.allowed_modules = ["opener", "marker", "guard",
+			"refractor_wide", "refractor_scatter"]
+	lvl.start_robots = {"opener": 1, "marker": 1, "refractor_wide": 1}  # 落预设驻点
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.allow_continue = true
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "引光"
+	lvl.intro_line = "强力增幅有代价：引光柱会损耗。"
+	lvl.mechanic_tags = ["激光", "引光柱", "折光"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S5.mines)
+	lvl.fixed_base = FixedBoards.CH2_S5.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S5.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S5.walls)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

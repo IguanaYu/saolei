@@ -91,13 +91,14 @@ func tick(delta: float, grid, _target_base: Vector2i) -> void:
 		_try_build(grid)
 
 
-## 已开区内 4 邻随机游走（不出已开区；覆盖墙格不可站）
+## 已开区内 4 邻随机游走（不出已开区；覆盖墙/中立设施格不可站）
 func _wander_step(grid) -> void:
 	var options: Array = []
 	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 		var n: Vector2i = coord + o
 		var c: Cell = grid.get_cell(n)
-		if c != null and c.is_opened and c.cover_wall_hp <= 0 and not c.is_base:
+		if c != null and c.is_opened and c.cover_wall_hp <= 0 and not c.is_base \
+				and not grid.facility_cells.has(n):
 			options.append(n)
 	if options.is_empty():
 		return
@@ -123,6 +124,8 @@ func _try_build(grid, laser_manager = null) -> void:
 				continue
 			if cell.is_base or cell.is_vein or cell.is_flagged or cell.is_collapsed:
 				continue  # 不占基地/已转化资源/旗格/坍塌
+			if grid.facility_cells.has(c):
+				continue  # 不占中立设施格（2-4 连爆节点/2-5 柱，总纲 §7/Q4）
 			if _robot_at(c):
 				continue  # 不推挤机器人
 			if lm != null and lm.was_recently_lasered(c):

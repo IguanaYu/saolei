@@ -89,6 +89,8 @@ func _inject_click(screen_pos: Vector2) -> void:
 
 
 func _shot(fname: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # 无渲染层：截图跳过（逻辑断言不受影响）
 	await RenderingServer.frame_post_draw
 	var img := root.get_texture().get_image()
 	img.save_png(EVIDENCE + fname)
@@ -208,8 +210,8 @@ func _phase2_takeover() -> void:
 	check(corridor_hit, "宽束走廊=3 宽×6（含 (13,y) 列）")
 	var peeled0: int = int(GS.result_stats["layers_peeled"])
 	main._on_laser_fire_requested(Vector2i(13, 7))
-	check(int(GS.result_stats["layers_peeled"]) == peeled0 + 3,
-			"副束削走廊正面三墙各一层（同轮单格一层，共 +3）")
+	check(int(GS.result_stats["layers_peeled"]) == peeled0 + 10,
+			"副束削走廊宽墙带 10 面各一层（(9-11,y)×3+(13,7)，同轮单格一层，实 +%d）" % (int(GS.result_stats["layers_peeled"]) - peeled0))
 	check(int(g.cells[Vector2i(9, 7)].wall_hp) == 2, "(9,7) 3→2")
 	check(int(g.cells[Vector2i(9, 6)].wall_hp) == 2 and int(g.cells[Vector2i(9, 8)].wall_hp) == 2,
 			"走廊两侧 (9,6)(9,8) 同削一层（3 宽生效）")

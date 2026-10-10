@@ -50,8 +50,14 @@ var ch02_s1_director: Ch02S1Director = null
 var ch02_s2_director: Ch02S2Director = null
 # 第二章 2-3 折光关剧本控制器
 var ch02_s3_director: Ch02S3Director = null
+# 第二章 2-4 连爆关剧本控制器
+var ch02_s4_director: Ch02S4Director = null
+# 第二章 2-5 引光关剧本控制器
+var ch02_s5_director: Ch02S5Director = null
 # 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
 var laser_manager: LaserManager = null
+# 第二章中立设施管理器（2-4 连爆节点 + 2-5 引光柱；BoardRoot 下同 laser 先例）
+var facility_manager: FacilityManager = null
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -205,10 +211,23 @@ func _ready() -> void:
 	ch02_s3_director = Ch02S3Director.new()
 	ch02_s3_director.name = "Ch02S3Director"
 	add_child(ch02_s3_director)
+	ch02_s4_director = Ch02S4Director.new()
+	ch02_s4_director.name = "Ch02S4Director"
+	add_child(ch02_s4_director)
+	ch02_s5_director = Ch02S5Director.new()
+	ch02_s5_director.name = "Ch02S5Director"
+	add_child(ch02_s5_director)
+	# 2-4 中立设施管理器（清理/重投影/装载三链接线见 FacilityManager 头注）
+	facility_manager = FacilityManager.new()
+	facility_manager.name = "FacilityManager"  # 显式命名，避免遍历误匹配
+	$BoardRoot.add_child(facility_manager)
 	laser_manager.refractor_activated.connect(
 		func(_r): tutorial_guide.notify_event("refractor_activated"))
 	laser_manager.robots_charged.connect(
 		func(_rs): tutorial_guide.notify_event("robots_charged"))
+	laser_manager.chain_triggered.connect(
+		func(_ns): tutorial_guide.notify_event("chain_triggered"))
+	laser_manager.chain_triggered.connect(ch02_s4_director.on_chain_triggered)
 	enemy_manager.builder_now.connect(func(_b): tutorial_guide.notify_event("builder_spawned"))
 	enemy_manager.builder_hurt.connect(func(_b): tutorial_guide.notify_event("builder_damaged"))
 	grid.laser_fire_requested.connect(_on_laser_fire_requested)
@@ -359,6 +378,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	robot_manager.remove_all()
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
 	boss_manager.clear()   # 上一局的 Boss 实体/阶段状态清空（非 Boss 关为空操作）
+	facility_manager.clear()  # 上一局的中立设施清空（2-4 节点/2-5 柱；空关为空操作）
 	if lvl != null:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
@@ -396,6 +416,11 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		elif lvl.pregen_random:
 			grid.apply_random_board()
 			enemy_manager.setup_board(grid)
+		# 2-4 连爆节点装载（固定盘/随机盘同口径；空列表=no-op，非本章关零影响）
+		facility_manager.setup_chain_nodes(grid, lvl.chain_nodes)
+		# 2-5 引光柱装载（(-9,-9)=无柱；占格同节点口径）
+		if lvl.light_pillar != Vector2i(-9, -9):
+			facility_manager.setup_pillar(grid, lvl.light_pillar)
 		# L5 Boss 关（FIND_ALL_MINES 目标 = 有 Boss 的关）：实体+阶段机就位（安静 Boss 关
 		# 的招式表在 M2-M4 逐阶段填实；盘外锚点定位不依赖基地摆放）
 		var obj0 = lvl.objectives[0] if not lvl.objectives.is_empty() else null
@@ -458,6 +483,10 @@ func _maybe_start_tutorial() -> void:
 		ch02_s2_director.begin()
 	elif GameState.current_level_id == "ch02_s03" and ch02_s3_director != null:
 		ch02_s3_director.begin()
+	elif GameState.current_level_id == "ch02_s04" and ch02_s4_director != null:
+		ch02_s4_director.begin()
+	elif GameState.current_level_id == "ch02_s05" and ch02_s5_director != null:
+		ch02_s5_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -510,6 +539,7 @@ func _relayout_play_area() -> void:
 	robot_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
+	facility_manager.reproject_all(grid)
 	_update_scroll_buttons()
 	if tutorial_guide.visible:
 		tutorial_guide._relayout_current()
@@ -544,6 +574,7 @@ func _on_grid_view_changed(_view_top_px: float) -> void:
 	robot_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
+	facility_manager.on_grid_relaid(grid)
 	_update_scroll_buttons()
 
 
@@ -683,6 +714,8 @@ func _on_tutorial_rewatch() -> void:
 	GameSettings.set_value("tutorial_done_ch02_s01", false)    # 第二章 2-1 激光关教学
 	GameSettings.set_value("tutorial_done_ch02_s02", false)    # 第二章 2-2 充能拆敌关教学
 	GameSettings.set_value("tutorial_done_ch02_s03", false)    # 第二章 2-3 折光关教学
+	GameSettings.set_value("tutorial_done_ch02_s04", false)    # 第二章 2-4 连爆关教学
+	GameSettings.set_value("tutorial_done_ch02_s05", false)    # 第二章 2-5 引光关教学
 	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 
@@ -784,6 +817,7 @@ func _process(delta: float) -> void:
 	robot_manager.tick_all(delta, grid)
 	enemy_manager.tick(delta, grid)  # L4 敌虫：与机器人同点驱动，pause/结算天然停摆
 	boss_manager.tick(delta, grid)   # L5 Boss：阶段机/出招计时（非 Boss 关 tick 内部短路）
+	facility_manager.tick(delta, grid)  # 2-5 引光柱恢复（2-4 无柱=no-op；三重门天然冻结）
 
 
 # ---- 初始基地放置阶段 ----
@@ -1030,7 +1064,7 @@ func place_block_reason(coord: Vector2i) -> String:
 			return "金币不够"
 		return ""
 
-	# 2-3 折光驻点：已开安全空格（不占资源/覆盖墙/基地/其他单位当前格）
+	# 2-3 折光驻点：已开安全空格（不占资源/覆盖墙/基地/中立设施/其他单位当前格）
 	if placing_mode.begins_with("refractor"):
 		if cell == null:
 			return "盘外"
@@ -1040,6 +1074,8 @@ func place_block_reason(coord: Vector2i) -> String:
 			return "这格已被占用"
 		if cell.cover_wall_hp > 0:
 			return "覆盖墙上不能放"
+		if grid.facility_cells.has(coord):
+			return "中立建筑上不能放"
 		if robot_manager.get_robot_positions().has(coord):
 			return "有单位站在这里"
 		if GameState.money < GameState.get_robot_price(placing_mode):
@@ -1455,6 +1491,13 @@ func _on_boss_kill_done() -> void:
 func _end_game(result: String) -> void:
 	if not GameState.game_active:
 		return
+	# 2-5 破柱数例防线（设计 §7）：达标判定被 call_deferred 延到整轮结算后，但 _end_game
+	# 自身若不复核分数线，同枪中途过线又破柱 -50 跌破（350+20-50=320）仍会按陈旧快照判胜
+	if result == "win":
+		var obj0 := GameState.current_objective
+		if obj0 != null and obj0.type == ObjectiveData.Type.REACH_SCORE \
+				and GameState.score < obj0.target_value:
+			return
 	GameState.game_active = false
 	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
 	_close_level_overlays()  # 结算收起升级面板/放置预览（P1-03：旧面板不再盖关前卡）

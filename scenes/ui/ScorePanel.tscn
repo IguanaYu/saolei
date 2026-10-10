@@ -75,6 +75,12 @@ text = "拆墙 0"
 theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 
+[node name="PillarScoreLabel" type="Label" parent="Margin/VBox"]
+visible = false
+text = "引光柱 0"
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
 [node name="Spacer" type="Control" parent="Margin/VBox"]
 size_flags_vertical = 3
 mouse_filter = 2

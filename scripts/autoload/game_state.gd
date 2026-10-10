@@ -117,6 +117,7 @@ var result_stats := {
 	"shatter_score": 0, "diamonds_shattered": 0,
 	"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
 	"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
+	"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,  # 2-5 引光柱（总纲 §11）
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -348,6 +349,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"shatter_score": 0, "diamonds_shattered": 0,
 		"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
 		"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
+		"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
