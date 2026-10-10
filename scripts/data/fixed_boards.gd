@@ -71,13 +71,14 @@ const CH2_S2 := {
 	"walls": [Vector2i(4, 2), Vector2i(4, 12), Vector2i(5, 2), Vector2i(5, 12), Vector2i(6, 2), Vector2i(6, 12), Vector2i(7, 2), Vector2i(7, 12), Vector2i(8, 3), Vector2i(8, 4), Vector2i(8, 5), Vector2i(8, 6), Vector2i(8, 7), Vector2i(8, 8), Vector2i(8, 12), Vector2i(9, 12), Vector2i(10, 9), Vector2i(11, 4), Vector2i(11, 5), Vector2i(11, 6), Vector2i(11, 10), Vector2i(12, 2), Vector2i(12, 12), Vector2i(13, 7)],
 }
 
-## 第二章 2-3 由 tmp/ch02_s3_board_finder_v2.py 烘焙（seed=389，改版 2026-10-10）：
-## 含矿石爆发模拟（束止于足迹→3 随机互异八向×≤3 步期望结算）。总分 290（目标 260）/
-## 24 旗全可推 / 0 碎钻 / 矿石 A 基地第 7 行直射可达 + 首触期望 4.36（正收益教学位）/
-## 足迹不切断预开连通；加固墙 30 格（东区 3×4 带为矿石 A 爆发面 + 北横带为矿石 B 面）；
+## 第二章 2-3 由 tmp/ch02_s3_board_finder_v2.py 烘焙（seed=2808，改版 2026-10-10）：
+## 含矿石爆发模拟（束止于足迹→3 随机互异八向×≤3 步期望结算）。总分 296（目标 260）/
+## 24 旗全可推 / 0 碎钻 / **贪婪路线实发矿石 8 次（矿石经济立得住）** /
+## 矿石 A 基地第 7 行直射可达 + 首触期望 2.48（正收益教学位）/ 足迹不切断预开连通；
+## 加固墙 30 格（东区 3×4 带为矿石 A 爆发面 + 北横带为矿石 B 面）；
 ## 矿石 2 处：A(7,6) 东带位 + B(3,4) 北带位；折光驻点退场（改版提案 D5）
 const CH2_S3 := {
-	"mines": [Vector2i(1, 1), Vector2i(1, 13), Vector2i(3, 2), Vector2i(3, 12), Vector2i(4, 11), Vector2i(5, 1), Vector2i(5, 11), Vector2i(6, 3), Vector2i(7, 1), Vector2i(7, 12), Vector2i(7, 13), Vector2i(8, 5), Vector2i(8, 10), Vector2i(9, 0), Vector2i(10, 2), Vector2i(10, 10), Vector2i(11, 0), Vector2i(11, 1), Vector2i(11, 2), Vector2i(11, 5), Vector2i(11, 12), Vector2i(12, 2), Vector2i(13, 2), Vector2i(13, 11)],
+	"mines": [Vector2i(0, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(3, 12), Vector2i(3, 13), Vector2i(4, 1), Vector2i(4, 13), Vector2i(6, 4), Vector2i(6, 10), Vector2i(7, 1), Vector2i(7, 10), Vector2i(7, 12), Vector2i(9, 4), Vector2i(9, 10), Vector2i(9, 12), Vector2i(10, 0), Vector2i(10, 3), Vector2i(10, 10), Vector2i(11, 2), Vector2i(12, 8), Vector2i(12, 11), Vector2i(12, 12), Vector2i(13, 6), Vector2i(13, 12)],
 	"preopen": [Vector2i(0, 3), Vector2i(0, 4), Vector2i(0, 5), Vector2i(0, 6), Vector2i(0, 7), Vector2i(0, 8), Vector2i(0, 9), Vector2i(0, 10), Vector2i(0, 11), Vector2i(1, 3), Vector2i(1, 4), Vector2i(1, 5), Vector2i(1, 6), Vector2i(1, 7), Vector2i(1, 8), Vector2i(1, 9), Vector2i(1, 10), Vector2i(1, 11), Vector2i(2, 3), Vector2i(2, 4), Vector2i(2, 5), Vector2i(2, 6), Vector2i(2, 7), Vector2i(2, 8), Vector2i(2, 9), Vector2i(2, 10), Vector2i(2, 11), Vector2i(3, 3), Vector2i(3, 4), Vector2i(3, 5), Vector2i(3, 6), Vector2i(3, 7), Vector2i(3, 8), Vector2i(3, 9), Vector2i(3, 10), Vector2i(3, 11), Vector2i(4, 4), Vector2i(4, 5), Vector2i(4, 6), Vector2i(4, 7), Vector2i(4, 8), Vector2i(4, 9), Vector2i(4, 10), Vector2i(5, 4), Vector2i(5, 5), Vector2i(5, 6), Vector2i(5, 7), Vector2i(5, 8), Vector2i(5, 9), Vector2i(5, 10), Vector2i(6, 5), Vector2i(6, 6), Vector2i(6, 7), Vector2i(6, 8), Vector2i(6, 9), Vector2i(7, 4), Vector2i(7, 5), Vector2i(7, 6), Vector2i(7, 7), Vector2i(7, 8), Vector2i(7, 9), Vector2i(8, 6), Vector2i(8, 7), Vector2i(8, 8)],
 	"base": Vector2i(1, 7),
 	"walls": [Vector2i(4, 2), Vector2i(4, 12), Vector2i(5, 2), Vector2i(5, 12), Vector2i(6, 2), Vector2i(6, 12), Vector2i(7, 2), Vector2i(7, 12), Vector2i(8, 12), Vector2i(9, 4), Vector2i(9, 5), Vector2i(9, 6), Vector2i(9, 7), Vector2i(9, 8), Vector2i(9, 12), Vector2i(10, 5), Vector2i(10, 6), Vector2i(10, 7), Vector2i(10, 8), Vector2i(10, 10), Vector2i(11, 5), Vector2i(11, 6), Vector2i(11, 7), Vector2i(11, 8), Vector2i(11, 11), Vector2i(12, 2), Vector2i(12, 4), Vector2i(12, 5), Vector2i(13, 7), Vector2i(13, 12)],
