@@ -28,6 +28,7 @@ var detector_speed_level: int = 0
 var miner_speed_level: int = 0
 var discount_level: int = 0
 var recharge_level: int = 0   # 点击恢复轨（玩家 CD 回充加速）
+var overload_range_level: int = 0  # 追加拍板 #11：过载扩爆档（0=13 格 / 1=17 格，本局一次性）
 
 # 继续挑战模式（胜利结算后回盘面：倒计时冻结/加分锁定/免命/分数累加）
 var continue_mode: bool = false
@@ -44,6 +45,8 @@ const RECHARGE_LEVELS := [1.0, 0.8, 0.65, 0.5]
 const RECHARGE_PRICES := [40, 80, 140]
 # L4 探测价（E1：单一来源，main/shop 共用；此前三处各写 100）
 const PROBE_PRICE := 100
+# 追加拍板 #11（2026-10-10）：过载「扩爆」一次性升级价——爆炸四正各再伸 1 格（13→17 格）
+const OVERLOAD_RANGE_PRICE := 150
 
 # 已购买机器人计数（用于价格递增）
 var opener_count: int = 0
@@ -120,6 +123,7 @@ var result_stats := {
 	"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 	"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,  # 2-5 引光柱（总纲 §11）
 	"ore_bursts": 0, "overload_blasts": 0,  # 改版 2-3/2-4 特殊矿石爆发/过载爆炸次数
+	"overload_range_bought": 0,  # 追加拍板 #11：扩爆升级购入（0/1，平衡归因用）
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -352,7 +356,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
 		"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 		"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,
-		"ore_bursts": 0, "overload_blasts": 0,
+		"ore_bursts": 0, "overload_blasts": 0, "overload_range_bought": 0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()
@@ -371,6 +375,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 	miner_speed_level = gs_move
 	discount_level = 0
 	recharge_level = 0
+	overload_range_level = 0
 	opener_count = 0
 	marker_count = 0
 	detector_count = 0

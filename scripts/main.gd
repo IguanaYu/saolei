@@ -1103,6 +1103,28 @@ func place_block_reason(coord: Vector2i) -> String:
 	return ""
 
 
+## 追加拍板 #11（2026-10-10）：过载「扩爆」一次性升级——爆炸四正各再伸 1 格（13→17 格）。
+## 门槛：已购过载机器人；价格 GameState.OVERLOAD_RANGE_PRICE（150，实测后调）；
+## 立即生效（blast_cells 实时读档，预览/结算/特效同源）
+func _buy_overload_range() -> bool:
+	if GameState.overload_range_level >= 1:
+		return false
+	if GameState.get_robot_purchased_count("overload") < 1:
+		hud.show_toast("先购买过载机器人", 1.5)
+		return false
+	if GameState.money < GameState.OVERLOAD_RANGE_PRICE:
+		hud.show_toast("金币不足", 1.5)
+		return false
+	GameState.add_money(-GameState.OVERLOAD_RANGE_PRICE)
+	GameState.overload_range_level = 1
+	GameState.result_stats["overload_range_bought"] = 1
+	GameState.game_event_logged.emit("过载扩爆 −%d金：爆炸射程 +1 格" \
+			% GameState.OVERLOAD_RANGE_PRICE, "player", "player")
+	shop._refresh_prices()  # 扣款信号先于升档到达——升档本身无信号，显式补刷「已升级」态
+	hud.show_toast("过载爆炸射程 +1 格", 2.5)
+	return true
+
+
 ## 无副作用的放置判定：悬停预览与 _try_place_at 共用同一套规则（盘点 v1 §约束 2：
 ## 禁止另写近似规则）。钱判定与 purchase_robot / get_base_price 的实际扣费口径一致。
 func can_place_at(coord: Vector2i) -> bool:

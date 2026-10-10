@@ -149,6 +149,7 @@ func _run() -> void:
 	await _phase1_board()
 	await _phase2_buy_patrol()
 	await _phase3_blast_economy()
+	await _phase4_range_upgrade()
 	_finish()
 
 
@@ -240,6 +241,46 @@ func _phase3_blast_economy() -> void:
 	check(g.get_cell(Vector2i(9, 7)).is_opened, "三次引爆削穿开格（3 层→开）")
 	check(int(GS.result_stats["overload_blasts"]) == 3, "overload_blasts 埋点 =3")
 	check(is_instance_valid(ov), "三连爆后仍存活（常驻移动炮台）")
+
+
+# ---- 阶段 4：扩爆升级（追加拍板 #11：13→17 格，贵价一次性） ----
+func _phase4_range_upgrade() -> void:
+	print("[Phase4] 扩爆升级")
+	check(GS.overload_range_level == 0, "初始档 0（13 格）")
+	check(main.shop.buy_overload_range_button.visible, "扩爆按钮可见（s4 extra 开闸）")
+	GS.add_money(300)
+	# 门槛态：无机器人 → 锁（临时清计数模拟未购；限购计数是门槛数据源）
+	GS.overload_count = 0
+	main.shop._refresh_prices()
+	check(main.shop.buy_overload_range_button.disabled, "未购过载 → 扩爆锁（需先购机器人）")
+	GS.overload_count = 1
+	main.shop._refresh_prices()
+	check(not main.shop.buy_overload_range_button.disabled, "已有过载 → 扩爆解锁（金币充足）")
+	var gold0: int = GS.money
+	check(main._buy_overload_range(), "购买扩爆成功")
+	check(GS.money == gold0 - GS.OVERLOAD_RANGE_PRICE, "扣 %d 金（贵价）"
+			% GS.OVERLOAD_RANGE_PRICE)
+	check(GS.overload_range_level == 1, "升档 1")
+	check(int(GS.result_stats["overload_range_bought"]) == 1, "购入埋点 1")
+	check(not main._buy_overload_range(), "重复购买拒绝（一次性）")
+	check(main.shop.buy_overload_range_button.disabled, "按钮转「已升级」锁")
+	# 17 格形态：盘心布置验证（(8,7) 四正远端 (11,7)(5,7)(8,10)(8,4) 全在界内）
+	var ov = null
+	for r in RM.robots:
+		if r.robot_type == "overload":
+			ov = r
+	if ov == null:
+		ov = RM.spawn_robot(Vector2i(8, 7), "overload", g)
+	ov.snap_to(Vector2i(8, 7), g)
+	var cells: Array = ov.blast_cells(g)
+	check(cells.size() == 17, "升级后爆炸 17 格（%d）" % cells.size())
+	var has_far: bool = cells.has(Vector2i(11, 7)) and cells.has(Vector2i(5, 7)) \
+			and cells.has(Vector2i(8, 10)) and cells.has(Vector2i(8, 4))
+	check(has_far, "四正远端 (11,7)(5,7)(8,10)(8,4) 全在爆炸集")
+	# 即时生效结算：升级后首爆削到 (11,7)（东墙带最远列，先置回 3 层）
+	g.get_cell(Vector2i(11, 7)).wall_hp = 3
+	_fire(Vector2i(8, 7))
+	check(g.get_cell(Vector2i(11, 7)).wall_hp == 2, "升级后爆炸削到远端墙（11,7 3→2）")
 
 
 func _finish() -> void:

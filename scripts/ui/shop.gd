@@ -12,6 +12,7 @@ signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（�
 @onready var buy_refractor_wide_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorWideButton
 @onready var buy_refractor_scatter_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyRefractorScatterButton
 @onready var buy_overload_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOverloadButton
+@onready var buy_overload_range_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOverloadRangeButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BuildRow/UpgradeButton
 @onready var build_base_button: Button = $MarginContainer/VBoxContainer/BuildRow/BuildBaseButton
 @onready var rules_button: Button = $MarginContainer/VBoxContainer/BuildRow/RulesButton
@@ -49,6 +50,7 @@ func _ready() -> void:
 	buy_refractor_wide_button.icon = BUTTON_ICONS.guard  # 程序占位：暂借保安图标
 	buy_refractor_scatter_button.icon = BUTTON_ICONS.guard
 	buy_overload_button.icon = BUTTON_ICONS.guard  # 改版 2-4：程序占位，素材批后换
+	buy_overload_range_button.icon = BUTTON_ICONS.upgrade  # 扩爆=升级语义，借升级图标
 	build_base_button.icon = BUTTON_ICONS.base
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
@@ -60,6 +62,9 @@ func _ready() -> void:
 	buy_refractor_scatter_button.pressed.connect(func(): _buy_refractor("refractor_scatter"))
 	# 改版 2-4 过载机器人：直购直出基地出厂（不走放置流，拍板 #10）
 	buy_overload_button.pressed.connect(func(): _buy("overload"))
+	# 追加拍板 #11：过载「扩爆」一次性升级（爆炸四正各再伸 1 格；先有机器人才可买）
+	buy_overload_range_button.pressed.connect(func():
+		get_node("/root/Main").call("_buy_overload_range"))
 	upgrade_button.pressed.connect(_on_upgrade)
 	build_base_button.pressed.connect(_on_build_base)
 	rules_button.pressed.connect(func():
@@ -179,6 +184,7 @@ func _refresh_prices() -> void:
 	_refresh_one(buy_refractor_wide_button, "refractor_wide", "折光·宽束")
 	_refresh_one(buy_refractor_scatter_button, "refractor_scatter", "折光·散射")
 	_refresh_one(buy_overload_button, "overload", "过载")
+	_refresh_overload_range()
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
 	build_base_button.text = "建基地 ¥%d" % base_price
@@ -201,6 +207,28 @@ func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void
 	btn.disabled = GameState.money < price
 
 
+## 追加拍板 #11：「扩爆」卡——三态：未购机器人（锁）/ 可购（含差价）/ 已升级（锁）
+func _refresh_overload_range() -> void:
+	if not buy_overload_range_button.visible:
+		return
+	if GameState.overload_range_level >= 1:
+		buy_overload_range_button.text = "🔒 扩爆·已升级\n17 格形态"
+		buy_overload_range_button.disabled = true
+		return
+	if GameState.get_robot_purchased_count("overload") < 1:
+		buy_overload_range_button.text = "🔒 扩爆 ¥%d\n需先购过载机器人" \
+				% GameState.OVERLOAD_RANGE_PRICE
+		buy_overload_range_button.disabled = true
+		return
+	var price: int = GameState.OVERLOAD_RANGE_PRICE
+	if GameState.money < price:
+		buy_overload_range_button.text = "扩爆 ¥%d\n差 ¥%d · 爆炸+1 格射程" \
+				% [price, price - GameState.money]
+	else:
+		buy_overload_range_button.text = "扩爆 ¥%d\n爆炸+1 格射程" % price
+	buy_overload_range_button.disabled = GameState.money < price
+
+
 ## 关卡级商店配置：隐藏本关不出现的按钮（教学关只留 opener/marker，钱不可能花错）；
 ## shop_extra 反向开闸：guard/probe 默认隐藏，L4/L5 声明后可见（level_data.gd 口径）
 func _apply_level_shop_config() -> void:
@@ -216,3 +244,5 @@ func _apply_level_shop_config() -> void:
 	buy_refractor_wide_button.visible = extra.has("refractor_wide") and not hidden.has("refractor_wide")
 	buy_refractor_scatter_button.visible = extra.has("refractor_scatter") and not hidden.has("refractor_scatter")
 	buy_overload_button.visible = extra.has("overload") and not hidden.has("overload")
+	buy_overload_range_button.visible = extra.has("overload_range") \
+			and not hidden.has("overload_range")

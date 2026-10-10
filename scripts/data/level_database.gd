@@ -526,7 +526,7 @@ func _apply_laser_s4(lvl: LevelData) -> void:
 	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug",
 			"refractor_wide", "refractor_scatter"]
 	lvl.shop_limits = {"guard": 1, "overload": 1}   # 过载 100 金限购 1（拍板 #9，折光位）
-	lvl.shop_extra = ["guard", "overload"]
+	lvl.shop_extra = ["guard", "overload", "overload_range"]  # 扩爆=追加拍板 #11（150 金一次性）
 	lvl.allowed_modules = ["opener", "marker", "guard", "overload"]
 	lvl.start_robots = {"opener": 1, "marker": 1}
 	lvl.upgrades_hidden = ["discount"]

@@ -125,6 +125,13 @@ clip_text = true
 text = "过载 ¥100"
 theme_override_font_sizes/font_size = 16
 
+[node name="BuyOverloadRangeButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
+visible = false
+custom_minimum_size = Vector2(220, 56)
+clip_text = true
+text = "扩爆 ¥150"
+theme_override_font_sizes/font_size = 16
+
 [node name="BuyProbeButton" type="Button" parent="MarginContainer/VBoxContainer/DeviceFlow"]
 visible = false
 custom_minimum_size = Vector2(220, 56)

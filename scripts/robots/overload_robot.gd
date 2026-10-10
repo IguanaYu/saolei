@@ -79,12 +79,20 @@ func _score(c: Cell, grid) -> float:
 	return float(n) + (0.0 if near_wall else WALL_PENALTY) + randf() * 0.99
 
 
-## 爆炸 13 格：3×3 + 四正方向各延伸 1 格（边界裁切；快照阶段由 LaserManager 取用）
+## 爆炸格：3×3 + 四正方向各延伸 1 格（拍板 #6，边界裁切；快照阶段由 LaserManager 取用）。
+## 追加拍板 #11（2026-10-10）：「扩爆」升级后四正各再伸 1 格（正 2→3 斜 1 不变，13→17 格）；
+## 读 GameState 实时档——预览/结算/特效共用本函数，升级即时生效
 func blast_cells(grid) -> Array:
 	var out: Array = []
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			out.append(coord + Vector2i(dx, dy))
+	var reach := 2
+	if GameState.overload_range_level >= 1:
+		reach = 3
 	for d in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
 		out.append(coord + d)
+	if reach >= 3:
+		for d in [Vector2i(3, 0), Vector2i(-3, 0), Vector2i(0, 3), Vector2i(0, -3)]:
+			out.append(coord + d)
 	return out.filter(func(c): return grid.cells.has(c))
