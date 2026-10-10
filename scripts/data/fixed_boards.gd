@@ -60,3 +60,13 @@ const CH2_S1 := {
 	"base": Vector2i(1, 6),
 	"walls": [Vector2i(4, 2), Vector2i(5, 2), Vector2i(5, 10), Vector2i(6, 2), Vector2i(6, 3), Vector2i(6, 4), Vector2i(6, 5), Vector2i(6, 6), Vector2i(6, 7), Vector2i(6, 10), Vector2i(7, 10), Vector2i(8, 10), Vector2i(9, 8), Vector2i(10, 3), Vector2i(10, 4), Vector2i(10, 9), Vector2i(11, 1), Vector2i(11, 11)],
 }
+
+## 第二章 2-2 由 tmp/ch02_s2_board_finder.py 烘焙：静态模拟 228 分 + 筑墙工经济
+## （7 只击杀 +10 与同代覆盖墙 +1，容量口径总纲 §8.3）≈ 300 容量带（目标 220 富余）/
+## 教学线A=无钻石射线 / 教学线B=一枪 ≥2 加固墙 / 加固墙 24 格手工布局与雷位独立
+const CH2_S2 := {
+	"mines": [Vector2i(0, 1), Vector2i(0, 12), Vector2i(1, 12), Vector2i(2, 2), Vector2i(3, 0), Vector2i(4, 1), Vector2i(4, 11), Vector2i(4, 12), Vector2i(7, 2), Vector2i(7, 11), Vector2i(8, 11), Vector2i(9, 8), Vector2i(10, 3), Vector2i(10, 6), Vector2i(10, 12), Vector2i(11, 0), Vector2i(11, 7), Vector2i(11, 8), Vector2i(11, 10), Vector2i(12, 1), Vector2i(12, 11), Vector2i(13, 2), Vector2i(13, 6), Vector2i(13, 12)],
+	"preopen": [Vector2i(0, 3), Vector2i(0, 4), Vector2i(0, 5), Vector2i(0, 6), Vector2i(0, 7), Vector2i(0, 8), Vector2i(0, 9), Vector2i(0, 10), Vector2i(0, 11), Vector2i(1, 3), Vector2i(1, 4), Vector2i(1, 5), Vector2i(1, 6), Vector2i(1, 7), Vector2i(1, 8), Vector2i(1, 9), Vector2i(1, 10), Vector2i(1, 11), Vector2i(2, 3), Vector2i(2, 4), Vector2i(2, 5), Vector2i(2, 6), Vector2i(2, 7), Vector2i(2, 8), Vector2i(2, 9), Vector2i(2, 10), Vector2i(2, 11), Vector2i(3, 3), Vector2i(3, 4), Vector2i(3, 5), Vector2i(3, 6), Vector2i(3, 7), Vector2i(3, 8), Vector2i(3, 9), Vector2i(3, 10), Vector2i(3, 11), Vector2i(4, 4), Vector2i(4, 5), Vector2i(4, 6), Vector2i(4, 7), Vector2i(4, 8), Vector2i(4, 9), Vector2i(4, 10), Vector2i(5, 4), Vector2i(5, 5), Vector2i(5, 6), Vector2i(5, 7), Vector2i(5, 8), Vector2i(5, 9), Vector2i(5, 10), Vector2i(6, 5), Vector2i(6, 6), Vector2i(6, 7), Vector2i(6, 8), Vector2i(6, 9), Vector2i(7, 5), Vector2i(7, 6), Vector2i(7, 7), Vector2i(7, 8), Vector2i(7, 9)],
+	"base": Vector2i(1, 7),
+	"walls": [Vector2i(4, 2), Vector2i(4, 12), Vector2i(5, 2), Vector2i(5, 12), Vector2i(6, 2), Vector2i(6, 12), Vector2i(7, 2), Vector2i(7, 12), Vector2i(8, 3), Vector2i(8, 4), Vector2i(8, 5), Vector2i(8, 6), Vector2i(8, 7), Vector2i(8, 8), Vector2i(8, 12), Vector2i(9, 12), Vector2i(10, 9), Vector2i(11, 4), Vector2i(11, 5), Vector2i(11, 6), Vector2i(11, 10), Vector2i(12, 2), Vector2i(12, 12), Vector2i(13, 7)],
+}

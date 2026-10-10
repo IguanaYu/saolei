@@ -55,6 +55,7 @@ signal fire_extinguish_requested(coord: Vector2i)  # L5 灭火：点任一火格
 signal laser_fire_requested(target: Vector2i)
 signal wall_damaged(cell, by_actor: String, layers_left: int)
 signal diamond_shattered(cell, by_actor: String)
+signal cover_wall_destroyed(cell)   # 2-2 覆盖墙拆完（Cell 级信号在此中继，main 连一次）
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 ## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
@@ -384,6 +385,7 @@ func init_empty_grid() -> void:
 			cell.cell_right_clicked.connect(_on_cell_right_clicked)
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
 			cell.cell_obstacle_cleared.connect(_on_cell_obstacle_cleared)
+			cell.cover_wall_destroyed.connect(_on_cover_wall_destroyed)
 			cell.mouse_entered.connect(_on_cell_mouse_entered.bind(cell))
 			cell.mouse_exited.connect(_on_cell_mouse_exited.bind(cell))
 			cells[coord] = cell
@@ -805,8 +807,9 @@ func is_walkable(coord: Vector2i) -> bool:
 	if not cells.has(coord):
 		return false
 	var c: Cell = cells[coord]
-	# 坍塌格视为已开；L5 火区/触手占格 = 通路阻断（path_blockers 0 时与原判定逐字节等价）
-	return c.is_opened and c.path_blockers == 0
+	# 坍塌格视为已开；L5 火区/触手占格 = 通路阻断（path_blockers 0 时与原判定逐字节等价）；
+	# 2-2 覆盖墙=已开格上的动态墙（阻挡通行，ch01 恒 0 行为不变）
+	return c.is_opened and c.path_blockers == 0 and c.cover_wall_hp <= 0
 
 
 ## 玩家领土（点杀可达性判定，2026-10-05 敌虫隔空点杀修复）：
@@ -876,6 +879,65 @@ func count_processed_mines() -> int:
 ## 牙数变化出口：三处状态变更点（toggle_flag/open_cell 塌雷/probe）调用
 func refresh_processed_mines() -> void:
 	processed_mines_changed.emit(count_processed_mines())
+
+
+# ---- 2-2 覆盖墙（筑墙工动态墙；总纲 §7）----
+
+## 全场覆盖墙总数（筑墙工 8 块上限用；builder 每 6s 一次的低频扫描可接受）
+func count_cover_walls() -> int:
+	var n := 0
+	for c in cells:
+		if cells[c].cover_wall_hp > 0:
+			n += 1
+	return n
+
+
+## 激光/机器人削覆盖墙转发入口（信号在 Cell 上，奖励由 main 接）
+func damage_cover_wall_at(coord: Vector2i, layers: int = 1) -> void:
+	var cell: Cell = cells.get(coord)
+	if cell != null:
+		cell.damage_cover_wall(layers)
+
+
+## 所有覆盖墙坐标（opener 拆墙目标扫描用）
+func get_cover_wall_coords() -> Array:
+	var out: Array = []
+	for c in cells:
+		if cells[c].cover_wall_hp > 0:
+			out.append(c)
+	return out
+
+
+## 出口保活（2-2 WP3 施工校验）：把 candidate 视为阻挡后，
+## 基地沿可走格 BFS 是否仍能到达任一「与未开格相邻」的工作前沿格。
+## 覆盖墙封死唯一出口会断掉机器人开墙通路 → 施工弃单（总纲 §7「不得封死基地唯一出口」）
+func base_can_reach_frontier(blocked: Vector2i) -> bool:
+	if GameState.bases.is_empty():
+		return true
+	var queue: Array[Vector2i] = [GameState.bases[0]]
+	var visited: Dictionary = {GameState.bases[0]: true}
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_front()
+		if _is_frontier_reachable(c, blocked):
+			return true  # 本格即工作前沿（邻接未开格）
+		for o in MapGenerator.NEIGHBOR_OFFSETS:
+			var n: Vector2i = c + o
+			if visited.has(n) or not cells.has(n) or n == blocked:
+				continue
+			var n_cell: Cell = cells[n]
+			if not n_cell.is_opened or n_cell.cover_wall_hp > 0 or n_cell.path_blockers > 0:
+				continue  # 沿已开无阻断格洪泛（坍塌/基地/矿脉 is_opened 天然可走）
+			visited[n] = true
+			queue.append(n)
+	return false
+
+
+func _is_frontier_reachable(c: Vector2i, blocked: Vector2i) -> bool:
+	for o in MapGenerator.NEIGHBOR_OFFSETS:
+		var f: Vector2i = c + o
+		if f != blocked and cells.has(f) and not cells[f].is_opened:
+			return true
+	return false
 
 
 ## L5 拔牙跳字公开入口（EffectsLayer.fx_tooth_pulled 的坐标封装；仅拔牙关生效）
@@ -978,6 +1040,10 @@ func clear_cell_obstacle(cell: Cell, by_actor: String) -> String:
 
 func _on_cell_obstacle_cleared(cell, kind: String, by_actor: String) -> void:
 	obstacle_cleared.emit(cell, kind, by_actor)
+
+
+func _on_cover_wall_destroyed(cell) -> void:
+	cover_wall_destroyed.emit(cell)
 
 
 func _on_cell_left_clicked(cell: Cell) -> void:

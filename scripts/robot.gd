@@ -9,6 +9,17 @@ extends Node2D
 
 var coord: Vector2i = Vector2i(-1, -1)
 var tick_interval: float = 2.0
+
+# ---- 2-2 激光充能（设计 §6.1：6s 移动/作业 ×2，刷新不叠倍率，与升级档位相乘）----
+var charge_until_elapsed: float = -1.0
+
+
+func is_charged() -> bool:
+	return GameState.elapsed < charge_until_elapsed
+
+
+func apply_charge(duration_sec: float = 6.0) -> void:
+	charge_until_elapsed = maxf(charge_until_elapsed, GameState.elapsed + duration_sec)
 var _tick_timer: float = 0.0
 var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
@@ -45,6 +56,44 @@ func _process(delta: float) -> void:
 	# 钻头、旗、探头、灯各自轻循环，不按移动/作业切换动作。
 	if MICRO_ANIMATION.is_gameplay_running(self):
 		_micro_loop.advance(delta)
+	_update_charge_ring()
+
+
+## 2-2 充能环（程序绘制占位）：charged 期间青色圆环 + 剩余比例，超时自隐
+var _charge_ring: Node2D = null
+
+
+func _update_charge_ring() -> void:
+	var charged: bool = is_charged()
+	if not charged:
+		if _charge_ring != null and is_instance_valid(_charge_ring):
+			_charge_ring.visible = false
+		return
+	if _charge_ring == null or not is_instance_valid(_charge_ring):
+		_charge_ring = ChargeRing.new()
+		_charge_ring.name = "ChargeRing"  # 显式命名，防遍历误匹配
+		add_child(_charge_ring)
+	var remain: float = charge_until_elapsed - GameState.elapsed
+	_charge_ring.set_progress(clampf(remain / 6.0, 0.0, 1.0))
+	_charge_ring.visible = true
+
+
+class ChargeRing extends Node2D:
+	var progress := 1.0
+	var _pulse := 0.0
+
+	func set_progress(p: float) -> void:
+		progress = p
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		_pulse += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var alpha: float = 0.55 + 0.25 * sin(_pulse * 6.0)
+		draw_arc(Vector2.ZERO, 13.0, -PI / 2.0, -PI / 2.0 + TAU * progress,
+			24, Color(0.4, 0.95, 1.0, alpha), 2.0)
 
 
 func set_initial_position(start_coord: Vector2i, grid) -> void:
@@ -88,6 +137,10 @@ func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
 	if grid.is_slime_nearby(coord):
 		tick_interval *= 2.0
 		GameState.result_stats["slowed_seconds"] += delta
+	# 2-2 激光充能：作业机器人 6s 内移动/作业 ×2（查档表后乘系数=升级×充能复乘口径；
+	# guard/detector/miner 不吃——设计只承诺开墙/标雷机器人，Q1 决策记录）
+	if is_charged() and (robot_type == "opener" or robot_type == "marker"):
+		tick_interval *= 0.5
 	_tick_timer += delta
 	if _tick_timer >= tick_interval:
 		_tick_timer = 0.0
@@ -101,10 +154,10 @@ func _next_tick_is_work() -> bool:
 
 
 func do_tick(grid, locked: Dictionary) -> void:
-	# 1. 清理失效目标
+	# 1. 清理失效目标（2-2 覆盖墙长在已开格上：只有「已开且无覆盖墙」才算完成）
 	if _current_target != null:
 		var c = grid.get_cell(_current_target)
-		if c == null or c.is_opened or c.is_flagged or c.is_collapsed:
+		if c == null or c.is_flagged or c.is_collapsed 				or (c.cover_wall_hp <= 0 and c.is_opened):
 			locked.erase(_current_target)
 			_current_target = null
 
@@ -114,6 +167,15 @@ func do_tick(grid, locked: Dictionary) -> void:
 		var want: String = "open" if robot_type == "opener" else "flag"
 		var my_actions := actions.filter(func(a): return a.action == want)
 		var targets: Array = my_actions.map(func(a): return a.coord)
+		# 2-2 覆盖墙兜底任务（仅 opener）：推理无事可做时接手已知安全覆盖墙（总纲 §7）
+		if targets.is_empty() and robot_type == "opener":
+			var covers: Array = grid.get_cover_wall_coords()
+			if not covers.is_empty():
+				var found_cover := Pathfinding.find_nearest_target(grid, coord, covers, locked, self)
+				if not found_cover.is_empty():
+					_current_target = found_cover.target
+					locked[_current_target] = self
+					# 锁定后落入下方既有寻路段：走到邻接格由作业分支削层（Q5 口径）
 		if targets.is_empty():
 			_state = "idle"
 			return
@@ -139,15 +201,23 @@ func do_tick(grid, locked: Dictionary) -> void:
 		return
 
 	if path_result.work_pos == coord:
-		# 邻接 → 直接作业
+		# 邻接 → 直接作业（2-2 起覆盖墙目标走削层分支：拆一层后目标仍在，下个作业 tick 续拆）
 		var action: String = "open" if robot_type == "opener" else "flag"
-		if robot_type == "opener":
-			grid.open_cell(_current_target, "robot_opener")
+		var cur_cell = grid.get_cell(_current_target)
+		if robot_type == "opener" and cur_cell != null and cur_cell.cover_wall_hp > 0:
+			grid.damage_cover_wall_at(_current_target, 1)
+			action = "cover_wall"
+			if cur_cell.cover_wall_hp <= 0:
+				locked.erase(_current_target)
+				_current_target = null
 		else:
-			grid.toggle_flag(_current_target, "robot_marker")
+			if robot_type == "opener":
+				grid.open_cell(_current_target, "robot_opener")
+			else:
+				grid.toggle_flag(_current_target, "robot_marker")
+			locked.erase(_current_target)
+			_current_target = null
 		action_performed.emit(self, action, _current_target)
-		locked.erase(_current_target)
-		_current_target = null
 		_state = "working"
 		_play_action_pulse()
 	else:

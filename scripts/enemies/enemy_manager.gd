@@ -19,12 +19,21 @@ const HARM_INTERVAL := 8.0    # 途中每 ~8s 施害 1 次
 const NEST_HP := 2            # 巢 HP：玩家点击 2 次（各吃 1 CD）摧毁
 const PRESET_WEBS := 3        # 预置网：盖已开数字（保安开局即有活）
 const PRESET_LOCKS := 3       # 预置锁：锁 frontier 关闭格
-const CLICK_REFRESH_SEC := 0.5  # 可达性视觉刷新节流（领土随开格变化 ≤0.5s 反映）
+const CLICK_REFRESH_SEC := 0.5  # 可达性视觉刷新节流（领土随开格变化 ≤0.5s 反应）
+
+# ---- 2-2 筑墙工（总纲 §7；与 L4 三虫波次表独立调度）----
+const BUILDER_SCENE_PATH := "res://scenes/Builder.tscn"
+const BUILDER_FIRST_AT := 12.0   # 有效游玩 12s 首只
+const BUILDER_INTERVAL := 25.0   # 此后每 25s 尝试补 1 只
+const BUILDER_MAX_ALIVE := 2
+const BUILDER_WALL_SEQUENCE := [1]  # 2-2 新墙恒 1 层（2-3 起按关覆写 [1,1,3]）
 
 signal enemy_spawned(enemy: Enemy)   # 剧本 #3「首虫出场后」的触发源
 signal nest_damaged(nest: Nest)      # 剧本 #2「巢被点第一下」的触发源
 signal nest_destroyed(nest: Nest)    # 结算「除巢数」
 signal enemy_killed(enemy: Enemy, by_actor: String)  # 击杀埋点（点杀/保安分列）
+signal builder_now(b)        # 2-2：筑墙工开始出场（裂隙亮起时；director 预警句挂点）
+signal builder_hurt(b)       # 2-2：筑墙工首次受击（director「激光也能击破敌人」挂点）
 
 var enemies: Array = []   # Array[Enemy]
 var nests: Array = []     # Array[Nest]
@@ -36,6 +45,10 @@ var waves_enabled := true
 var _wave_idx := 0
 var _elapsed := 0.0
 var _click_refresh_timer := 0.0
+var builders_enabled := false      # LevelData.builders（ch02 s02+ 开）
+var builder_wall_sequence: Array = []  # 空取 BUILDER_WALL_SEQUENCE 默认
+var _builder_spawned := 0
+var builders: Array = []           # Array[BuilderEnemy]（enemies 数组之外单独跟踪）
 
 
 ## 进关时调用（放基地前即可见，剧本 #0）：裂缝×2 + 预置网×3 + 预置锁×3
@@ -59,6 +72,19 @@ func tick(delta: float, grid) -> void:
 				continue  # 双巢皆除 = 再无新虫（设计 §5）
 			alive.shuffle()
 			spawn_enemy(alive[0].coord, String(wave.type), grid)
+	# 2-2 筑墙工调度：12s 首只 → 每 25s 补 → 场上 ≤2；裂隙预警在 Builder 内部编排
+	if builders_enabled:
+		var interval_seq: Array = builder_wall_sequence if not builder_wall_sequence.is_empty() 				else BUILDER_WALL_SEQUENCE
+		if _elapsed >= BUILDER_FIRST_AT 				and _builder_spawned == 0:
+			_spawn_builder(grid, interval_seq)
+		elif _builder_spawned > 0 				and _elapsed >= BUILDER_FIRST_AT + BUILDER_INTERVAL * _builder_spawned:
+			if _alive_builders() < BUILDER_MAX_ALIVE:
+				_spawn_builder(grid, interval_seq)
+			else:
+				_builder_spawned += 1  # 满员也推进序号，避免每帧重试
+		for b in builders.duplicate():
+			if is_instance_valid(b):
+				b.tick(delta, grid, Vector2i.ZERO)
 	# 虫推进（每 tick 重算最近基地：玩家中途放新基地可改变虫的奔袭目标）
 	for e in enemies.duplicate():
 		var target = GameState.get_nearest_base(e.coord)
@@ -98,6 +124,68 @@ func spawn_slime(at: Vector2i, grid) -> Enemy:
 	return spawn_enemy(at, "slime", grid)
 
 
+## 2-2 筑墙工出厂：已开区边缘随机位 + 裂隙预警 2s；不进 enemies（三虫波次/点杀链不认它）
+func _spawn_builder(grid, sequence: Array) -> void:
+	_builder_spawned += 1
+	var edge: Vector2i = _builder_edge_coord(grid)
+	var b: BuilderEnemy = load(BUILDER_SCENE_PATH).instantiate()
+	add_child(b)
+	b.coord = edge
+	b.position = grid.coord_to_world(edge)
+	b.spawn_with_rift(edge, grid, sequence)
+	builders.append(b)
+	b.died.connect(_on_builder_died)
+	b.builder_damaged.connect(func(_bb): builder_hurt.emit(_bb))
+	builder_now.emit(b)
+
+
+func _builder_edge_coord(grid) -> Vector2i:
+	# 已开区边缘：随机挑一个「邻接未开格」的已开格（靠近玩家生产区，设计 §3）
+	var edges: Array = []
+	for c in grid.cells:
+		var cell: Cell = grid.cells[c]
+		if not cell.is_opened or cell.is_base or cell.cover_wall_hp > 0:
+			continue
+		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + o
+			if grid.cells.has(n) and not grid.cells[n].is_opened:
+				edges.append(c)
+				break
+	if edges.is_empty():
+		return GameState.bases[0] if not GameState.bases.is_empty() else Vector2i.ZERO
+	edges.shuffle()
+	return edges[0]
+
+
+func _alive_builders() -> int:
+	var n := 0
+	for b in builders:
+		if is_instance_valid(b) and b.is_alive():
+			n += 1
+	return n
+
+
+## 统一伤害入口（玩家激光/护卫共用）：普通虫 1 血即死；筑墙工 2 血走 take_hit
+func damage_enemy(e: Enemy, by_actor: String, dmg: int = 1) -> void:
+	if e is BuilderEnemy:
+		(e as BuilderEnemy).take_hit(by_actor)
+		return
+	e.die(by_actor)  # kill_enemy 兼容别名保留给旧调用
+
+
+func _on_builder_died(b: BuilderEnemy, by_actor: String) -> void:
+	builders.erase(b)
+	# 击破奖励（设计 §8.1：+10 分 +5 金；玩家/护卫同酬）
+	GameState.add_score(10, "combat")
+	GameState.add_money(5, "guard_combat" if by_actor == "robot_guard" else "player_combat")
+	if by_actor == "player_laser":
+		GameState.result_stats["enemy_kills_player"] += 1
+	elif by_actor == "robot_guard":
+		GameState.result_stats["enemy_kills_guard"] += 1
+	GameState.result_stats["builders_killed"] += 1
+	GameState.game_event_logged.emit("击破 筑墙工 +10分", "player", "good")
+
+
 func count_alive_type(type: String) -> int:
 	var n := 0
 	for e in enemies:
@@ -118,9 +206,16 @@ func clear() -> void:
 	for n in nests:
 		n.queue_free()
 	nests.clear()
+	for b in builders:
+		if is_instance_valid(b):
+			b.queue_free()
+	builders.clear()
 	_wave_idx = 0
 	_elapsed = 0.0
 	_click_refresh_timer = 0.0
+	_builder_spawned = 0
+	builders_enabled = false
+	builder_wall_sequence = []
 	waves_enabled = true  # 恢复默认（L4）；L5 进关时再关（实施计划 §5-2 回归点）
 
 

@@ -307,6 +307,11 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 			"发射 %d 次 · 削层 %d · 碎钻 %d · 均束 %.1f 格" % [
 				fired, int(s.get("layers_peeled", 0)),
 				int(s.get("diamonds_shattered", 0)), avg_beam])
+		if int(s.get("builders_killed", 0)) > 0 or int(s.get("cover_walls_destroyed", 0)) > 0:
+			_add_row(ICON_STAR, "拆敌",
+				"击破筑墙工 %d · 拆覆盖墙 %d" % [
+					int(s.get("builders_killed", 0)),
+					int(s.get("cover_walls_destroyed", 0))])
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",

@@ -46,6 +46,8 @@ var level5_director: Level5Director = null
 var shop_guide_director: ShopGuideDirector = null
 # 第二章 2-1 激光关剧本控制器
 var ch02_s1_director: Ch02S1Director = null
+# 第二章 2-2 充能拆敌关剧本控制器
+var ch02_s2_director: Ch02S2Director = null
 # 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
 var laser_manager: LaserManager = null
 
@@ -191,13 +193,21 @@ func _ready() -> void:
 	laser_manager = LaserManager.new()
 	laser_manager.name = "LaserManager"  # 显式命名，避免遍历误匹配
 	$BoardRoot.add_child(laser_manager)
-	laser_manager.setup(grid)
+	laser_manager.setup(grid, enemy_manager)
 	ch02_s1_director = Ch02S1Director.new()
 	ch02_s1_director.name = "Ch02S1Director"
 	add_child(ch02_s1_director)
+	ch02_s2_director = Ch02S2Director.new()
+	ch02_s2_director.name = "Ch02S2Director"
+	add_child(ch02_s2_director)
+	laser_manager.robots_charged.connect(
+		func(_rs): tutorial_guide.notify_event("robots_charged"))
+	enemy_manager.builder_now.connect(func(_b): tutorial_guide.notify_event("builder_spawned"))
+	enemy_manager.builder_hurt.connect(func(_b): tutorial_guide.notify_event("builder_damaged"))
 	grid.laser_fire_requested.connect(_on_laser_fire_requested)
 	grid.wall_damaged.connect(_on_wall_damaged)
 	grid.diamond_shattered.connect(_on_diamond_shattered)
+	grid.cover_wall_destroyed.connect(_on_cover_wall_destroyed)
 	# 音频连接器（旁听信号→AudioManager）
 	var audio_connector := AudioConnector.new()
 	audio_connector.name = "AudioConnector"
@@ -348,6 +358,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		grid.wall_style = wall_style if wall_style != "" else chapter_style
 		grid.laser_mode = lvl.laser_mode  # 第二章：左键改道激光发射（非激光关恒 false）
 		laser_manager.reset_for_level()
+		enemy_manager.builders_enabled = lvl.builders        # 2-2 起筑墙工
+		enemy_manager.builder_wall_sequence = lvl.builder_wall_sequence
 		grid.shape_rows = lvl.shape_mask.duplicate()  # 形状掩码（空=矩形，普通关不受影响）
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
@@ -435,6 +447,8 @@ func _maybe_start_tutorial() -> void:
 		level5_director.begin()
 	elif GameState.current_level_id == "ch02_s01" and ch02_s1_director != null:
 		ch02_s1_director.begin()
+	elif GameState.current_level_id == "ch02_s02" and ch02_s2_director != null:
+		ch02_s2_director.begin()
 
 
 # ---- 暂停 / 放弃 ----
@@ -658,6 +672,7 @@ func _on_tutorial_rewatch() -> void:
 		GameSettings.set_value("tutorial_done_ch01_s0%d" % i, false)
 	GameSettings.set_value("tutorial_done_shop_guide", false)  # 局外商店引导一并重置（重置后仍需处于窗口期才会重播）
 	GameSettings.set_value("tutorial_done_ch02_s01", false)    # 第二章 2-1 激光关教学
+	GameSettings.set_value("tutorial_done_ch02_s02", false)    # 第二章 2-2 充能拆敌关教学
 	hud.show_toast("各关教学已重置，重新进关即可重看", 3.0)
 
 
@@ -896,6 +911,10 @@ func _try_place_first_base_at(world_pos: Vector2) -> bool:
 ## 设计 §5.1 开路接近）——隔空点杀被拦截、不耗 CD（压暗态自解释）
 func _try_hit_enemy_at(world_pos: Vector2) -> bool:
 	if not GameState.game_active:
+		return false
+	# 第二章激光关（Q2 拍板）：点杀入口旁路——点击敌所在格=照常发射激光
+	# （束终点即该格必命中，伤害/奖励走 fire 结算）；本函数保留给 ch01 逐格点击玩法
+	if grid.laser_mode:
 		return false
 	var hit_radius: float = grid.cell_size * 0.7
 	# L5 落弹最优先（引信期才可点：阴影期未落地、爆炸期已结束）
@@ -1244,6 +1263,14 @@ func _on_diamond_shattered(_cell, _by_actor: String) -> void:
 	GameState.add_score(1, "shatter")  # +1 分 0 金不扣命（总纲 §8.1；add_score 已钳 >=0）
 	GameState.result_stats["diamonds_shattered"] += 1
 	tutorial_guide.notify_event("diamond_shattered")
+
+
+## 2-2 覆盖墙拆完：+1 分 +1 金（每代墙一次；底层开格奖励不重复——预开口径天然防）
+func _on_cover_wall_destroyed(cell) -> void:
+	GameState.add_score(1, "cover_wall")
+	GameState.add_money(1, "player_combat")
+	GameState.result_stats["cover_walls_destroyed"] += 1
+	tutorial_guide.notify_event("cover_wall_destroyed")
 
 
 func _on_mine_stepped(_cell, _by_actor: String) -> void:

@@ -10,16 +10,19 @@ extends Node2D
 
 signal laser_fired(target: Vector2i)          # 已发射（含空射；director/埋点用）
 signal laser_resolved(target: Vector2i)       # 整轮结算完成（后续关的达标检查挂点）
+signal robots_charged(robots: Array)          # 2-2：本轮充能的机器人（director 视觉自解释用）
 
 var grid: Grid = null
+var enemy_manager: EnemyManager = null
 ## 最近 10s 被玩家激光打出的格（2-2 筑墙工优先在这些地面施工用；环形淘汰）
 var recent_laser_opened: Dictionary = {}  # coord -> elapsed
 
 const RECENT_WINDOW_SEC := 10.0
 
 
-func setup(g: Grid) -> void:
+func setup(g: Grid, em: EnemyManager = null) -> void:
 	grid = g
+	enemy_manager = em
 	g.cell_hovered.connect(_on_cell_hovered)
 	g.cell_unhovered.connect(_on_cell_unhovered)
 
@@ -51,10 +54,18 @@ func try_fire(target: Vector2i) -> bool:
 	return true
 
 
-## 一次射击的完整结算。2-1 为直射版：逐格走 grid.open_cell 统一入口
-## （hp>1 削层 / hp<=1 破墙开格 / 雷格碎钻），旗格跳过且光束继续（保护不阻断，总纲 §4.3）
+## 2-2 查询：该格最近 10s 是否被玩家激光拆过（筑墙工施工优先级用）
+func was_recently_lasered(c: Vector2i) -> bool:
+	return recent_laser_opened.has(c)
+
+
+## 一次射击的完整结算（2-2 版）：束格统一去重——
+## 未开格走 grid.open_cell（hp>1 削层 / hp<=1 破墙开格或碎钻，旗格跳过光束继续）；
+## 已开格：削覆盖墙 / 充能作业机器人 / 伤筑墙工（同轮各对象至多一次，总纲 §5.3）
 func fire(base: Vector2i, target: Vector2i) -> void:
 	var beam := LaserGeometry.beam_cells(base, target)
+	var charged_robots: Array = []
+	var hit_builders: Dictionary = {}
 	for c in beam:
 		var cell: Cell = grid.get_cell(c)
 		if cell == null:
@@ -62,10 +73,26 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 		if cell.is_flagged or cell.is_fossil:
 			continue  # 旗格受保护（光束继续）；化石无伤害交互（ch02 不布化石，防御）
 		if cell.is_opened:
-			continue  # 已开格：2-1 无事（2-2 起充能/对敌在此挂钩）
+			# 2-2 已开格三件事（同轮去重天然保证"每格削 1 层/每台充 1 次/每敌 1 伤"）
+			if cell.cover_wall_hp > 0:
+				grid.damage_cover_wall_at(c, 1)
+			if enemy_manager != null:
+				for b in enemy_manager.builders:
+					if is_instance_valid(b) and b.is_alive() and b.coord == c 							and not hit_builders.has(c):
+						hit_builders[c] = true
+						b.take_hit("player_laser")
+			var rm = get_node_or_null("../RobotManager")
+			if rm != null:
+				for r in rm.robots:
+					if (r.robot_type == "opener" or r.robot_type == "marker") 							and r.coord == c and not charged_robots.has(r):
+						r.apply_charge(6.0)
+						charged_robots.append(r)
+			continue
 		grid.open_cell(c, "player_laser")
 	_register_recent_opened(beam)
 	_play_beam_fx(base, target)
+	if not charged_robots.is_empty():
+		robots_charged.emit(charged_robots)
 	GameState.result_stats["shots_fired"] += 1
 	GameState.result_stats["beam_cells_total"] += beam.size()
 	laser_fired.emit(target)

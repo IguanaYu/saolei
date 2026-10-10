@@ -114,6 +114,7 @@ var result_stats := {
 	# 第二章激光矿场（总纲 §11 节奏观察四件套 + 碎钻；add_score 已钳 >=0 为 2-5 破柱预埋）
 	"shatter_score": 0, "diamonds_shattered": 0,
 	"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
+	"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -179,6 +180,7 @@ const SCORE_SOURCE_KEYS := {
 	"preopen": "preopen_score", "detector": "detector_score",
 	"combat": "combat_score", "time_bonus": "time_bonus",
 	"shatter": "shatter_score",  # 第二章：未标钻石被打碎 +1（总纲 §8.1）
+	"cover_wall": "cover_wall_score",  # 2-2：拆完覆盖墙 +1（每代墙一次）
 }
 
 
@@ -343,6 +345,7 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"phase_reached": 1, "phase2_elapsed": -1.0, "phase3_elapsed": -1.0,
 		"shatter_score": 0, "diamonds_shattered": 0,
 		"shots_fired": 0, "layers_peeled": 0, "beam_cells_total": 0,
+		"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()

@@ -30,6 +30,8 @@ var shape_mask: Array = []                  # 形状掩码（L形等异形盘）
 # ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/）----
 var laser_mode: bool = false                # true：左键=发射激光（基地→点击格），右键/和弦照旧
 var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷位独立；其余未开格默认 1 层）
+var builders: bool = false                  # 2-2 起筑墙工（12s 首出/25s 补/上限 2）
+var builder_wall_sequence: Array = []       # 新墙耐久序列；空 = [1]（2-3 起覆写 [1,1,3]）
 
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽

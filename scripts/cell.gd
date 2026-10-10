@@ -32,6 +32,10 @@ var path_blockers: int = 0      # 通路阻断计数（火/触手 +1/-1）：is_
 # 唯一削层入口 Grid.open_cell（>1 层先削不开格），零连开/和弦/机器人/激光同走该入口
 var wall_hp: int = 1
 
+# ---- 2-2 覆盖墙（筑墙工在已开地面上造的动态墙；总纲 §7）----
+# 只落在已开安全格：不改 is_opened/数字/钻石位；阻挡通行；拆掉 +1 分 +1 金（每代一次）
+var cover_wall_hp: int = 0
+
 # ---- 化石（2×2 永久多格障碍；调研 §4 定调：纯难度件，不可清除，透明口径不改数字）----
 var is_fossil: bool = false                 # 永久占位：不可开/不可标/机器人虫子皆不可入
 var fossil_origin: Vector2i = Vector2i(-9, -9)  # 所属 2×2 化石左上原点（贴图取象限用）
@@ -525,6 +529,31 @@ func damage_wall(layers: int = 1) -> bool:
 	return true
 
 
+## 覆盖墙铺设（筑墙工专用单入口；只接受已开安全地面）。返回是否铺成
+func place_cover_wall(hp: int) -> bool:
+	if not is_opened or is_base or is_vein or is_collapsed or is_fossil:
+		return false
+	if cover_wall_hp > 0 or is_flagged:
+		return false  # 已有覆盖墙/旗格不铺
+	cover_wall_hp = maxi(1, hp)
+	refresh_visual()
+	return true
+
+
+## 覆盖墙削层：归零时发 cover_wall_destroyed（奖励由 main 结算）；返回剩余层数
+func damage_cover_wall(layers: int = 1) -> int:
+	if cover_wall_hp <= 0:
+		return 0
+	cover_wall_hp = maxi(0, cover_wall_hp - layers)
+	refresh_visual()
+	if cover_wall_hp == 0:
+		cover_wall_destroyed.emit(self)
+	return cover_wall_hp
+
+
+signal cover_wall_destroyed(cell: Cell)
+
+
 ## 多层墙层数角标（程序占位：WP9 素材批换裂纹贴图；显式命名防遍历误匹配）
 var _wall_badge: Label = null
 
@@ -787,11 +816,34 @@ func refresh_visual() -> void:
 		_slime_overlay.texture = null
 	if is_on_fire:
 		bg.color = bg.color.lerp(Color(0.85, 0.30, 0.10), 0.55)  # 火：橙红炙烤
-	# 多层墙层数角标：仅未开格且 hp>1 显示（ch01 恒 1 层 → 永不显示，视觉零变化）
-	if not is_opened and wall_hp > 1:
+	# 多层墙层数角标：未开格墙 hp>1 或覆盖墙 hp>1 显示（ch01 恒不触发，视觉零变化）
+	if (not is_opened and wall_hp > 1) or cover_wall_hp > 1:
 		_ensure_wall_badge()
-		_wall_badge.text = "×%d" % wall_hp
+		_wall_badge.text = "×%d" % (wall_hp if not is_opened else cover_wall_hp)
 		_wall_badge.visible = true
 	elif _wall_badge != null and is_instance_valid(_wall_badge):
 		_wall_badge.visible = false
+	_refresh_cover_wall_visual(lbl)
 	cell_state_changed.emit(self)
+
+
+## 覆盖墙视觉（程序占位）：半透明岩色盖板 + 数字淡显（总纲 §4.7 建议）；素材批后换贴图
+var _cover_wall_rect: ColorRect = null
+
+
+func _refresh_cover_wall_visual(lbl: Label) -> void:
+	if cover_wall_hp > 0:
+		if _cover_wall_rect == null:
+			_cover_wall_rect = ColorRect.new()
+			_cover_wall_rect.name = "CoverWallOverlay"  # 显式命名，防遍历误匹配
+			_cover_wall_rect.position = Vector2(-14, -14)
+			_cover_wall_rect.size = Vector2(28, 28)
+			_cover_wall_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_cover_wall_rect.z_index = 2
+			add_child(_cover_wall_rect)
+		_cover_wall_rect.color = Color(0.32, 0.26, 0.20, 0.72)  # 岩色半透明盖板
+		_cover_wall_rect.visible = true
+		lbl.modulate = Color(1, 1, 1, 0.35)  # 底层数字淡显保留可读入口
+	elif _cover_wall_rect != null and is_instance_valid(_cover_wall_rect):
+		_cover_wall_rect.visible = false
+		# 数字颜色由 refresh_visual 上方分支每次全量重算，无需在此恢复

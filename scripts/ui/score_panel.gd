@@ -8,6 +8,7 @@ extends PanelContainer
 @onready var detector_label: Label = $Margin/VBox/DetectorScoreLabel
 @onready var combat_label: Label = $Margin/VBox/CombatScoreLabel
 @onready var shatter_label: Label = $Margin/VBox/ShatterScoreLabel
+@onready var cover_label: Label = $Margin/VBox/CoverScoreLabel
 
 
 func _ready() -> void:
@@ -46,5 +47,9 @@ func _refresh() -> void:
 	var shatter: int = int(s.get("shatter_score", 0))
 	shatter_label.text = "碎钻 %d" % shatter
 	shatter_label.visible = shatter > 0
+	# 2-2 拆墙行：零值收起（无筑墙工的关永隐藏）
+	var cover: int = int(s.get("cover_wall_score", 0))
+	cover_label.text = "拆墙 %d" % cover
+	cover_label.visible = cover > 0
 	# 引导/面板压暗层都在本栏之上（Main.tscn 侧栏置底），无需让路隐藏
 	visible = GameState.game_active

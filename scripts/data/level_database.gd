@@ -60,9 +60,11 @@ func _build() -> void:
 			elif ch_idx == 0 and s_idx == 6:
 				_apply_playtest_level7(lvl)
 			# 第二章「激光矿场」五关（2026-10-09 起；设计=docs/active/玩法设计/第二章-激光矿场/）：
-			# s02-s05 由各自实施计划落地时再接（现为默认模板占位）
+			# s03-s05 由各自实施计划落地时再接（现为默认模板占位）
 			elif ch_idx == 1 and s_idx == 0:
 				_apply_laser_s1(lvl)
+			elif ch_idx == 1 and s_idx == 1:
+				_apply_laser_s2(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -404,6 +406,50 @@ func _apply_laser_s1(lvl: LevelData) -> void:
 	lvl.fixed_base = FixedBoards.CH2_S1.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S1.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S1.walls)
+
+
+## 第二章 2-2「充能与拆敌」：激光充能机器人 + 筑墙工循环（2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/2-2-充能与拆敌-设计文档.md §2
+func _apply_laser_s2(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 24
+	var obj := ObjectiveData.new()  # ch02_s02 默认模板是 FLAG_N_MINES，覆写为限时积分
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 220
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 180.0
+	lvl.start_gold = 100
+	lvl.start_lives = 0
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true
+	lvl.builders = true               # 12s 首只筑墙工（裂隙预警 2s/25s 补/上限 2）
+	lvl.builder_wall_sequence = [1]   # 2-2 新墙恒 1 层
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
+	lvl.shop_limits = {"guard": 1}    # 护卫首次开放（80 金限购 1）
+	lvl.shop_extra = ["guard"]
+	lvl.allowed_modules = ["opener", "marker", "guard"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.allow_continue = true
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "充能"
+	lvl.intro_line = "同一束激光：拆墙、加速机器人、击破敌人。"
+	lvl.mechanic_tags = ["激光", "充能", "筑墙工"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S2.mines)
+	lvl.fixed_base = FixedBoards.CH2_S2.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S2.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S2.walls)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

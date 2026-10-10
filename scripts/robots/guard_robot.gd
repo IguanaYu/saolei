@@ -145,7 +145,7 @@ func _fire(grid) -> void:
 	if _target_kind == "enemy":
 		if _target_enemy != null and _target_enemy.is_alive():
 			var em: EnemyManager = get_node("/root/Main/BoardRoot/EnemyManager")
-			em.kill_enemy(_target_enemy, "robot_guard")
+			em.damage_enemy(_target_enemy, "robot_guard")  # 2-2 起统一伤害入口（builder 2 血）
 	else:
 		var cell = grid.get_cell(_target_coord)
 		if cell != null:
