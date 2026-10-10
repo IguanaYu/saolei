@@ -36,6 +36,7 @@ const SUGGEST_TRACKS := {
 @onready var record_badge: PanelContainer = $Center/Panel/VBox/RecordBadge
 @onready var stars_row: HBoxContainer = $Center/Panel/VBox/StarsRow
 @onready var star_hint_label: Label = $Center/Panel/VBox/StarHintLabel
+@onready var rewards_scroll: ScrollContainer = $Center/Panel/VBox/RewardsScroll
 @onready var rewards_box: VBoxContainer = $Center/Panel/VBox/RewardsScroll/RewardsBox
 @onready var final_score_label: Label = $Center/Panel/VBox/ScoreRow/FinalScoreLabel
 @onready var next_button: Button = $Center/Panel/VBox/ButtonsRow/NextLevelButton
@@ -307,18 +308,19 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 			"发射 %d 次 · 削层 %d · 碎钻 %d · 均束 %.1f 格" % [
 				fired, int(s.get("layers_peeled", 0)),
 				int(s.get("diamonds_shattered", 0)), avg_beam])
-		if int(s.get("builders_killed", 0)) > 0 or int(s.get("cover_walls_destroyed", 0)) > 0:
-			_add_row(ICON_STAR, "拆敌",
-				"击破筑墙工 %d · 拆覆盖墙 %d" % [
-					int(s.get("builders_killed", 0)),
-					int(s.get("cover_walls_destroyed", 0))])
-		# 2-5 引光柱行：零值收起（无柱的关永隐藏）；破碎一次性 -50 已入总分
+		# 2-5 引光柱行：零值收起（无柱的关永隐藏）；破碎一次性 -50 已入总分。
+		# 排在拆敌前——它是 2-5 的招牌数据，行多的局不能落到滚动折叠线下
 		if int(s.get("pillar_hits", 0)) > 0:
 			var broken_txt := " · 已破碎（-50）" if int(s.get("pillar_broken", 0)) > 0 else ""
 			_add_row(ICON_STAR, "引光柱",
 				"命中 %d 次 · 最低耐久 %d%s" % [
 					int(s.get("pillar_hits", 0)),
 					int(s.get("pillar_lowest_hp", 6)), broken_txt])
+		if int(s.get("builders_killed", 0)) > 0 or int(s.get("cover_walls_destroyed", 0)) > 0:
+			_add_row(ICON_STAR, "拆敌",
+				"击破筑墙工 %d · 拆覆盖墙 %d" % [
+					int(s.get("builders_killed", 0)),
+					int(s.get("cover_walls_destroyed", 0))])
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",
@@ -353,6 +355,16 @@ func _add_money_rows() -> void:
 			shown += 1
 	if shown > 1:
 		_add_row(ICON_COIN, "收入合计", "+%d金" % total)
+	_fit_rewards_scroll()  # 金钱行永远最后追加，视口在所有路径的收尾处自适应
+
+
+## 结算行多时按内容抬高滚动视口（2-5 全行结算曾把「引光柱」拦腰截半，2026-10-10）。
+## 高度对齐整行步进 27px（行高 21 + 间距 6）——折叠线永远落在行缝上，不切半行字；
+## 上限 297（11 行）：面板底在 768 基准视口仍留 ≥13px 余量；超出部分照常滚轮翻页
+func _fit_rewards_scroll() -> void:
+	var needed: float = rewards_box.get_combined_minimum_size().y
+	var h: float = clampf(needed, 243.0, 297.0)
+	rewards_scroll.custom_minimum_size.y = float(int(h / 27.0) * 27)
 
 
 func _handle_daily(result: String) -> void:

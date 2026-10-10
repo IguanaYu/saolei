@@ -240,7 +240,10 @@ func _play_beam_fx(base: Vector2i, target: Vector2i, geo: Dictionary = {}) -> vo
 	var fx: EffectsLayer = grid.get_node_or_null("EffectsLayer") as EffectsLayer
 	if fx == null:
 		return
-	fx.fx_laser_flash(grid.coord_to_world(base), grid.coord_to_world(target))
+	# 坐标系注意（2026-10-10 修复）：EffectsLayer 是 Grid 子节点，吃 Grid 本地系；
+	# 此前误传 BoardRoot 本地的 coord_to_world 输出，束整体偏移一个 grid.position
+	# （探针实测：BASE 格全局 (500,320)，束全局 (959,430)=多加了一次 (458,110)）
+	fx.fx_laser_flash(_cell_local(base), _cell_local(target))
 	if geo != null and geo.get("refractor", null) != null:
 		# 副束示意闪光（折光格→出射区质心；一束示意避免多线糊屏，逐格命中已由结算保证）
 		var sub: Array = geo.get("sub", [])
@@ -248,9 +251,18 @@ func _play_beam_fx(base: Vector2i, target: Vector2i, geo: Dictionary = {}) -> vo
 			var sum := Vector2.ZERO
 			for c in sub:
 				sum += Vector2(c)
-			fx.fx_laser_flash(grid.coord_to_world(geo.refractor.coord),
-					grid.coord_to_world(Vector2i((sum / sub.size()).round())))
+			fx.fx_laser_flash(_cell_local(geo.refractor.coord),
+					_cell_local(Vector2i((sum / sub.size()).round())))
 	fx.fx_base_flash(grid.get_cell(base))  # 炮口=基地短亮（复用出厂"工厂开工"语言）
+
+
+## 格心 → Grid 本地像素（EffectsLayer 坐标系；格节点缺失时按公式兜底）
+func _cell_local(c: Vector2i) -> Vector2:
+	var cell: Cell = grid.get_cell(c)
+	if cell != null:
+		return cell.position
+	return Vector2(c.x * grid.cell_size + grid.cell_size / 2.0,
+			c.y * grid.cell_size + grid.cell_size / 2.0)
 
 
 # ---- 悬停预览（公开几何，与结算共用 LaserGeometry；不泄雷，总纲 §4.5）----

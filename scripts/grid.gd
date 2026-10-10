@@ -993,7 +993,11 @@ func fx_tooth_at(coord: Vector2i) -> void:
 	if obj == null or obj.type != ObjectiveData.Type.FIND_ALL_MINES:
 		return
 	if _fx != null:
-		_fx.fx_tooth_pulled(coord_to_world(coord))
+		# Grid 本地系（EffectsLayer 是 Grid 子节点；2026-10-10 修复同激光束坐标系错位）
+		var cell: Cell = cells.get(coord)
+		var local: Vector2 = cell.position if cell != null else Vector2(
+				coord.x * cell_size + cell_size / 2.0, coord.y * cell_size + cell_size / 2.0)
+		_fx.fx_tooth_pulled(local)
 
 
 ## 坐标 → 父容器(BoardRoot)本地像素（格中心）。
