@@ -39,16 +39,18 @@ func refresh() -> void:
 	# 矿石行一并兜底刷：首通 L2 时 add_ore(ore_changed) 先于 mark_cleared 到达
 	# 且后者不发信号，不在这里补刷的话「升级」按钮会一直隐藏到下次矿石变动
 	_refresh_ore()
-	var idx := _current_index()
-	continue_button.text = "开始试玩" if idx == 0 and not SaveSystem.is_level_cleared(PLAYTEST_IDS[0]) \
-			else "继续试玩 · 第 %d 关" % (idx + 1)
-
-
-func _current_index() -> int:
-	for i in PLAYTEST_IDS.size():
-		if not SaveSystem.is_level_cleared(PLAYTEST_IDS[i]):
-			return i
-	return PLAYTEST_IDS.size() - 1   # 全通关 → 第 5 关（拍板：重玩最后一关）
+	# 2026-10-11：文案与主按钮行为同源（LevelSystem.get_progress_level_id 跨实装章找进度；
+	# 此前 PLAYTEST_IDS 困在 ch01 前五关，跨章后文案与实际进关不一致）
+	var id := LevelSystem.get_progress_level_id()
+	var lvl: LevelData = LevelSystem.get_level(id)
+	if lvl == null:
+		continue_button.text = "继续试玩"
+	elif not SaveSystem.is_level_cleared(PLAYTEST_IDS[0]) and id == PLAYTEST_IDS[0]:
+		continue_button.text = "开始试玩"
+	elif lvl.short_name != "":
+		continue_button.text = "继续试玩 · %s %s" % [lvl.display_name, lvl.short_name]
+	else:
+		continue_button.text = "继续试玩 · %s" % lvl.display_name
 
 
 func _refresh_ore() -> void:

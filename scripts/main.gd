@@ -263,14 +263,27 @@ func _show_main_menu() -> void:
 
 func _on_continue_play() -> void:
 	# 主按钮直进当前进度关：弹关前卡（首关教学在局内，见 director）
-	# 首个未通关关由 LevelSystem 统一给出（全通 → 末关，与菜单"第 5 关"文案一致）
+	# 2026-10-11：实装章节按序找首个未通关（此前只看 _current_chapter_id=ch01，
+	# 一章打完后按钮困在旧章末关；模板桩章节不参与进度）
 	main_menu.hide()
-	_open_pre_level(LevelSystem.get_first_uncleared_level_id(_current_chapter_id))
+	_open_pre_level(_progress_level_id())
+
+
+## 主按钮进度关：委托 LevelSystem.get_progress_level_id（与主菜单文案唯一同源）；
+## 顺带同步 _current_chapter_id（选关页落在进度章上）
+func _progress_level_id() -> String:
+	var id := LevelSystem.get_progress_level_id()
+	var lvl := LevelSystem.get_level(id)
+	if lvl != null and lvl.chapter_id != "":
+		_current_chapter_id = lvl.chapter_id
+	return id
 
 
 func _on_select_level() -> void:
+	# 2026-10-11 复活章节页（此前封闭试玩版直入关卡列表，跨章无入口——用户报"没有第二章入口"）
 	main_menu.hide()
-	_show_level_select()   # 绕过章节页；ChapterSelect 场景保留不用
+	chapter_select.refresh()
+	chapter_select.show()
 
 
 ## 统一选关页入口：先设章节并刷新再显示（P1-07：不初始化会露出空列表/陈旧详情）
@@ -296,8 +309,10 @@ func _on_chapter_select_back() -> void:
 
 
 func _on_level_select_back() -> void:
+	# 关卡列表返回 → 章节页（2026-10-11 章节页复活后的自然回链）
 	level_select.hide()
-	main_menu.show()
+	chapter_select.refresh()
+	chapter_select.show()
 	main_menu.refresh()
 
 
@@ -364,11 +379,15 @@ func _start_daily() -> void:
 
 
 func _start_level_with(lvl: LevelData, wall_style: String) -> void:
+	if lvl.chapter_id != "":
+		_current_chapter_id = lvl.chapter_id  # 选关页落在进度章（2026-10-11 章节页复活配套）
 	main_menu.hide()
 	chapter_select.hide()
 	level_select.hide()
 	results_panel.hide()
 	pause_panel.hide()
+	pre_level_card.hide()  # 正常流由「开始挖矿」收卡；直调/异常路径兜底（2026-10-11：
+	# 残留的关前卡全屏 Dim 会挡住 HUD 暂停键等一切局内 UI 点击）
 	tutorial_guide.hide()  # 中断上一局的引导
 	_close_level_overlays()  # 上一局的升级面板/放置预览/光标不带到新关（P1-03）
 	get_tree().paused = false
@@ -829,6 +848,19 @@ func _process(delta: float) -> void:
 # ---- 初始基地放置阶段 ----
 
 # 在 placing_base 阶段拦截所有点击，避免传到 Cell 触发开/标
+## 递归命中检测：点是否落在 UILayer 里任一「可见且吃鼠标」的控件上（按钮/面板；
+## mouse_filter=IGNORE 的透传容器不算）。放基地/放置阶段的左键守卫用——命中则留给 GUI
+func _ui_hit(node: Node, pos: Vector2) -> bool:
+	if node is Control and node.is_visible_in_tree() \
+			and node.mouse_filter != Control.MOUSE_FILTER_IGNORE \
+			and node.get_global_rect().has_point(pos):
+		return true
+	for c in node.get_children():
+		if _ui_hit(c, pos):
+			return true
+	return false
+
+
 func _input(event: InputEvent) -> void:
 	# Esc 已移交流程见 _ready：EscapeRouter（UILayer/ALWAYS）转发到 _handle_escape，
 	# 暂停树里本函数已停摆，不能再承担 Esc 分层（2026-10-03 盲测 F01）
@@ -836,6 +868,12 @@ func _input(event: InputEvent) -> void:
 	# （放置模式会 set_input_as_handled 把「跳过」的左键吞掉，回归 2026-10-01 P1）
 	if tutorial_guide.visible and event is InputEventMouseButton \
 			and tutorial_guide.is_point_on_chrome(event.position):
+		return
+	# 可见 UI 控件命中的左键留给 GUI（2026-10-11 修复：放基地/放置阶段 _input 吞掉
+	# 全部左键 → HUD 暂停键点不动；教学 chrome 早退的一般化，敌命中分支同受保护）
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT \
+			and _ui_hit($UILayer, event.position):
 		return
 	# 任一菜单覆盖层显示时不处理游戏输入
 	if not _in_game():

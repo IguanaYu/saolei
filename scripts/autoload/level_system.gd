@@ -22,6 +22,11 @@ func get_all_chapters() -> Array:
 	return db.all_chapters()
 
 
+## 实装章节（IMPLEMENTED_CHAPTERS 白名单过滤；模板桩章节不进 UI——2026-10-11 章节页复活配套）
+func get_implemented_chapters() -> Array:
+	return db.implemented_chapters()
+
+
 func is_chapter_unlocked(ch_id: String) -> bool:
 	return SaveSystem.is_chapter_unlocked(ch_id)
 
@@ -65,6 +70,21 @@ func get_first_uncleared_level_id(ch_id: String) -> String:
 		if not SaveSystem.is_level_cleared(id):
 			return String(id)
 	return String(ch.level_ids[-1])
+
+
+## 全局进度关（2026-10-11）：实装章节按序找首个未通关；全通 → 末个实装章末关。
+## 主按钮行为(main._on_continue_play)与文案(main_menu.refresh)唯一同源——
+## 此前文案困在 ch01 前五关(PLAYTEST_IDS)，跨章进度会对不上
+func get_progress_level_id() -> String:
+	var impl := get_implemented_chapters()
+	if impl.is_empty():
+		return ""
+	for ch in impl:
+		var id := get_first_uncleared_level_id(ch.id)
+		if not SaveSystem.is_level_cleared(id):
+			return id
+	var last_ch = impl[impl.size() - 1]
+	return String(last_ch.level_ids[last_ch.level_ids.size() - 1])
 
 
 ## 领取首通奖励（矿石入账），返回奖励数据用于展示

@@ -8,6 +8,11 @@ const MAX_DENSITY := 0.16  # 雷密度上限，超过会变成猜雷（体验崩
 const CHAPTER_DENSITY := [0.10, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15, 0.155, 0.16, 0.16, 0.16, 0.16]
 const CHAPTER_MODULE := ["opener_marker", "detector", "miner", "tower", "drone", "", "", "", "", "", "", ""]
 const CHAPTER_NAMES := ["新手村", "激光矿场", "产业链", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
+
+## 实装章节白名单（2026-10-11 用户拍板）：章节页/进度直进只认这些；
+## 其余章节是老路线图的模板桩关卡（随机盘+通用目标），不进 UI 不做进度目标。
+## 新章实装后在 _build 的 elif 链加 _apply 的同时把 id 加进这里。
+const IMPLEMENTED_CHAPTERS := ["ch01", "ch02"]
 # 章内 5 关"舒适度"乘子（spike-valley 模板）：越高越简单
 # 关1 爽 → 关2 顺 → 关3 Spike 卡关 → 关4 Valley 碾压 → 关5 Boss 难度尖峰
 const WITHIN_EASE := [1.20, 1.00, 0.85, 1.05, 0.65]
@@ -664,3 +669,8 @@ func get_chapter(id: String) -> ChapterData:
 
 func all_chapters() -> Array:
 	return chapters
+
+
+## 实装章节（IMPLEMENTED_CHAPTERS 白名单过滤，保序）；章节页/进度直进的数据源
+func implemented_chapters() -> Array:
+	return chapters.filter(func(ch): return IMPLEMENTED_CHAPTERS.has(ch.id))

@@ -161,7 +161,7 @@ func _run() -> void:
 	# 切第二章（逻辑直调 set_chapter，章节切换 UI 不在本次断言范围）
 	var level_select: Node = root.get_node("Main/UILayer/LevelSelect")
 	check(level_select != null, "选关页存在")
-	level_select.set_chapter("ch02")
+	root.get_node("Main")._on_chapter_selected("ch02")  # 2026-10-11 章节页复活配套
 	await _sec(0.5)
 	var btn2: Array = []
 	for n in _walk(root, []):

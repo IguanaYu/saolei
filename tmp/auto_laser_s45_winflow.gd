@@ -137,7 +137,7 @@ func _play_level(level_id: String, target: int, shot_prefix: String) -> void:
 	if menu_btn != null and not root.get_node("Main/UILayer/LevelSelect").visible:
 		await _click_button("选择关卡")
 		await _sec(0.8)
-	root.get_node("Main/UILayer/LevelSelect").set_chapter("ch02")
+	root.get_node("Main")._on_chapter_selected("ch02")  # 2026-10-11 章节页复活：选关后经章节页选章
 	await _sec(0.4)
 	var slot := level_id.split("_")[1].substr(1)   # "ch02_s05" → "05"
 	var card = await _await_btn(slot, 5.0)

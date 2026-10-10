@@ -121,7 +121,7 @@ func _run() -> void:
 	await _sec(0.8)
 	print("  [DEBUG] 选关后 level_id=", GS.current_level_id,
 			" cells=", main_grid_cells(), " active=", GS.game_active)
-	root.get_node("Main/UILayer/LevelSelect").set_chapter("ch02")
+	root.get_node("Main")._on_chapter_selected("ch02")  # 2026-10-11 章节页复活：选关后经章节页选章
 	await _sec(0.5)
 	var card = await _await_btn("02", 5.0)
 	check(card != null, "2-2 关卡入口可见")

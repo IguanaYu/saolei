@@ -16,13 +16,15 @@ func _ready() -> void:
 func refresh() -> void:
 	for child in grid_container.get_children():
 		child.queue_free()
-	for ch in LevelSystem.get_all_chapters():
+	# 只列实装章节（2026-10-11 复活本页配套）：老路线图模板桩章节不出现
+	for ch in LevelSystem.get_implemented_chapters():
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(190, 100)
 		var unlocked: bool = LevelSystem.is_chapter_unlocked(ch.id)
 		var stars: int = _chapter_stars(ch.id)
 		if unlocked:
-			btn.text = "%s %s\n%s\n★%d/15" % [ch.id.to_upper(), ch.display_name, _module_hint(ch.unlock_module), stars]
+			btn.text = "%s %s\n%s\n★%d/%d" % [ch.id.to_upper(), ch.display_name,
+					_module_hint(ch.unlock_module), stars, ch.level_ids.size() * 3]
 		else:
 			btn.text = "%s %s\n🔒" % [ch.id.to_upper(), ch.display_name]
 		btn.disabled = not unlocked

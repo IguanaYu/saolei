@@ -118,7 +118,7 @@ func _run() -> void:
 	check(menu_btn != null, "BootLoading 正常进主菜单")
 	await _click_button("选择关卡")
 	await _sec(0.8)
-	root.get_node("Main/UILayer/LevelSelect").set_chapter("ch02")
+	root.get_node("Main")._on_chapter_selected("ch02")  # 2026-10-11 章节页复活：选关后经章节页选章
 	await _sec(0.5)
 	var card = await _await_btn("03", 5.0)
 	check(card != null, "2-3 关卡入口可见")
