@@ -36,3 +36,13 @@ docs/active/试玩版内容/敌虫领土规则实测证据-2026-10-05/
 # docs/tmp 下参考图的 Godot 导入缓存（图本身未入库，.import 不得单独入库）
 tmp/**/*.import
 docs/**/*.import
+
+# 3D 资产与美术原型（本地留档不入库，2026-10-10）
+3d_asset_delivery/
+art_prototypes/
+assets/3d/
+docs/active/美术生产/3d风格探索/
+docs/reference/research/音效设计学习/
+
+# Python 缓存
+__pycache__/
