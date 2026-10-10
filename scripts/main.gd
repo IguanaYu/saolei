@@ -227,7 +227,11 @@ func _ready() -> void:
 		func(_rs): tutorial_guide.notify_event("robots_charged"))
 	laser_manager.chain_triggered.connect(
 		func(_ns): tutorial_guide.notify_event("chain_triggered"))
-	laser_manager.chain_triggered.connect(ch02_s4_director.on_chain_triggered)
+	# 改版 2-3/2-4：矿石爆发/过载爆炸推进聚光（s3 矿石首触句 / s4 过载首爆句）
+	laser_manager.ore_burst.connect(
+		func(_o, _cs): tutorial_guide.notify_event("ore_burst"))
+	laser_manager.overload_blast.connect(
+		func(_r, _cs): tutorial_guide.notify_event("overload_blast"))
 	enemy_manager.builder_now.connect(func(_b): tutorial_guide.notify_event("builder_spawned"))
 	enemy_manager.builder_hurt.connect(func(_b): tutorial_guide.notify_event("builder_damaged"))
 	grid.laser_fire_requested.connect(_on_laser_fire_requested)

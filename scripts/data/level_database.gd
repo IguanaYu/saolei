@@ -457,14 +457,14 @@ func _apply_laser_s2(lvl: LevelData) -> void:
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S2.walls)
 
 
-## 第二章 2-3「折光机器人」：新单位=输出形状选择（2026-10-10 实装）
-## 设计：docs/active/玩法设计/第二章-激光矿场/2-3-折光机器人-设计文档.md §2
+## 第二章 2-3「特殊矿石」：新中立物=可反复触发的本地开区工具（改版 2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/第二章改版提案-2026-10-10.md §4
 func _apply_laser_s3(lvl: LevelData) -> void:
 	lvl.grid_size = Vector2i(14, 14)
 	lvl.mine_count = 24
 	var obj := ObjectiveData.new()
 	obj.type = ObjectiveData.Type.REACH_SCORE
-	obj.target_value = 250
+	obj.target_value = 260
 	lvl.objectives = [obj]
 	lvl.time_limit_sec = 210.0
 	lvl.start_gold = 180
@@ -476,13 +476,13 @@ func _apply_laser_s3(lvl: LevelData) -> void:
 	lvl.laser_mode = true
 	lvl.builders = true
 	lvl.builder_wall_sequence = [1, 1, 3]   # 2-3 起新墙按固定序列循环（总纲 §7）
-	lvl.preset_refractor = {"coord": FixedBoards.CH2_S3.refractor, "config": "wide"}
-	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
-	lvl.shop_limits = {"guard": 1, "refractor_wide": 1, "refractor_scatter": 1}
-	lvl.shop_extra = ["guard", "refractor_wide", "refractor_scatter"]
-	lvl.allowed_modules = ["opener", "marker", "guard",
+	lvl.special_ores.assign(FixedBoards.CH2_S3.ores)   # 矿石 2 处（A 东带位 + B 北带位）
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug",
 			"refractor_wide", "refractor_scatter"]
-	lvl.start_robots = {"opener": 1, "marker": 1, "refractor_wide": 1}  # 落预设驻点
+	lvl.shop_limits = {"guard": 1}
+	lvl.shop_extra = ["guard"]
+	lvl.allowed_modules = ["opener", "marker", "guard"]
+	lvl.start_robots = {"opener": 1, "marker": 1}
 	lvl.upgrades_hidden = ["discount"]
 	lvl.upgrade_speed_prices = [50, 70, 100]
 	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
@@ -495,23 +495,23 @@ func _apply_laser_s3(lvl: LevelData) -> void:
 	lvl.base_price_flat = 80
 	lvl.no_stars = true
 	lvl.is_playtest = true
-	lvl.short_name = "折光"
-	lvl.intro_line = "射中折光机器人，激光变宽或散开。"
-	lvl.mechanic_tags = ["激光", "折光", "筑墙工"]
+	lvl.short_name = "矿石"
+	lvl.intro_line = "射中特殊矿石，周围一起开。"
+	lvl.mechanic_tags = ["激光", "矿石", "筑墙工"]
 	lvl.fixed_mines.assign(FixedBoards.CH2_S3.mines)
 	lvl.fixed_base = FixedBoards.CH2_S3.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S3.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S3.walls)
 
 
-## 第二章 2-4「连爆节点」：中立建筑连爆=引爆时机与范围风险（2026-10-10 实装）
-## 设计：docs/active/玩法设计/第二章-激光矿场/2-4-连爆节点-设计文档.md §2
+## 第二章 2-4「过载机器人」：玩家新兵种=移动的移动炮台（改版 2026-10-10 实装）
+## 设计：docs/active/玩法设计/第二章-激光矿场/第二章改版提案-2026-10-10.md §5
 func _apply_laser_s4(lvl: LevelData) -> void:
 	lvl.grid_size = Vector2i(16, 16)
 	lvl.mine_count = 32
 	var obj := ObjectiveData.new()  # ch02_s04 默认模板是 CLEAR_ALL_SAFE，覆写为限时积分
 	obj.type = ObjectiveData.Type.REACH_SCORE
-	obj.target_value = 320
+	obj.target_value = 325
 	lvl.objectives = [obj]
 	lvl.time_limit_sec = 210.0
 	lvl.start_gold = 180
@@ -523,14 +523,12 @@ func _apply_laser_s4(lvl: LevelData) -> void:
 	lvl.laser_mode = true
 	lvl.builders = true
 	lvl.builder_wall_sequence = [1, 1, 3]   # 沿 2-3
-	lvl.preset_refractor = {"coord": FixedBoards.CH2_S4.refractor, "config": "wide"}
-	lvl.chain_nodes.assign(FixedBoards.CH2_S4.nodes)   # 6 座两组（教学组+工作面组）
-	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
-	lvl.shop_limits = {"guard": 1, "refractor_wide": 1, "refractor_scatter": 1}
-	lvl.shop_extra = ["guard", "refractor_wide", "refractor_scatter"]
-	lvl.allowed_modules = ["opener", "marker", "guard",
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug",
 			"refractor_wide", "refractor_scatter"]
-	lvl.start_robots = {"opener": 1, "marker": 1, "refractor_wide": 1}  # 落预设驻点（同 2-3）
+	lvl.shop_limits = {"guard": 1, "overload": 1}   # 过载 100 金限购 1（拍板 #9，折光位）
+	lvl.shop_extra = ["guard", "overload"]
+	lvl.allowed_modules = ["opener", "marker", "guard", "overload"]
+	lvl.start_robots = {"opener": 1, "marker": 1}
 	lvl.upgrades_hidden = ["discount"]
 	lvl.upgrade_speed_prices = [50, 70, 100]
 	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
@@ -543,9 +541,9 @@ func _apply_laser_s4(lvl: LevelData) -> void:
 	lvl.base_price_flat = 80
 	lvl.no_stars = true
 	lvl.is_playtest = true
-	lvl.short_name = "连爆"
-	lvl.intro_line = "先护住钻石，再引爆整片节点。"
-	lvl.mechanic_tags = ["激光", "连爆", "筑墙工"]
+	lvl.short_name = "过载"
+	lvl.intro_line = "等它走到墙边，一条线全开。"
+	lvl.mechanic_tags = ["激光", "过载", "筑墙工"]
 	lvl.fixed_mines.assign(FixedBoards.CH2_S4.mines)
 	lvl.fixed_base = FixedBoards.CH2_S4.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S4.preopen)

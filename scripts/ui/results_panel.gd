@@ -321,6 +321,11 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 				"击破筑墙工 %d · 拆覆盖墙 %d" % [
 					int(s.get("builders_killed", 0)),
 					int(s.get("cover_walls_destroyed", 0))])
+		# 改版 2-3/2-4 招牌数据行（零值收起：无矿石/过载的关永隐藏）
+		if int(s.get("ore_bursts", 0)) > 0:
+			_add_row(ICON_STAR, "特殊矿石", "触发爆发 %d 次" % int(s.get("ore_bursts", 0)))
+		if int(s.get("overload_blasts", 0)) > 0:
+			_add_row(ICON_STAR, "过载机器人", "引爆 %d 次" % int(s.get("overload_blasts", 0)))
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",

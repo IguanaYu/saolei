@@ -395,7 +395,7 @@ func _phase9_chapter_chain() -> void:
 		"ch02_s01": [144, 40, 0, false],
 		"ch02_s02": [196, 60, 0, false],
 		"ch02_s03": [196, 64, 0, false],
-		"ch02_s04": [256, 80, 6, false],
+		"ch02_s04": [256, 80, 0, false],  # 改版 2026-10-10：连爆节点退场，过载兵种关
 		"ch02_s05": [256, 84, 3, true],
 	}
 	for id in ["ch02_s01", "ch02_s02", "ch02_s03", "ch02_s04", "ch02_s05"]:
