@@ -1211,8 +1211,15 @@ func _try_place_at(world_pos: Vector2) -> bool:
 
 
 ## 直购直出（2026-10-02 优化）：机器人不再手动放置，购买后自动从最新基地旁出生。
-## 找不到空位时直接拒单不扣钱。锁定/余额检查在调用方（shop.can_buy / 快捷键）
+## 找不到空位时直接拒单不扣钱。锁定/余额检查在调用方（shop.can_buy / 快捷键）；
+## 限购在本入口自查（2026-10-11 补：此前直调可绕过限购——商店/快捷键都拦了，
+## 但未来任何"送/发机器人"的新调用方不该依赖调用方自觉）
 func _buy_and_spawn_robot(robot_type: String) -> bool:
+	var lvl := GameState.get_current_level()
+	if lvl != null and lvl.shop_limits.has(robot_type) \
+			and GameState.get_robot_purchased_count(robot_type) >= int(lvl.shop_limits[robot_type]):
+		hud.show_toast("已购满", 1.5)
+		return false
 	var spot := _find_spawn_spot_near_base()
 	if spot == Vector2i(-1, -1):
 		hud.show_toast("基地周围没有空位", 2.0)

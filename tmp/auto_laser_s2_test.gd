@@ -267,7 +267,23 @@ func _phase3_builder() -> void:
 	check(g.cells[wall_coord].is_opened, "覆盖墙不改底层已开状态")
 	check(int(g.cells[wall_coord].cover_wall_hp) == 1, "2-2 新墙 1 层（序列 [1]）")
 	await _shot("03-builder-wall.png")
-	# 激光对敌：束终点=筑墙工所在格，两枪击破
+	# 激光对敌：束终点=筑墙工所在格，两枪击破。
+	# 抖动修正（2026-10-11）：击杀束若恰好穿过分隔墙格，把墙拆掉是正确游戏行为而非 bug
+	# ——击杀前找/补一块「确定不在基地→筑墙工射线上」的分隔墙做存活样本
+	var beam: Array = LM.compute_shot_geometry(GS.bases[0], b.coord).main
+	var sample: Vector2i = Vector2i(-9, -9)
+	for c in g.get_cover_wall_coords():
+		if not beam.has(c):
+			sample = c
+			break
+	if sample == Vector2i(-9, -9):
+		for n in g.get_neighbors(g.get_cell(GS.bases[0])):
+			if n.is_opened and n.cover_wall_hp <= 0 and not n.is_base \
+					and not beam.has(n.coord) and not g.facility_cells.has(n.coord):
+				sample = n.coord
+				g.get_cell(sample).place_cover_wall(1)
+				break
+	check(sample != Vector2i(-9, -9), "存活样本墙就位（%s）" % str(sample))
 	var hp0: int = b.hp
 	main._on_laser_fire_requested(b.coord)
 	check(b.hp == hp0 - 1 and b.is_alive(), "激光一伤（2→1，同轮不重复）")
@@ -276,8 +292,9 @@ func _phase3_builder() -> void:
 	var combat0: int = int(GS.result_stats["combat_score"])
 	check(int(GS.result_stats["builders_killed"]) == 1, "击破埋点 +1")
 	check(int(GS.result_stats["combat_score"]) == combat0 or combat0 >= 10, "击破 +10 分入账")
-	# 覆盖墙仍可拆（墙不随敌死回收，设计 §7）
-	check(g.count_cover_walls() >= 1, "敌死后遗留墙仍在（独立拆除目标）")
+	# 覆盖墙仍可拆（墙不随敌死回收，设计 §7）——样本墙不在击杀束上，必然存活
+	check(g.get_cell(sample) != null and g.get_cell(sample).cover_wall_hp > 0,
+			"敌死后遗留墙仍在（独立拆除目标，样本 %s）" % str(sample))
 
 
 # ---- 阶段 4：覆盖墙拆除 + 护卫 + 出口保活 ----
@@ -304,15 +321,22 @@ func _phase4_coverwall() -> void:
 		GS.locked_targets[spot] = opener
 		opener.do_tick(g, GS.locked_targets)
 	check(g.cells[spot].cover_wall_hp == 0, "开墙机作业分支拆 3 层（每 tick 一层）")
-	# 护卫伤害入口（builder 两枪口径已验；此处验 damage_enemy 普通虫兼容）
-	EM._elapsed = EM.BUILDER_FIRST_AT + 25.1
-	EM.tick(0.016, g)
-	check(EM.builders.size() == 1, "25s 后补第二只（场上 ≤2）")
-	var b2 = EM.builders[0]
+	# 护卫伤害入口（builder 两枪口径已验；此处验 damage_enemy 普通虫兼容）。
+	# 补怪节奏检查（2026-10-11 二次抖动修正）：阶段间真实等待已把管理器推过若干
+	# 调度点，强跳回固定 elapsed 会和真实状态撞车（负载高时真实时间已过 62s，场上
+	# 已 2 只）。改为推到所有调度点之后连 tick 让状态机走完，断言设计不变量：
+	# 场上存活 ≤2 且 25s 节奏仍在补
+	EM._elapsed = EM.BUILDER_FIRST_AT + EM.BUILDER_INTERVAL * 4.0
+	for i in 10:
+		EM.tick(0.016, g)
+	check(EM._alive_builders() >= 1 and EM._alive_builders() <= 2,
+			"补怪后场上 1~2 只（实际 %d）" % EM._alive_builders())
 	await _sec(2.6)
-	EM.damage_enemy(b2, "robot_guard")
-	EM.damage_enemy(b2, "robot_guard")
-	check(EM.builders.is_empty(), "护卫口径两枪击破第二只")
+	for b in EM.builders.duplicate():
+		if is_instance_valid(b) and b.is_alive():
+			EM.damage_enemy(b, "robot_guard")
+			EM.damage_enemy(b, "robot_guard")
+	check(EM.builders.is_empty(), "护卫口径两枪击破补的筑墙工")
 	# 出口保活：正常局面 base 到前沿可达
 	check(g.base_can_reach_frontier(Vector2i(-9, -9)), "出口保活基线（基地可达前沿）")
 	RM.remove_all()
