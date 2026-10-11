@@ -24,6 +24,11 @@ const DEFAULTS := {
 	"tutorial_done_ch01_s03": false,
 	"tutorial_done_ch01_s04": false,
 	"tutorial_done_ch01_s05": false,
+	"tutorial_done_ch02_s01": false,   # 第二章逐关教学（2026-10-11 补注册：此前漏登记，
+	"tutorial_done_ch02_s02": false,   # load 只回读 DEFAULTS 内的键 → 每次启动键被丢弃、
+	"tutorial_done_ch02_s03": false,   # 再存盘直接从文件消失，叠加 main 空值分支反向
+	"tutorial_done_ch02_s04": false,   # → 用户进关教学永不出现）
+	"tutorial_done_ch02_s05": false,
 	"tutorial_done_shop_guide": false,   # L2 通关后的局外商店引导（shop_guide_director）
 	"skip_pre_level": false,   # 重玩时跳过关前卡（首次通关前强制显示）
 	"feedback_url": "",        # 试玩反馈地址（空 = 反馈按钮隐藏，渠道定后配置启用）

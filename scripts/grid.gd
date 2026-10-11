@@ -166,10 +166,12 @@ class LaserPreview extends Node2D:
 			var r := Rect2(Vector2(c.x * cell_px + 2.0, c.y * cell_px + 2.0),
 					Vector2(cell_px - 4.0, cell_px - 4.0))
 			# 2-5：柱耐久 ≤2 时整段束格预览变暗红（射前理解代价，设计 §4）
-			var fill := Color(1.0, 0.42, 0.15, 0.13) if not low_pillar else Color(0.85, 0.18, 0.12, 0.16)
-			var border := Color(1.0, 0.55, 0.25, 0.55) if not low_pillar else Color(1.0, 0.35, 0.28, 0.7)
+			# 2026-10-11 提亮：原 fill 0.13/border 1.0@0.55 实测仅约 10% 亮度变化，
+			# 用户两报"预览看不见/不稳定"——像素实测画了但肉眼难辨
+			var fill := Color(1.0, 0.42, 0.15, 0.28) if not low_pillar else Color(0.85, 0.18, 0.12, 0.34)
+			var border := Color(1.0, 0.55, 0.25, 0.9) if not low_pillar else Color(1.0, 0.35, 0.28, 0.95)
 			draw_rect(r, fill, true)
-			draw_rect(r, border, false, 1.0)
+			draw_rect(r, border, false, 1.5)
 		for c in marks:
 			# 节点启动位：亮青外框 + 内缩角标线（读作「打这里启动整条链」）
 			var ro := Rect2(Vector2(c.x * cell_px + 1.0, c.y * cell_px + 1.0),
@@ -191,8 +193,9 @@ class LaserPreview extends Node2D:
 						"本次命中将破碎，-50 分", HORIZONTAL_ALIGNMENT_LEFT, 130.0, 11,
 						Color(1.0, 0.35, 0.28))
 		if has_line:
+			# 束线同步提亮（原 2.0@0.45）
 			draw_line(from_px, to_px,
-					Color(1.0, 0.78, 0.45, 0.45) if not low_pillar else Color(1.0, 0.4, 0.3, 0.55), 2.0)
+					Color(1.0, 0.78, 0.45, 0.8) if not low_pillar else Color(1.0, 0.4, 0.3, 0.85), 3.0)
 
 
 var _laser_preview: LaserPreview = null

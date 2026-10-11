@@ -492,11 +492,12 @@ func _maybe_start_tutorial() -> void:
 		return
 	tutorial_guide.reset_run()
 	# 每关教学单独记次：看过一次（含跳过）整段不再播；重看入口=设置里重置标记
-	# 2026-10-04 修复：新关卡（如 ch01_s06）的标志键从未写入时 get_value 返回 null，
-	# bool(null) 在 4.x 是非法构造会报 SCRIPT ERROR——null 视同"未播过"，正常走教学判断
+	# 空值视同"未播过"照常走教学（2026-10-11 修正：原 `== null or` 把空值当已播过
+	# 反向拦死——键未注册/文件缺键时教学永不出现，用户实测进 2-1 无教学）；
+	# 未注册的关会安全落空（elif 链无匹配分支）
 	var tutorial_done: Variant = GameSettings.get_value(
 		"tutorial_done_" + GameState.current_level_id)
-	if tutorial_done == null or tutorial_done:
+	if tutorial_done == true:
 		return
 	if GameState.current_level_id == "ch01_s01" and level1_director != null:
 		level1_director.begin()
