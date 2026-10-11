@@ -223,6 +223,10 @@ func _ready() -> void:
 	$BoardRoot.add_child(facility_manager)
 	laser_manager.refractor_activated.connect(
 		func(_r): tutorial_guide.notify_event("refractor_activated"))
+	# 2-1 教学第一步「点远处，沿线开墙」等 laser_fired 推进——出生起漏接此转发，
+	# 真人打一枪引导永不前进卡死（实测脚本全走 _finish 直跳没暴露；2026-10-11 用户实测）
+	laser_manager.laser_fired.connect(
+		func(_t): tutorial_guide.notify_event("laser_fired"))
 	laser_manager.robots_charged.connect(
 		func(_rs): tutorial_guide.notify_event("robots_charged"))
 	laser_manager.chain_triggered.connect(
@@ -290,6 +294,8 @@ func _on_select_level() -> void:
 func _show_level_select() -> void:
 	level_select.set_chapter(_current_chapter_id)
 	level_select.show()
+	# 商店引导收尾步「返回选关」等此事件——同为出生起漏转发（2026-10-11 事件对账补齐）
+	tutorial_guide.notify_event("level_select_opened")
 
 
 func _ask_quit() -> void:
@@ -818,10 +824,13 @@ func _process(delta: float) -> void:
 	if not GameState.game_active:
 		_update_scroll_buttons()  # 高塔：结算/退出局面收起箭头（game_active 翻转的那一帧）
 		return
-	# 引导=教学停摆：计时/CD/机器人/敌虫全冻结（todo 卡点三）。剧本步骤等的是玩家
+	# 引导=教学停摆：计时/机器人/敌虫全冻结（todo 卡点三）。剧本步骤等的是玩家
 	# 输入事件（board_click 等，不经 _process），早退不影响推进；后续剧本若新增
-	# 「等机器人干活」类事件，需回来放开 robot_manager.tick
+	# 「等机器人干活」类事件，需回来放开 robot_manager.tick。
+	# 例外（2026-10-11）：操作充能照走——2-1 三步要连打三枪（3s CD），冷却冻结
+	# 会让第二步永远等不到第二枪，实测卡死在第一步/第二步
 	if tutorial_guide.visible:
+		GameState.tick_cd(delta)
 		return
 	GameState.elapsed += delta
 	GameState.tick_cd(delta)
