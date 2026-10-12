@@ -17,27 +17,27 @@ extends Node
 
 signal finished
 
-const FLAG_STEP := 0.18        # 旗子逐面间隔（2026-10-12 复看放缓）
-const FLAG_TIME_CAP := 3.2     # 旗多时压缩步长，总时长封顶（复看②：全标雷的旗段要看得清）
-const RING_STEP := 0.13        # 开格波纹逐圈间隔
-const RING_TIME_CAP := 3.0     # 波纹总时长封顶（30×30 大图自动提速）
-const HEART_STEP := 0.24       # 红心逐颗间隔
+const FLAG_STEP := 0.24        # 旗子逐面间隔（复看两轮放缓后的现值）
+const FLAG_TIME_CAP := 3.8     # 旗多时压缩步长，总时长封顶（复看②：全标雷的旗段要看得清）
+const RING_STEP := 0.17        # 开格波纹逐圈间隔
+const RING_TIME_CAP := 3.6     # 波纹总时长封顶（30×30 大图自动提速）
+const HEART_STEP := 0.30       # 红心逐颗间隔
 const LIFE_BONUS_PER := 20     # 每条命 +20 分（拍板 #1）
-const MARIO_TIME_CAP := 1.7    # 倒计时换分时长封顶
-const MARIO_MIN_TIME := 0.5    # 剩余秒很少时的下限
+const MARIO_TIME_CAP := 2.1    # 倒计时换分时长封顶
+const MARIO_MIN_TIME := 0.55   # 剩余秒很少时的下限
 const FLAG_POINTS := 5         # 每面正确旗局内已给的分（与 main._on_cell_flagged 同口径）
 const OPEN_POINTS := 1         # 每个开格局内已给的分
-const FINAL_HOLD := 0.5        # 收尾大脉冲后面板出现前的定格
+const FINAL_HOLD := 0.6        # 收尾大脉冲后面板出现前的定格
 const TICK_PITCH_MAX := 1.6    # 「叮」升调上限
 const TICK_MIN_GAP_MS := 45    # 倒计时滴答最短间隔（防百次/秒刷屏爆音）
 # 剩余金币折分（复看追加分）：金币逐枚飞向总分，1 枚 = 1 分（真实入账在收尾）
 const MONEY_BONUS_PER := 1
-const MONEY_TIME := 1.15       # 折分时长（金币流+双数字对滚）
+const MONEY_TIME := 1.35       # 折分时长（金币流+双数字对滚）
 const MONEY_COINS_SHOWN := 14  # 视觉金币枚数封顶（钱多时一枚代表多枚，数字照实滚）
 const COIN_TEX := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
 # 分数飞字（复看③：旗子/倒计时的加 分也像金币一样"飞进"总分）
 const FLY_FONT_SIZE := 12
-const FLY_TIME := 0.42         # 单个飞字飞行时长
+const FLY_TIME := 0.48         # 单个飞字飞行时长
 const MARIO_FLYERS := 10       # 倒计时换分的飞字个数上限
 # 总分脉冲幅度随演出进度递增（复看拍板：越往后跳得越大，收尾最大）
 const PULSE_STRENGTH_MIN := 1.2
@@ -105,7 +105,7 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 	_beat_total = maxi(1, flag_cells.size() + rings.size() + _lives_total)
 
 	_master = create_tween()
-	_master.tween_interval(0.25)  # 定格一拍再开演
+	_master.tween_interval(0.3)  # 定格一拍再开演
 
 	# ① 旗子逐面跳（复述已给的分）
 	var flag_step: float = minf(FLAG_STEP, FLAG_TIME_CAP / float(maxi(flag_cells.size(), 1)))
@@ -126,7 +126,7 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 
 	# ④ 马里奥式倒计时换分（显示先行，真实入账在收尾）；分数从时钟拆成若干份飞向总分
 	if mario_secs > 0 and mario_per > 0:
-		var dur: float = clampf(mario_secs * 0.06, MARIO_MIN_TIME, MARIO_TIME_CAP)
+		var dur: float = clampf(mario_secs * 0.075, MARIO_MIN_TIME, MARIO_TIME_CAP)
 		_master.tween_callback(_mario_begin.bind(mario_secs, mario_per, dur))
 		_master.tween_method(_mario_tick, 0.0, 1.0, dur) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)  # 加速走完
