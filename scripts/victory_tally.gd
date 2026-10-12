@@ -18,7 +18,7 @@ extends Node
 signal finished
 
 const FLAG_STEP := 0.18        # 旗子逐面间隔（2026-10-12 复看放缓）
-const FLAG_TIME_CAP := 2.4     # 旗多时压缩步长，总时长封顶
+const FLAG_TIME_CAP := 3.2     # 旗多时压缩步长，总时长封顶（复看②：全标雷的旗段要看得清）
 const RING_STEP := 0.13        # 开格波纹逐圈间隔
 const RING_TIME_CAP := 3.0     # 波纹总时长封顶（30×30 大图自动提速）
 const HEART_STEP := 0.24       # 红心逐颗间隔
