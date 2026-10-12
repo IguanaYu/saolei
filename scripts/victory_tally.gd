@@ -186,6 +186,15 @@ func _pop_ring(ring: Dictionary) -> void:
 		c.play_chord_pulse()
 	if _fx != null:
 		_fx.fx_gain_text(ring["pos"], "+%d" % (cells.size() * OPEN_POINTS))
+		# 复看⑤：同款开格波纹——岩屑取样飞溅（直接复用 fx_reveal_wave，延迟 0 当拍齐发）
+		var entries: Array = []
+		for c in cells:
+			entries.append({"cell": c, "delay": 0.0})
+		_fx.fx_reveal_wave(entries, "player")
+	# 同款开格音效级联：每圈最多 4 声、音调递增、错峰 35ms（audio_connector 同配方）
+	var n: int = mini(cells.size(), 4)
+	for i in n:
+		AudioManager.play_sfx("open", 1.0 + 0.09 * i, 0.035 * i)
 	_land(cells.size() * OPEN_POINTS)
 
 
