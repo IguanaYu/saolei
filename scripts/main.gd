@@ -46,8 +46,6 @@ var level5_director: Level5Director = null
 var shop_guide_director: ShopGuideDirector = null
 # 第二章 2-1 激光关剧本控制器
 var ch02_s1_director: Ch02S1Director = null
-# 第二章 2-2 充能拆敌关剧本控制器
-var ch02_s2_director: Ch02S2Director = null
 # 第二章 2-3 折光关剧本控制器
 var ch02_s3_director: Ch02S3Director = null
 # 第二章 2-4 连爆关剧本控制器
@@ -214,9 +212,6 @@ func _ready() -> void:
 	ch02_s1_director = Ch02S1Director.new()
 	ch02_s1_director.name = "Ch02S1Director"
 	add_child(ch02_s1_director)
-	ch02_s2_director = Ch02S2Director.new()
-	ch02_s2_director.name = "Ch02S2Director"
-	add_child(ch02_s2_director)
 	ch02_s3_director = Ch02S3Director.new()
 	ch02_s3_director.name = "Ch02S3Director"
 	add_child(ch02_s3_director)
@@ -520,8 +515,6 @@ func _maybe_start_tutorial() -> void:
 		level5_director.begin()
 	elif GameState.current_level_id == "ch02_s01" and ch02_s1_director != null:
 		ch02_s1_director.begin()
-	elif GameState.current_level_id == "ch02_s02" and ch02_s2_director != null:
-		ch02_s2_director.begin()
 	elif GameState.current_level_id == "ch02_s03" and ch02_s3_director != null:
 		ch02_s3_director.begin()
 	elif GameState.current_level_id == "ch02_s04" and ch02_s4_director != null:
