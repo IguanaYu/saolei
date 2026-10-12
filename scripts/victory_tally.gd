@@ -1,31 +1,37 @@
 class_name VictoryTally
 extends Node
-## 胜利结算演出编排（docs/active/胜利结算算分动画-方案-v1.md，2026-10-12 四点拍板）
+## 胜利结算演出编排（docs/active/胜利结算算分动画-方案-v1.md，2026-10-12 四点拍板+复看调整）
 ## 胜利瞬间先在棋盘上把账演一遍，再弹结算面板（L5 Boss「先演出后结算」同思路）：
-##   ①旗子逐面弹跳 +「+5」飘字 —— 复述局内已给的分，总分数字只脉冲不涨
-##   ②已开格波纹逐圈弹跳 + 合并「+N」—— 同上复述（大图圈速自动压缩，总时长封顶）
-##   ③剩余的命逐颗弹跳 +「+20」—— 真实入账（life_bonus），总分滚动上涨
+##   ①旗子逐面弹跳 +「+5」飘字；②已开格波纹逐圈弹跳 + 合并「+N」——两段是复述
+##     局内已给的分：总分数字先退回「没算这些项」的起点，之后每落一拍真的涨一格，
+##     收在真实总分（动的只是显示，账目不重复记）
+##   ③剩余的命逐颗弹跳 +「+20」—— 真实入账（life_bonus）
 ##   ④剩余时间马里奥式加速清零，总分按每秒系数同步滚涨 —— 显示先行，真实入账由
 ##     main._apply_time_bonus 在收尾统一做（账本只落一条 time_bonus）
-## 点击/空格跳过：未入账的命分一次性补齐，直接收尾。
+## 总分脉冲幅度随演出进度递增，收尾一拍最大（复看拍板：越往后跳得越大）。
+## 点击/空格跳过：未入账的命分一次性补齐，数字直接定格真实总分，面板秒弹。
 ## 收尾发 finished 信号 → main._finish_victory_tally 入账时间分 + win_score 快照 + 弹面板。
 ## 演出期间树不暂停（结算期现状）、game_active=false 已拦棋盘输入，格子/飘字照常播放。
 
 signal finished
 
-const FLAG_STEP := 0.12        # 旗子逐面间隔
-const FLAG_TIME_CAP := 1.8     # 旗多时压缩步长，总时长封顶
-const RING_STEP := 0.09        # 开格波纹逐圈间隔
-const RING_TIME_CAP := 2.0     # 波纹总时长封顶（30×30 大图自动提速）
-const HEART_STEP := 0.18       # 红心逐颗间隔
+const FLAG_STEP := 0.18        # 旗子逐面间隔（2026-10-12 复看放缓）
+const FLAG_TIME_CAP := 2.4     # 旗多时压缩步长，总时长封顶
+const RING_STEP := 0.13        # 开格波纹逐圈间隔
+const RING_TIME_CAP := 3.0     # 波纹总时长封顶（30×30 大图自动提速）
+const HEART_STEP := 0.24       # 红心逐颗间隔
 const LIFE_BONUS_PER := 20     # 每条命 +20 分（拍板 #1）
-const MARIO_TIME_CAP := 1.2    # 倒计时换分时长封顶
-const MARIO_MIN_TIME := 0.35   # 剩余秒很少时的下限
+const MARIO_TIME_CAP := 1.7    # 倒计时换分时长封顶
+const MARIO_MIN_TIME := 0.5    # 剩余秒很少时的下限
 const FLAG_POINTS := 5         # 每面正确旗局内已给的分（与 main._on_cell_flagged 同口径）
 const OPEN_POINTS := 1         # 每个开格局内已给的分
-const FINAL_HOLD := 0.3        # 收尾大脉冲后面板出现前的定格
+const FINAL_HOLD := 0.5        # 收尾大脉冲后面板出现前的定格
 const TICK_PITCH_MAX := 1.6    # 「叮」升调上限
 const TICK_MIN_GAP_MS := 45    # 倒计时滴答最短间隔（防百次/秒刷屏爆音）
+# 总分脉冲幅度随演出进度递增（复看拍板：越往后跳得越大，收尾最大）
+const PULSE_STRENGTH_MIN := 1.2
+const PULSE_STRENGTH_MAX := 1.5
+const PULSE_STRENGTH_FINAL := 1.65
 
 var _grid: Grid = null
 var _hud = null  # hud.gd 无 class_name，按鸭子类型调用
@@ -35,6 +41,11 @@ var _master: Tween = null
 var _pitch_idx := 0
 var _lives_total := 0
 var _hearts_done := 0
+# 总分滚动显示（复看拍板：每落一拍数字真的涨一格；起点=最终分−复述合计，
+# 收在真实总分——动的只是显示，账目不重复记）
+var _disp_score := 0
+var _beat_idx := 0
+var _beat_total := 1
 var _mario := {"on": false, "secs": 0, "per": 0, "base": 0, "last_disp": -1, "last_tick_ms": 0}
 var _time_backup := {"saved": false, "text": "", "color": Color.WHITE}
 
@@ -74,8 +85,15 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 	var mario_secs: int = int(time_info.get("secs", 0))
 	var mario_per: int = int(time_info.get("per", 0))
 
+	# 总分滚动起点：真实分 −（将要复述的旗+开格合计）；命/时间是后面的真实入账
+	_disp_score = GameState.score \
+			- flag_cells.size() * FLAG_POINTS - opened_cells.size() * OPEN_POINTS
+	_hud.score_label.text = str(_disp_score)
+	_beat_idx = 0
+	_beat_total = maxi(1, flag_cells.size() + rings.size() + _lives_total)
+
 	_master = create_tween()
-	_master.tween_interval(0.15)  # 定格一拍再开演
+	_master.tween_interval(0.25)  # 定格一拍再开演
 
 	# ① 旗子逐面跳（复述已给的分）
 	var flag_step: float = minf(FLAG_STEP, FLAG_TIME_CAP / float(maxi(flag_cells.size(), 1)))
@@ -96,7 +114,7 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 
 	# ④ 马里奥式倒计时换分（显示先行，真实入账在收尾）
 	if mario_secs > 0 and mario_per > 0:
-		var dur: float = clampf(mario_secs * 0.05, MARIO_MIN_TIME, MARIO_TIME_CAP)
+		var dur: float = clampf(mario_secs * 0.06, MARIO_MIN_TIME, MARIO_TIME_CAP)
 		_master.tween_callback(_mario_begin.bind(mario_secs, mario_per))
 		_master.tween_method(_mario_tick, 0.0, 1.0, dur) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)  # 加速走完
@@ -124,12 +142,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ---- 各拍实现 ----
 
+## 落一拍：总分数字真涨一格 + 幅度递增的脉冲 + 升调「叮」
+func _land(delta: int) -> void:
+	_disp_score += delta
+	_hud.score_label.text = str(_disp_score)
+	var k: float = float(_beat_idx) / float(_beat_total)
+	_hud.fx_score_pulse(lerpf(PULSE_STRENGTH_MIN, PULSE_STRENGTH_MAX, k))
+	_beat_idx += 1
+	_tick()
+
+
 func _pop_flag(cell: Cell) -> void:
 	cell.play_chord_pulse()
 	if _fx != null:
 		_fx.fx_gain_text(cell.position, "+%d" % FLAG_POINTS)
-	_hud.fx_score_pulse()
-	_tick()
+	_land(FLAG_POINTS)
 
 
 func _pop_ring(ring: Dictionary) -> void:
@@ -138,8 +165,7 @@ func _pop_ring(ring: Dictionary) -> void:
 		c.play_chord_pulse()
 	if _fx != null:
 		_fx.fx_gain_text(ring["pos"], "+%d" % (cells.size() * OPEN_POINTS))
-	_hud.fx_score_pulse()
-	_tick()
+	_land(cells.size() * OPEN_POINTS)
 
 
 func _pop_heart(i: int) -> void:
@@ -148,8 +174,7 @@ func _pop_heart(i: int) -> void:
 	_hearts_done += 1
 	_hud.fx_heart_pop(i)
 	_hud.fx_heart_gain(i, "+%d" % LIFE_BONUS_PER)
-	_hud.fx_score_pulse()
-	_tick()
+	_land(LIFE_BONUS_PER)
 
 
 func _mario_begin(secs: int, per: int) -> void:
@@ -185,7 +210,7 @@ func _mario_end() -> void:
 
 
 func _final_pulse() -> void:
-	_hud.fx_score_pulse(1.4)
+	_hud.fx_score_pulse(PULSE_STRENGTH_FINAL)
 
 
 func _finish() -> void:
