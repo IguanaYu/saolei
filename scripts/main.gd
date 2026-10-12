@@ -1622,12 +1622,23 @@ func _end_game(result: String) -> void:
 	GameState.game_over.emit(result)
 
 
-## 演出收尾（VictoryTally.finished，含跳过路径）：时间分此刻才真实入账，
+## 演出收尾（VictoryTally.finished，含跳过路径）：时间分与金币折分此刻才真实入账，
 ## win_score 快照落在完整账目上，再弹结算面板（win 音效随 game_over 走 audio_connector）
 func _finish_victory_tally() -> void:
 	_apply_time_bonus()
+	_apply_money_bonus()
 	GameState.result_stats["win_score"] = GameState.score
 	GameState.game_over.emit("win")
+
+
+## 剩余金币折分（胜利演出⑤：钱清零换分，1 枚 = 1 分；分数达标型第二章不走此通道）
+func _apply_money_bonus() -> void:
+	var m: int = GameState.money
+	if m <= 0:
+		return
+	GameState.result_stats["money_bonus_coins"] = m
+	GameState.add_money(-m)
+	GameState.add_score(m, "money_bonus")  # 明细键 money_bonus_score 由账本写入
 
 
 ## 时间加分预计算（演出显示目标与入账共用同一口径）

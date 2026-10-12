@@ -263,11 +263,15 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		star_hint_label.visible = false
 		_add_playtest_rows()
 	else:
-		# 星级局的命加分行（无星级账单局由 _add_playtest_rows 内的同名行负责，勿重复）
+		# 星级局的命加分/金币折分行（无星级账单局由 _add_playtest_rows 内同名行负责，勿重复）
 		var life_bonus_score: int = int(GameState.result_stats.get("life_bonus_score", 0))
 		if life_bonus_score > 0:
 			_add_row(ICON_HEART, "剩余生命加分",
 				"剩 %d 颗 · +%d 分" % [GameState.lives, life_bonus_score])
+		var money_bonus_score: int = int(GameState.result_stats.get("money_bonus_score", 0))
+		if money_bonus_score > 0:
+			_add_row(ICON_COIN, "剩余金币折分",
+				"%d 枚 · +%d 分" % [int(GameState.result_stats.get("money_bonus_coins", 0)), money_bonus_score])
 		_animate_stars(stars)
 		star_hint_label.visible = true
 		star_hint_label.text = _star_hint(stars)
@@ -300,6 +304,9 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 	if include_time_bonus:
 		_add_row(ICON_CLOCK, "时间加分",
 			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s.get("time_bonus", 0))])
+	if int(s.get("money_bonus_score", 0)) > 0:
+		_add_row(ICON_COIN, "剩余金币折分",
+			"%d 枚 · +%d 分" % [int(s.get("money_bonus_coins", 0)), int(s.get("money_bonus_score", 0))])
 	# L4 除害关：敌人数据行 + 探测次数（设计 §3 结算；到点/命尽分支也显示）
 	if GameState.current_level_id == "ch01_s04":
 		_add_row(ICON_STAR, "除害",

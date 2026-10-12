@@ -8,6 +8,8 @@ extends Node
 ##   ③剩余的命逐颗弹跳 +「+20」—— 真实入账（life_bonus）
 ##   ④剩余时间马里奥式加速清零，总分按每秒系数同步滚涨 —— 显示先行，真实入账由
 ##     main._apply_time_bonus 在收尾统一做（账本只落一条 time_bonus）
+##   ⑤剩余金币折分：金币流飞向总分、钱数清零/分数对滚（1 枚 = 1 分）—— 显示先行，
+##     真实入账由 main._apply_money_bonus 在收尾统一做（金币清零、只落一条 money_bonus）
 ## 总分脉冲幅度随演出进度递增，收尾一拍最大（复看拍板：越往后跳得越大）。
 ## 点击/空格跳过：未入账的命分一次性补齐，数字直接定格真实总分，面板秒弹。
 ## 收尾发 finished 信号 → main._finish_victory_tally 入账时间分 + win_score 快照 + 弹面板。
@@ -28,6 +30,11 @@ const OPEN_POINTS := 1         # 每个开格局内已给的分
 const FINAL_HOLD := 0.5        # 收尾大脉冲后面板出现前的定格
 const TICK_PITCH_MAX := 1.6    # 「叮」升调上限
 const TICK_MIN_GAP_MS := 45    # 倒计时滴答最短间隔（防百次/秒刷屏爆音）
+# 剩余金币折分（复看追加分）：金币逐枚飞向总分，1 枚 = 1 分（真实入账在收尾）
+const MONEY_BONUS_PER := 1
+const MONEY_TIME := 1.15       # 折分时长（金币流+双数字对滚）
+const MONEY_COINS_SHOWN := 14  # 视觉金币枚数封顶（钱多时一枚代表多枚，数字照实滚）
+const COIN_TEX := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
 # 总分脉冲幅度随演出进度递增（复看拍板：越往后跳得越大，收尾最大）
 const PULSE_STRENGTH_MIN := 1.2
 const PULSE_STRENGTH_MAX := 1.5
@@ -47,6 +54,7 @@ var _disp_score := 0
 var _beat_idx := 0
 var _beat_total := 1
 var _mario := {"on": false, "secs": 0, "per": 0, "base": 0, "last_disp": -1, "last_tick_ms": 0}
+var _money := {"on": false, "total": 0, "base": 0, "last_step": -1}
 var _time_backup := {"saved": false, "text": "", "color": Color.WHITE}
 
 
@@ -119,6 +127,14 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 		_master.tween_method(_mario_tick, 0.0, 1.0, dur) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)  # 加速走完
 		_master.tween_callback(_mario_end)
+
+	# ⑤ 剩余金币折分：金币流飞向总分，钱数清零/分数对滚（显示先行，真实入账在收尾）
+	var money_total: int = GameState.money
+	if money_total > 0:
+		_master.tween_callback(_money_begin.bind(money_total))
+		_master.tween_method(_money_tick, 0.0, 1.0, MONEY_TIME) \
+				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_master.tween_callback(_money_end)
 
 	# 收尾大脉冲 + 定格，面板随后弹出
 	_master.tween_callback(_final_pulse)
@@ -209,6 +225,69 @@ func _mario_end() -> void:
 	_hud.score_label.text = str(int(_mario["base"]) + int(_mario["secs"]) * int(_mario["per"]))
 
 
+func _money_begin(total: int) -> void:
+	_money = {"on": true, "total": total, "base": GameState.score, "last_step": -1}
+	_spawn_coin_stream(total)
+
+
+func _money_tick(k: float) -> void:
+	if not _money["on"]:
+		return
+	var total := int(_money["total"])
+	var spent := int(round(total * k))
+	# 双数字对滚：钱往下清、分往上涨（真实入账在收尾，这里只动显示）
+	_hud.money_label.text = str(total - spent)
+	_disp_score = int(_money["base"]) + spent
+	_hud.score_label.text = str(_disp_score)
+	var step := int(k * 12.0)
+	if step != int(_money["last_step"]):
+		_money["last_step"] = step
+		AudioManager.play_sfx("coin", 1.1 + 0.04 * step)  # 金币流渐密渐高
+
+
+func _money_end() -> void:
+	if not _money["on"]:
+		return
+	_money["on"] = false
+	_hud.money_label.text = "0"
+	_disp_score = int(_money["base"]) + int(_money["total"])
+	_hud.score_label.text = str(_disp_score)
+
+
+## 金币流：钱袋位置 → 总分位置逐枚贝塞尔飞币（枚数封顶，一枚可代表多枚）
+func _spawn_coin_stream(total: int) -> void:
+	var count: int = mini(total, MONEY_COINS_SHOWN)
+	var from := _hud_label_center(_hud.money_label)
+	var to := _hud_label_center(_hud.score_label)
+	for i in count:
+		_spawn_coin(from, to, 0.07 * i)
+
+
+func _hud_label_center(lbl: Label) -> Vector2:
+	return _hud.get_global_transform().affine_inverse() * lbl.get_global_rect().get_center()
+
+
+func _spawn_coin(from: Vector2, to: Vector2, delay_s: float) -> void:
+	var s := Sprite2D.new()
+	s.name = "TallyFlyCoin"  # 显式命名，避免遍历误匹配
+	s.texture = COIN_TEX
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	s.position = from
+	_hud.add_child(s)
+	var t := s.create_tween()
+	t.tween_interval(delay_s)
+	# 二次贝塞尔：中点抬高（与盘面飞币 _fly_coin 同语言）
+	var peak := (from + to) / 2.0 + Vector2(0, -26)
+	t.tween_method(
+		func(k: float):
+			var a: Vector2 = from.lerp(peak, k)
+			var b: Vector2 = peak.lerp(to, k)
+			s.position = a.lerp(b, k)
+			s.scale = Vector2.ONE * (1.0 - 0.3 * k),
+		0.0, 1.0, 0.38)
+	t.tween_callback(s.queue_free)
+
+
 func _final_pulse() -> void:
 	_hud.fx_score_pulse(PULSE_STRENGTH_FINAL)
 
@@ -236,6 +315,8 @@ func _skip() -> void:
 	if remain > 0:
 		GameState.add_score(remain * LIFE_BONUS_PER, "life_bonus")
 	_mario["on"] = false
+	_money["on"] = false
+	_hud.money_label.text = str(GameState.money)  # 金币流被掐断时显示回真实值
 	_hud.score_label.text = str(GameState.score)
 	_finish()
 
