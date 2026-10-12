@@ -35,6 +35,10 @@ const MONEY_BONUS_PER := 1
 const MONEY_TIME := 1.15       # 折分时长（金币流+双数字对滚）
 const MONEY_COINS_SHOWN := 14  # 视觉金币枚数封顶（钱多时一枚代表多枚，数字照实滚）
 const COIN_TEX := preload("res://visual_v2/runtime/ui/icons/icon_coin.png")
+# 分数飞字（复看③：旗子/倒计时的加 分也像金币一样"飞进"总分）
+const FLY_FONT_SIZE := 12
+const FLY_TIME := 0.42         # 单个飞字飞行时长
+const MARIO_FLYERS := 10       # 倒计时换分的飞字个数上限
 # 总分脉冲幅度随演出进度递增（复看拍板：越往后跳得越大，收尾最大）
 const PULSE_STRENGTH_MIN := 1.2
 const PULSE_STRENGTH_MAX := 1.5
@@ -120,10 +124,10 @@ func play(g: Grid, hud, wave_center: Vector2i, time_info: Dictionary) -> void:
 		_master.tween_callback(_pop_heart.bind(i))
 		_master.tween_interval(HEART_STEP)
 
-	# ④ 马里奥式倒计时换分（显示先行，真实入账在收尾）
+	# ④ 马里奥式倒计时换分（显示先行，真实入账在收尾）；分数从时钟拆成若干份飞向总分
 	if mario_secs > 0 and mario_per > 0:
 		var dur: float = clampf(mario_secs * 0.06, MARIO_MIN_TIME, MARIO_TIME_CAP)
-		_master.tween_callback(_mario_begin.bind(mario_secs, mario_per))
+		_master.tween_callback(_mario_begin.bind(mario_secs, mario_per, dur))
 		_master.tween_method(_mario_tick, 0.0, 1.0, dur) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)  # 加速走完
 		_master.tween_callback(_mario_end)
@@ -170,8 +174,9 @@ func _land(delta: int) -> void:
 
 func _pop_flag(cell: Cell) -> void:
 	cell.play_chord_pulse()
-	if _fx != null:
-		_fx.fx_gain_text(cell.position, "+%d" % FLAG_POINTS)
+	# 「+5」不再原地飘字，改为从旗格划弧线飞进总分（复看③，与金币流同语言）
+	_fly_score(_cell_center_hud(cell), _hud_label_center(_hud.score_label),
+			"+%d" % FLAG_POINTS, 0.0)
 	_land(FLAG_POINTS)
 
 
@@ -193,10 +198,21 @@ func _pop_heart(i: int) -> void:
 	_land(LIFE_BONUS_PER)
 
 
-func _mario_begin(secs: int, per: int) -> void:
+func _mario_begin(secs: int, per: int, dur: float) -> void:
 	_mario = {"on": true, "secs": secs, "per": per, "base": GameState.score,
 			"last_disp": secs, "last_tick_ms": 0}
 	_hud.fx_time_show(secs)
+	# 分数飞字：总加分拆成若干份，从时钟均匀飞向总分（金额精确合计）
+	var total := secs * per
+	var n: int = clampi(int(secs / 12.0), 5, MARIO_FLYERS)
+	var base_amount := total / n
+	var remainder := total - base_amount * n
+	var from := _hud_label_center(_hud.time_label)
+	var to := _hud_label_center(_hud.score_label)
+	for i in n:
+		var amt := base_amount + (remainder if i == n - 1 else 0)
+		var delay: float = maxf(0.0, dur * (float(i) + 0.5) / float(n) - FLY_TIME * 0.5)
+		_fly_score(from, to, "+%d" % amt, delay)
 
 
 func _mario_tick(k: float) -> void:
@@ -265,6 +281,38 @@ func _spawn_coin_stream(total: int) -> void:
 
 func _hud_label_center(lbl: Label) -> Vector2:
 	return _hud.get_global_transform().affine_inverse() * lbl.get_global_rect().get_center()
+
+
+## 格子（旗）中心 → HUD 本地坐标（跨 Grid/Control 两套坐标系走全局变换）
+func _cell_center_hud(cell: Cell) -> Vector2:
+	var half := Vector2(_grid.cell_size, _grid.cell_size) * 0.5
+	return _hud.get_global_transform().affine_inverse() \
+			* (cell.get_global_transform() * half)
+
+
+## 分数飞字：金色"+N"从 from 划贝塞尔弧线飞进总分，途中缩小、临到点淡出
+func _fly_score(from: Vector2, to: Vector2, text: String, delay_s: float) -> void:
+	var lbl := Label.new()
+	lbl.name = "TallyFlyScore"  # 显式命名，避免遍历误匹配
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", FLY_FONT_SIZE)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	lbl.add_theme_constant_override("outline_size", 3)
+	lbl.position = from
+	_hud.add_child(lbl)
+	var t := lbl.create_tween()
+	t.tween_interval(delay_s)
+	var peak := (from + to) / 2.0 + Vector2(0, -22)
+	t.tween_method(
+		func(k: float):
+			var a: Vector2 = from.lerp(peak, k)
+			var b: Vector2 = peak.lerp(to, k)
+			lbl.position = a.lerp(b, k)
+			lbl.scale = Vector2.ONE * (1.0 - 0.35 * k)
+			lbl.modulate.a = 1.0 if k < 0.75 else 1.0 - (k - 0.75) / 0.25,
+		0.0, 1.0, FLY_TIME)
+	t.tween_callback(lbl.queue_free)
 
 
 func _spawn_coin(from: Vector2, to: Vector2, delay_s: float) -> void:
