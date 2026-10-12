@@ -58,6 +58,10 @@ var ch02_s5_director: Ch02S5Director = null
 var laser_manager: LaserManager = null
 # 第二章中立设施管理器（2-4 连爆节点 + 2-5 引光柱；BoardRoot 下同 laser 先例）
 var facility_manager: FacilityManager = null
+# 胜利结算演出编排（docs/active/胜利结算算分动画-方案-v1.md；胜利时先演后弹面板）
+var victory_tally: VictoryTally = null
+# 最近一次开格坐标（胜利波纹的扩散中心；无效时演出内部回退开格质心）
+var _last_opened_coord := Vector2i(-9999, -9999)
 
 # 当前所在章节（"返回关卡选择"时用）
 var _current_chapter_id: String = "ch01"
@@ -81,6 +85,11 @@ const CHAPTER_WALL_STYLES := ["V2", "V2C", "V2M", "V2R"]
 func _ready() -> void:
 	# 不立即 reset，等玩家选关进入
 	_register_custom_cursors()
+	# 胜利结算演出编排器（动态创建同 director 先例；演完经 finished 回来弹结算面板）
+	victory_tally = VictoryTally.new()
+	victory_tally.name = "VictoryTally"  # 显式命名，避免遍历误匹配
+	add_child(victory_tally)
+	victory_tally.finished.connect(_finish_victory_tally)
 	# Esc 走 UILayer 下的 ALWAYS 路由器转发：暂停/规则等置 paused=true 的树里
 	# main._input（可暂停）已停摆，"按 ESC 继续"不能只靠它（2026-10-03 盲测 F01）
 	escape_router.escape_requested.connect(_handle_escape)
@@ -524,6 +533,8 @@ func _maybe_start_tutorial() -> void:
 # ---- 暂停 / 放弃 ----
 
 func _toggle_pause() -> void:
+	if victory_tally != null and victory_tally.is_active():
+		return  # 结算演出进行中不响应暂停（面板即将弹出；演出期间树未暂停）
 	if pause_panel.visible:
 		_resume()
 	elif _in_game():
@@ -1380,7 +1391,9 @@ func _gift_start_robots(gifts: Dictionary) -> void:
 
 # ---- 奖励逻辑（玩家和机器人走同一条通道）----
 
-func _on_cell_opened(_cell, by_actor: String) -> void:
+func _on_cell_opened(cell, by_actor: String) -> void:
+	if cell != null:
+		_last_opened_coord = cell.coord  # 胜利波纹扩散中心（教学/机器人开格同样有效）
 	if by_actor == "drone":
 		return  # 无人机开的格子不给奖励
 	GameState.add_money(1, "player_open" if by_actor == "player" or by_actor == "player_laser"
@@ -1589,6 +1602,15 @@ func _end_game(result: String) -> void:
 		if obj != null and obj.type == ObjectiveData.Type.REACH_SCORE:
 			# 过线时刻埋点（时间加分入账前的行动分轨迹，盲测校准 §10）
 			GameState.result_stats["crossing_elapsed"] = snappedf(GameState.elapsed, 0.1)
+		# 胜利结算演出（方案 v1 拍板）：棋盘复述账目 + 命分真实入账，演完再弹面板；
+		# 无可演项（第二章无旗无命）走下方直发路径，行为与旧版完全一致
+		if victory_tally != null and victory_tally.should_play(grid):
+			GameState.result_stats["obj_final_text"] = _update_objective_progress()
+			var pv_t := _objective_progress_values()
+			GameState.result_stats["obj_final_current"] = pv_t.x
+			GameState.result_stats["obj_final_total"] = pv_t.y
+			victory_tally.play(grid, hud, _last_opened_coord, _compute_time_bonus())
+			return  # 演完/跳过 → _finish_victory_tally 统一入账 + 快照 + 弹面板
 		_apply_time_bonus()
 		# 结算分快照（继续挑战的增量口径，见 _leave_after_continue）
 		GameState.result_stats["win_score"] = GameState.score
@@ -1600,16 +1622,30 @@ func _end_game(result: String) -> void:
 	GameState.game_over.emit(result)
 
 
-## 胜利时间加分：剩余秒 × 关卡系数，计入总分与最高分口径（设计 §3，Q4 已定）
-func _apply_time_bonus() -> void:
+## 演出收尾（VictoryTally.finished，含跳过路径）：时间分此刻才真实入账，
+## win_score 快照落在完整账目上，再弹结算面板（win 音效随 game_over 走 audio_connector）
+func _finish_victory_tally() -> void:
+	_apply_time_bonus()
+	GameState.result_stats["win_score"] = GameState.score
+	GameState.game_over.emit("win")
+
+
+## 时间加分预计算（演出显示目标与入账共用同一口径）
+func _compute_time_bonus() -> Dictionary:
 	var lvl := GameState.get_current_level()
 	if lvl == null or lvl.time_bonus_per_sec <= 0 or not GameState.has_time_limit():
-		return
+		return {"secs": 0, "per": 0, "bonus": 0}
 	var secs := int(max(0.0, floor(GameState.time_left)))
-	var bonus: int = secs * lvl.time_bonus_per_sec
+	return {"secs": secs, "per": lvl.time_bonus_per_sec, "bonus": secs * lvl.time_bonus_per_sec}
+
+
+## 胜利时间加分：剩余秒 × 关卡系数，计入总分与最高分口径（设计 §3，Q4 已定）
+func _apply_time_bonus() -> void:
+	var info := _compute_time_bonus()
+	var bonus: int = int(info["bonus"])
 	if bonus <= 0:
 		return
-	GameState.result_stats["time_bonus_secs"] = secs
+	GameState.result_stats["time_bonus_secs"] = int(info["secs"])
 	GameState.add_score(bonus, "time_bonus")  # 明细键 time_bonus 由账本写入
 	# 积分目标关的过线瞬间提示（设计 §4.2：过线即跳结算 + toast）
 	var obj := GameState.current_objective

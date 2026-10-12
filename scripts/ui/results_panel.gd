@@ -263,6 +263,11 @@ func _handle_level_mode(result: String, is_record: bool) -> void:
 		star_hint_label.visible = false
 		_add_playtest_rows()
 	else:
+		# 星级局的命加分行（无星级账单局由 _add_playtest_rows 内的同名行负责，勿重复）
+		var life_bonus_score: int = int(GameState.result_stats.get("life_bonus_score", 0))
+		if life_bonus_score > 0:
+			_add_row(ICON_HEART, "剩余生命加分",
+				"剩 %d 颗 · +%d 分" % [GameState.lives, life_bonus_score])
 		_animate_stars(stars)
 		star_hint_label.visible = true
 		star_hint_label.text = _star_hint(stars)
@@ -289,6 +294,9 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 	var pct: int = int(round(float(s["player_ops"]) / total_ops * 100.0)) if total_ops > 0 else 0
 	_add_row(ICON_STAR, "你的扫雷操作",
 		"%d 次 · 机器人 %d 次（你占 %d%%）" % [s["player_ops"], s["robot_ops"], pct])
+	if int(s.get("life_bonus_score", 0)) > 0:
+		_add_row(ICON_HEART, "剩余生命加分",
+			"剩 %d 颗 · +%d 分" % [GameState.lives, int(s.get("life_bonus_score", 0))])
 	if include_time_bonus:
 		_add_row(ICON_CLOCK, "时间加分",
 			"剩余 %d 秒 +%d 分" % [int(s.get("time_bonus_secs", 0)), int(s.get("time_bonus", 0))])

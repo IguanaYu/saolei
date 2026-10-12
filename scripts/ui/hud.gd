@@ -28,6 +28,7 @@ signal pause_requested
 var _last_money: int = -1
 var _gain_popup: Label = null
 var _gain_tween: Tween = null
+var _score_fx_tween: Tween = null  # 总分脉冲专用（连续拍重叠时先杀旧防抖动）
 
 
 func _ready() -> void:
@@ -129,6 +130,63 @@ func _show_gain_popup(amount: int) -> void:
 
 func _on_score_changed(v: int) -> void:
 	score_label.text = str(v)
+
+
+# ---- 胜利结算演出动效（VictoryTally 驱动；与金币脉冲/进账浮字同视觉语言）----
+
+## 总分数字脉冲回应：金色一闪 + 短促放大（strength 收尾大脉冲可给 1.4）
+func fx_score_pulse(strength := 1.25) -> void:
+	if _score_fx_tween != null and _score_fx_tween.is_valid():
+		_score_fx_tween.kill()
+		score_label.scale = Vector2.ONE
+		score_label.modulate = Color.WHITE
+	score_label.pivot_offset = score_label.size / 2.0
+	score_label.modulate = Color(1.0, 0.85, 0.3)
+	_score_fx_tween = score_label.create_tween()
+	_score_fx_tween.tween_property(score_label, "scale", Vector2(strength, strength), 0.07)
+	_score_fx_tween.parallel().tween_property(score_label, "modulate", Color.WHITE, 0.3)
+	_score_fx_tween.tween_property(score_label, "scale", Vector2.ONE, 0.12)
+
+
+## 红心弹跳（第 i 颗；胜利结算逐颗加分用）
+func fx_heart_pop(i: int) -> void:
+	if i < 0 or i >= hearts.size():
+		return
+	var h: TextureRect = hearts[i]
+	h.pivot_offset = h.size / 2.0
+	var t := h.create_tween()
+	t.tween_property(h, "scale", Vector2(1.45, 1.45), 0.08)
+	t.tween_property(h, "scale", Vector2.ONE, 0.16)
+
+
+## 心旁"+N"飘字（与金钱进账浮字同款样式）
+func fx_heart_gain(i: int, text: String) -> void:
+	if i < 0 or i >= hearts.size():
+		return
+	var h: TextureRect = hearts[i]
+	var lbl := Label.new()
+	lbl.name = "HeartGainPopup%d" % i  # 显式命名，避免遍历误匹配
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.add_theme_color_override("font_color", GOLD)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	lbl.add_theme_constant_override("outline_size", 3)
+	var anchor: Vector2 = get_global_transform().affine_inverse() \
+			* h.get_global_rect().end + Vector2(4.0, -2.0)
+	lbl.position = anchor
+	add_child(lbl)
+	var t := lbl.create_tween()
+	t.tween_property(lbl, "position:y", anchor.y - 12.0, 0.5)
+	t.parallel().tween_property(lbl, "modulate:a", 0.0, 0.5)
+	t.tween_callback(lbl.queue_free)
+
+
+## 时钟演出态显示（马里奥倒计时换分；只动显示，不碰真实 time_left）
+func fx_time_show(secs_left: int) -> void:
+	if not GameState.has_time_limit():
+		return
+	time_label.text = "%d:%02d" % [secs_left / 60, secs_left % 60]
+	time_label.modulate = Color(1, 0.35, 0.3) if secs_left <= 30 else Color.WHITE
 
 
 func _on_lives_changed(v: int) -> void:

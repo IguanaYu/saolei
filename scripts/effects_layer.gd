@@ -478,6 +478,11 @@ func _fx_jump_text(pos: Vector2, text: String) -> void:
 	_jump_texts.append(node)
 
 
+## 胜利结算演出：盘面任意位置跳"+N"金色飘字（复用 _fx_jump_text 的样式与合并）
+func fx_gain_text(pos: Vector2, text: String) -> void:
+	_fx_jump_text(pos, text)
+
+
 func _fly_coin(from: Vector2, to: Vector2, delay_s: float) -> void:
 	var s := Sprite2D.new()
 	s.name = _name("FlyCoin")
