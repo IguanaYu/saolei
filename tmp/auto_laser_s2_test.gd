@@ -248,6 +248,7 @@ func _phase2_charge() -> void:
 # ---- 阶段 3：筑墙工生命周期 ----
 func _phase3_builder() -> void:
 	print("[Phase3] 筑墙工")
+	main.tutorial_guide.hide()  # 隔离上一关残留教学状态，测真实经过的 2s。
 	check(EM.builders.is_empty(), "开局无筑墙工")
 	# 12s 首出（直推调度器内部时钟 + 单次 tick 触发）
 	EM._elapsed = EM.BUILDER_FIRST_AT + 0.1

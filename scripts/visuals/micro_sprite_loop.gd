@@ -11,6 +11,9 @@ const SHEETS := {
 	"lock": preload("res://visual_v2/runtime/micro_animations/v1/enemies/lock_sheet.png"),
 	"slow": preload("res://visual_v2/runtime/micro_animations/v1/enemies/slow_sheet.png"),
 	"slime": preload("res://visual_v2/runtime/micro_animations/v1/enemies/slime_sheet.png"),
+	"overload": preload("res://visual_v2/runtime/ch02_v1/robots/overload_sheet.png"),
+	"builder": preload("res://visual_v2/runtime/ch02_v1/enemies/builder_sheet.png"),
+	"special_ore": preload("res://visual_v2/runtime/ch02_v1/facilities/special_ore_sheet.png"),
 }
 const PATTERNS := {
 	"opener": {"frames": [0, 1, 2], "seconds": [0.3, 0.3, 0.3]},
@@ -22,6 +25,9 @@ const PATTERNS := {
 	"lock": {"frames": [0, 1, 2], "seconds": [0.7, 0.4, 0.7]},
 	"slow": {"frames": [0, 1, 2], "seconds": [1.0, 0.5, 0.9]},
 	"slime": {"frames": [0, 1, 2], "seconds": [0.7, 0.4, 0.7]},
+	"overload": {"frames": [0, 1, 2, 1], "seconds": [0.65, 0.22, 0.18, 0.22]},
+	"builder": {"frames": [0, 1, 2, 1], "seconds": [0.65, 0.25, 0.65, 0.25]},
+	"special_ore": {"frames": [0, 1, 2, 1], "seconds": [1.2, 0.6, 0.3, 0.6]},
 }
 
 var _skin: Sprite2D = null
@@ -57,12 +63,23 @@ func configure(skin: Sprite2D, kind: String) -> void:
 	_skin.vframes = 1
 	_skin.frame = 0
 	_skin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_skin.visible = true
 	_step = 0
 	_timer = 0.0
 	_cycle_seconds = 0.0
 	for seconds in PATTERNS[kind].seconds:
 		_cycle_seconds += float(seconds)
 	advance(_rng.randf() * _cycle_seconds)  # 同类实体随机错开起点
+
+
+func clear() -> void:
+	if is_instance_valid(_skin):
+		_skin.texture = null
+		_skin.hframes = 1
+		_skin.frame = 0
+		_skin.visible = false
+	_skin = null
+	_kind = ""
 
 
 func advance(delta: float) -> void:

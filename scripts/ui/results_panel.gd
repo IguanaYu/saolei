@@ -14,6 +14,7 @@ const ICON_ORE := preload("res://visual_v2/runtime/completion/ui/icons/icon_ore.
 const ICON_CLOCK := preload("res://visual_v2/runtime/ui/icons/icon_clock.png")
 const ICON_HEART := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
 const ICON_STAR := preload("res://visual_v2/runtime/ui/icons/icon_star.png")
+const CH02_PRESENTATION := preload("res://scripts/ui/ch02_presentation.gd")
 
 const STAR_GRAY := Color(0.38, 0.35, 0.3)
 const DAILY_ORE := 30
@@ -319,7 +320,7 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 	if GameState.current_level_id.begins_with("ch02"):
 		var fired: int = int(s.get("shots_fired", 0))
 		var avg_beam: float = float(s.get("beam_cells_total", 0)) / float(fired) if fired > 0 else 0.0
-		_add_row(ICON_STAR, "激光",
+		_add_row(CH02_PRESENTATION.icon("laser"), "激光",
 			"发射 %d 次 · 削层 %d · 碎钻 %d · 均束 %.1f 格" % [
 				fired, int(s.get("layers_peeled", 0)),
 				int(s.get("diamonds_shattered", 0)), avg_beam])
@@ -332,15 +333,15 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 					int(s.get("pillar_hits", 0)),
 					int(s.get("pillar_lowest_hp", 6)), broken_txt])
 		if int(s.get("builders_killed", 0)) > 0 or int(s.get("cover_walls_destroyed", 0)) > 0:
-			_add_row(ICON_STAR, "拆敌",
+			_add_row(CH02_PRESENTATION.icon("builder"), "拆敌",
 				"击破筑墙工 %d · 拆覆盖墙 %d" % [
 					int(s.get("builders_killed", 0)),
 					int(s.get("cover_walls_destroyed", 0))])
 		# 改版 2-3/2-4 招牌数据行（零值收起：无矿石/过载的关永隐藏）
 		if int(s.get("ore_bursts", 0)) > 0:
-			_add_row(ICON_STAR, "特殊矿石", "触发爆发 %d 次" % int(s.get("ore_bursts", 0)))
+			_add_row(CH02_PRESENTATION.icon("special_ore"), "特殊矿石", "触发爆发 %d 次" % int(s.get("ore_bursts", 0)))
 		if int(s.get("overload_blasts", 0)) > 0:
-			_add_row(ICON_STAR, "过载机器人", "引爆 %d 次" % int(s.get("overload_blasts", 0)))
+			_add_row(CH02_PRESENTATION.icon("overload"), "过载机器人", "引爆 %d 次" % int(s.get("overload_blasts", 0)))
 	# L5 Boss 关：互动数据行（设计 §4 结算；到点/命尽分支也显示——打没打完都给看战果）
 	if GameState.current_level_id == "ch01_s05":
 		_add_row(ICON_STAR, "Boss战",

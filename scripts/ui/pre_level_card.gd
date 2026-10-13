@@ -4,6 +4,9 @@ extends Control
 signal start_confirmed(level_id: String)
 
 var _level_id := ""
+const CH02_PRESENTATION := preload("res://scripts/ui/ch02_presentation.gd")
+var _mechanic_icon: TextureRect
+var _mechanic_tip: Label
 
 @onready var title_label: Label = $Center/Panel/Margin/VBox/TitleLabel
 @onready var goal_label: Label = $Center/Panel/Margin/VBox/GoalLabel
@@ -15,11 +18,32 @@ var _level_id := ""
 
 func _ready() -> void:
 	hide()
+	var box := $Center/Panel/Margin/VBox
+	_mechanic_icon = TextureRect.new()
+	_mechanic_icon.name = "ChapterMechanicIcon"
+	_mechanic_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_mechanic_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_mechanic_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_mechanic_icon.custom_minimum_size = Vector2(44, 44)
+	box.add_child(_mechanic_icon)
+	box.move_child(_mechanic_icon, 0)
+	_mechanic_tip = Label.new()
+	_mechanic_tip.name = "ChapterMechanicTip"
+	_mechanic_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_mechanic_tip.add_theme_font_size_override("font_size", 15)
+	_mechanic_tip.add_theme_color_override("font_color", Color(0.6, 0.9, 0.95))
+	box.add_child(_mechanic_tip)
+	box.move_child(_mechanic_tip, 4)
 	start_button.pressed.connect(_on_start)
 
 
 func open(lvl: LevelData) -> void:
 	_level_id = lvl.id
+	_mechanic_icon.texture = CH02_PRESENTATION.level_icon(lvl.id)
+	_mechanic_icon.visible = _mechanic_icon.texture != null
+	_mechanic_tip.text = CH02_PRESENTATION.level_tip(lvl.id)
+	_mechanic_tip.visible = _mechanic_tip.text != ""
+	$Center/Panel.custom_minimum_size.y = 510 if _mechanic_icon.visible else 420
 	var sname := lvl.short_name if lvl.short_name != "" else lvl.display_name
 	title_label.text = "第 %s 关 · %s" % [lvl.display_name.substr(2), sname]
 	var obj: ObjectiveData = lvl.objectives[0] if not lvl.objectives.is_empty() else null

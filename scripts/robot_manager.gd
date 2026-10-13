@@ -37,8 +37,8 @@ func spawn_robot(start_coord: Vector2i, robot_type: String, grid,
 		"overload":
 			robot = load(OVERLOAD_SCENE_PATH).instantiate()
 		_: robot = load(ROBOT_SCENE_PATH).instantiate()
-	add_child(robot)
 	robot.robot_type = robot_type
+	add_child(robot)  # _ready / 阵营描边必须读到最终类型与帧数
 	robot._update_visual()
 	robot.set_initial_position(start_coord, grid)
 	robots.append(robot)
@@ -61,13 +61,22 @@ func _play_spawn_presentation(robot: Robot, grid, spot: Vector2i,
 	var icon: Texture2D = fx.robot_icon_texture(robot.get_node_or_null("Skin"))
 	fx.fx_robot_deliver(grid.coord_to_world(origin), grid.coord_to_world(spot),
 		icon, delay_s,
-		func():
-			if not is_instance_valid(robot):
-				return
-			robot.visible = true
-			robot.play_spawn_drop()
-			fx.fx_spawn_dust(grid.get_cell(spot))
-			AudioManager.play_sfx("flag", 1.1))
+		_finish_spawn_presentation.bind(weakref(robot), weakref(grid), weakref(fx), spot))
+
+
+## 单台机器人可在飞图落地前自爆或被移除；延迟回调只持有弱引用。
+## Lambda 捕获已释放 Node 时会在进入函数体前报错，is_instance_valid 不能阻止它。
+func _finish_spawn_presentation(robot_ref: WeakRef, grid_ref: WeakRef,
+		fx_ref: WeakRef, spot: Vector2i) -> void:
+	var robot: Robot = robot_ref.get_ref()
+	var grid: Grid = grid_ref.get_ref()
+	var fx: EffectsLayer = fx_ref.get_ref()
+	if robot == null or robot.is_queued_for_deletion() or grid == null or fx == null:
+		return
+	robot.visible = true
+	robot.play_spawn_drop()
+	fx.fx_spawn_dust(grid.get_cell(spot))
+	AudioManager.play_sfx("flag", 1.1)
 
 
 ## 移除机器人（detector 自爆时调用）

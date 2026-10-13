@@ -17,6 +17,38 @@ var _bg_rect: TextureRect
 var _frame_layer: Control
 var _props_layer: Control
 var _relayout_queued := false   # 拖拽窗口时 size_changed 高频触发，防抖合并
+var _laser_chapter := false
+var _chapter_accent: ChapterAccent = null
+
+
+func set_laser_chapter(enabled: bool) -> void:
+	_laser_chapter = enabled
+	_bg_rect.modulate = Color(0.61, 0.73, 0.80) if enabled else Color(0.72, 0.72, 0.72)
+	if _chapter_accent == null:
+		_chapter_accent = ChapterAccent.new()
+		_chapter_accent.name = "LaserMineAccent"
+		_chapter_accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_chapter_accent)
+	_chapter_accent.visible = enabled
+	_refresh_chapter_accent()
+
+
+func _refresh_chapter_accent() -> void:
+	var grid := _find_grid()
+	if _chapter_accent == null or grid == null:
+		return
+	var screen_size := Vector2(grid.cols * grid.cell_size, grid.rows * grid.cell_size) * grid.global_scale
+	_chapter_accent.board = Rect2(grid.global_position - Vector2(12, 12), screen_size + Vector2(24, 24))
+	_chapter_accent.queue_redraw()
+
+
+class ChapterAccent extends Control:
+	var board := Rect2()
+	func _draw() -> void:
+		# 四个嵌入岩框的小型电源灯；不覆盖棋盘格或参与单位遍历。
+		for p in [board.position, Vector2(board.end.x, board.position.y), board.end, Vector2(board.position.x, board.end.y)]:
+			draw_rect(Rect2(p - Vector2(5, 3), Vector2(10, 6)), Color(0.07, 0.14, 0.17))
+			draw_rect(Rect2(p - Vector2(3, 1), Vector2(6, 2)), Color(0.45, 0.9, 0.95))
 
 
 func _ready() -> void:
@@ -66,6 +98,7 @@ func _build_static() -> void:
 
 ## 按 Grid 当前位置/尺寸重排边框与道具（configure 后调用；幂等）
 func layout_env() -> void:
+	_refresh_chapter_accent()
 	for c in _frame_layer.get_children():
 		c.queue_free()
 	for c in _props_layer.get_children():

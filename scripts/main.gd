@@ -260,6 +260,8 @@ func _on_splash_finished() -> void:
 
 
 func _show_main_menu() -> void:
+	AudioManager.clear_sfx()
+	AudioManager.use_chapter_music(false)
 	results_panel.hide()
 	pause_panel.hide()
 	playtest_done.hide()  # 完成页按钮只发信号不自隐藏，接收端统一收起
@@ -370,6 +372,8 @@ func _open_playtest_done() -> void:
 
 
 func _on_back_to_level_select() -> void:
+	AudioManager.clear_sfx()
+	AudioManager.use_chapter_music(false)
 	results_panel.hide()
 	playtest_done.hide()  # 完成页返回路径同 _show_main_menu：面板不残留
 	_show_level_select()
@@ -389,6 +393,9 @@ func _start_daily() -> void:
 
 
 func _start_level_with(lvl: LevelData, wall_style: String) -> void:
+	AudioManager.clear_sfx()
+	AudioManager.use_chapter_music(lvl != null and lvl.laser_mode)
+	get_node("AudioConnector").reset_for_level()
 	if lvl.chapter_id != "":
 		_current_chapter_id = lvl.chapter_id  # 选关页落在进度章（2026-10-11 章节页复活配套）
 	main_menu.hide()
@@ -424,6 +431,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具（读的是已更新的棋盘位）
+		$CaveEnv.set_laser_chapter(lvl.laser_mode)
 		# 固定盘面：直接装载雷位/预开区/预置基地，跳过放基地阶段
 		if lvl.has_fixed_board():
 			grid.apply_fixed_board({
@@ -576,6 +584,7 @@ func _relayout_play_area() -> void:
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
 	facility_manager.reproject_all(grid)
+	$CaveEnv._refresh_chapter_accent()
 	_update_scroll_buttons()
 	if tutorial_guide.visible:
 		tutorial_guide._relayout_current()
@@ -1169,6 +1178,11 @@ func _buy_overload_range() -> bool:
 		return false
 	GameState.add_money(-GameState.OVERLOAD_RANGE_PRICE)
 	GameState.overload_range_level = 1
+	for robot in robot_manager.robots:
+		if robot is OverloadRobot:
+			robot.play_range_upgrade()
+	AudioManager.play_sfx("upgrade")
+	grid.hide_laser_preview()  # 旧悬停范围不可继续展示未升级形状
 	GameState.result_stats["overload_range_bought"] = 1
 	GameState.game_event_logged.emit("过载扩爆 −%d金：爆炸射程 +1 格" \
 			% GameState.OVERLOAD_RANGE_PRICE, "player", "player")

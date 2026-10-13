@@ -3,6 +3,7 @@ extends Control
 
 signal chapter_selected(ch_id: String)
 signal back_requested
+const CH02_PRESENTATION := preload("res://scripts/ui/ch02_presentation.gd")
 
 @onready var grid_container: GridContainer = $MarginContainer/VBoxContainer/GridContainer
 @onready var back_button: Button = $MarginContainer/VBoxContainer/BackButton
@@ -19,18 +20,37 @@ func refresh() -> void:
 	# 只列实装章节（2026-10-11 复活本页配套）：老路线图模板桩章节不出现
 	for ch in LevelSystem.get_implemented_chapters():
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(190, 100)
+		btn.name = "ChapterCard_" + ch.id
+		btn.custom_minimum_size = Vector2(240, 118)
 		var unlocked: bool = LevelSystem.is_chapter_unlocked(ch.id)
-		var stars: int = _chapter_stars(ch.id)
 		if unlocked:
-			btn.text = "%s %s\n%s\n★%d/%d" % [ch.id.to_upper(), ch.display_name,
-					_module_hint(ch.unlock_module), stars, ch.level_ids.size() * 3]
+			btn.text = "%s %s\n%s\n%s" % [ch.id.to_upper(), ch.display_name,
+					"激光 · 晶簇 · 过载" if ch.id == "ch02" else _module_hint(ch.unlock_module),
+					_chapter_progress(ch)]
 		else:
 			btn.text = "%s %s\n🔒" % [ch.id.to_upper(), ch.display_name]
 		btn.disabled = not unlocked
 		btn.modulate = ch.theme_color if unlocked else Color(0.4, 0.4, 0.4)
+		if ch.id == "ch02":
+			btn.icon = CH02_PRESENTATION.icon("chapter")
+			btn.add_theme_constant_override("icon_max_width", 32)
 		btn.pressed.connect(_emit_chapter_selected.bind(ch.id))
 		grid_container.add_child(btn)
+
+
+func _chapter_progress(ch) -> String:
+	var cleared := 0
+	var star_slots := 0
+	var stars := 0
+	for id in ch.level_ids:
+		if SaveSystem.is_level_cleared(id):
+			cleared += 1
+		var lvl: LevelData = LevelSystem.get_level(id)
+		if lvl != null and not lvl.no_stars:
+			star_slots += 3
+			stars += SaveSystem.get_level_stars(id)
+	return "已通关 %d/%d" % [cleared, ch.level_ids.size()] if star_slots == 0 \
+			else "★%d/%d · 已通关 %d/%d" % [stars, star_slots, cleared, ch.level_ids.size()]
 
 
 func _emit_chapter_selected(ch_id: String) -> void:

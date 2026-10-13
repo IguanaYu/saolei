@@ -16,14 +16,42 @@ const ALL_DIRS := [
 ]
 
 var origin: Vector2i = Vector2i(-9, -9)
+const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
+var _micro_loop := MICRO_ANIMATION.new()
+var _skin: Sprite2D = null
+var _cell_px := 28.0
+var _hit_age := 1.0
 
 
 func setup(o: Vector2i, grid) -> void:
 	origin = o
+	_cell_px = grid.cell_size
 	z_index = 8  # 同连爆节点：压过格子与网格线，低于虫(10)/机器人悬停角框(40)
 	# 2×2 几何中心 = 四格中心的均值（origin 格心 + 半格偏移）
 	position = grid.coord_to_world(origin) + Vector2(grid.cell_size / 2.0,
 			grid.cell_size / 2.0)
+	if _skin == null:
+		_skin = Sprite2D.new()
+		_skin.name = "OreSkin"
+		add_child(_skin)
+		_micro_loop.configure(_skin, "special_ore")
+	_skin.scale = Vector2.ONE * ((_cell_px * SIZE - 6.0) / 48.0)
+	queue_redraw()
+
+
+func play_activate() -> void:
+	_hit_age = 0.0
+
+
+func _process(delta: float) -> void:
+	if not MICRO_ANIMATION.is_gameplay_running(self) or _skin == null:
+		return
+	_hit_age += delta
+	_micro_loop.advance(delta)
+	if _hit_age < 0.18:
+		_skin.frame = 2
+	_skin.modulate = Color.WHITE * (1.0 + 0.45 * maxf(0, 1.0 - _hit_age / 0.35))
+	_skin.modulate.a = 1.0
 	queue_redraw()
 
 
@@ -40,6 +68,11 @@ func footprint() -> Array:
 ## 斜向是 2 宽阶梯带（同主束斜射口径，LaserGeometry 全章唯一几何源）。
 ## rng 注入：测试可复现；每轮调用重新随机（无限次触发=每次新形状）
 func burst_cells(grid, rng: RandomNumberGenerator) -> Array:
+	return burst_geometry(grid, rng).cells
+
+
+## 一次抽样同时交付格集与三条射线，特效不再重掷随机方向。
+func burst_geometry(grid, rng: RandomNumberGenerator) -> Dictionary:
 	var dirs: Array = ALL_DIRS.duplicate()
 	for i in range(dirs.size() - 1, 0, -1):  # Fisher-Yates 用注入 rng
 		var j: int = rng.randi_range(0, i)
@@ -50,20 +83,29 @@ func burst_cells(grid, rng: RandomNumberGenerator) -> Array:
 	for c in footprint():
 		foot[c] = true
 	var out: Array = []
+	var rays: Array = []
 	for d in dirs.slice(0, BURST_DIRS):
 		var edge := origin + Vector2i(1 if d.x > 0 else 0, 1 if d.y > 0 else 0)
+		var ray: Array = []
 		for c in LaserGeometry.beam_cells(edge, edge + d * BURST_RANGE):
-			if foot.has(c) or not grid.cells.has(c) or out.has(c):
+			if foot.has(c) or not grid.cells.has(c):
 				continue
-			out.append(c)
-	return out
+			ray.append(c)
+			if not out.has(c):
+				out.append(c)
+		if not ray.is_empty():
+			rays.append({"from": edge, "to": ray.back(), "cells": ray})
+	return {"cells": out, "rays": rays}
 
 
 func _draw() -> void:
-	# 程序绘制占位：青蓝同心环晶簇 + 白芯菱晶（沿 ChainNode 同心环语言，素材批后换贴图）
-	draw_arc(Vector2.ZERO, 23.0, 0.0, TAU, 28, Color(0.30, 0.85, 0.95, 0.92), 2.0)
-	draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 24, Color(0.55, 0.95, 1.0, 0.85), 1.5)
-	draw_circle(Vector2.ZERO, 13.0, Color(0.10, 0.35, 0.45, 0.55))
-	var pts := PackedVector2Array([Vector2(0, -9), Vector2(7, 0), Vector2(0, 9), Vector2(-7, 0)])
-	draw_colored_polygon(pts, Color(0.85, 0.98, 1.0, 0.95))
-	draw_circle(Vector2.ZERO, 2.5, Color(1.0, 1.0, 1.0))
+	var half := _cell_px - 1.0
+	draw_rect(Rect2(-half, -half, half * 2, half * 2), Color(0.04, 0.14, 0.18, 0.75))
+	var edge := Color(0.35, 0.8, 0.86, 0.65)
+	if _hit_age < 0.35:
+		edge = Color(0.8, 1, 1, 1.0 - _hit_age)
+	for x in [-1, 1]:
+		for y in [-1, 1]:
+			var corner := Vector2(x * half, y * half)
+			draw_line(corner, corner - Vector2(x * 7, 0), edge, 2)
+			draw_line(corner, corner - Vector2(0, y * 7), edge, 2)

@@ -56,6 +56,7 @@ signal laser_fire_requested(target: Vector2i)
 signal wall_damaged(cell, by_actor: String, layers_left: int)
 signal diamond_shattered(cell, by_actor: String)
 signal cover_wall_destroyed(cell)   # 2-2 覆盖墙拆完（Cell 级信号在此中继，main 连一次）
+signal cover_wall_damaged(cell, layers_left: int)
 ## 任意棋盘点击（含已开空地上的无效点击；教学首句"点一下地图"推进用）
 signal board_clicked
 ## 鼠标进入/离开格子（Area2D 原生信号转发；悬停预览用，见盘点 v1 §接入约束 2）
@@ -105,6 +106,7 @@ func _make_effects_layer() -> void:
 	cargo_unloaded.connect(func(pos, amt): _fx.fx_unload(pos, amt))
 	# 第二章：削层岩屑（打墙看得见）/ 碎钻特效（奖励跳字在 main 结算侧出）
 	wall_damaged.connect(func(cell, _a, _l): _fx.fx_wall_crack(cell))
+	cover_wall_damaged.connect(func(cell, _l): _fx.fx_wall_crack(cell))
 	diamond_shattered.connect(func(cell, _a): _fx.fx_diamond_shatter(cell))
 
 
@@ -136,6 +138,7 @@ var _probe_preview: ProbePreview = null
 ## 专属青色双描边与普通束格区分（设计 §4"画出本次整条链的范围"）
 class LaserPreview extends Node2D:
 	var cells: Array = []      # Vector2i 列表
+	var protected: Array = []
 	var marks: Array = []      # 节点格（专属描边；链格已在 cells 里按普通样式画）
 	var pillar: Dictionary = {}  # 2-5 本次将命中的柱 {coord, hp}（空=不涉及）
 	var from_px := Vector2.ZERO
@@ -144,8 +147,9 @@ class LaserPreview extends Node2D:
 	var cell_px := 28
 
 	func set_shot(cells_list: Array, from_local: Vector2, to_local: Vector2,
-			mark_cells: Array = [], pillar_info: Dictionary = {}) -> void:
+			mark_cells: Array = [], pillar_info: Dictionary = {}, protected_cells: Array = []) -> void:
 		cells = cells_list
+		protected = protected_cells
 		marks = mark_cells
 		pillar = pillar_info
 		from_px = from_local
@@ -155,6 +159,7 @@ class LaserPreview extends Node2D:
 
 	func clear_shot() -> void:
 		cells = []
+		protected = []
 		marks = []
 		pillar = {}
 		has_line = false
@@ -165,6 +170,11 @@ class LaserPreview extends Node2D:
 		for c in cells:
 			var r := Rect2(Vector2(c.x * cell_px + 2.0, c.y * cell_px + 2.0),
 					Vector2(cell_px - 4.0, cell_px - 4.0))
+			if protected.has(c):
+				draw_rect(r, Color(0.4, 0.95, 1.0, 0.8), false, 1.5)
+				var p := r.position + Vector2(3, 3)
+				draw_polyline(PackedVector2Array([p, p + Vector2(3, 3), p + Vector2(7, -2)]), Color(0.65, 1, 1), 2)
+				continue
 			# 2-5：柱耐久 ≤2 时整段束格预览变暗红（射前理解代价，设计 §4）
 			# 2026-10-11 提亮：原 fill 0.13/border 1.0@0.55 实测仅约 10% 亮度变化，
 			# 用户两报"预览看不见/不稳定"——像素实测画了但肉眼难辨
@@ -205,15 +215,18 @@ var _laser_preview: LaserPreview = null
 ## placement=true 折光驻点预览（不画束线，只画出射格集）；mark_cells 节点启动位描边（2-4）；
 ## pillar_info 本次将命中的柱预警（2-5）
 func show_laser_preview(target: Vector2i, cells: Array, placement := false,
-		mark_cells: Array = [], pillar_info: Dictionary = {}) -> void:
+		mark_cells: Array = [], pillar_info: Dictionary = {},
+		beam_end := Vector2i(-9, -9), protected_cells: Array = []) -> void:
 	if _laser_preview == null:
 		return
 	if placement:
 		_laser_preview.set_shot(cells, Vector2.ZERO, Vector2.ZERO)
+		_laser_preview.has_line = false
 	else:
-		_laser_preview.set_shot(cells, _cell_center_px(target),
-				_cell_center_px(GameState.get_nearest_base(target) if GameState.bases.size() > 0 else target),
-				mark_cells, pillar_info)
+		var end := target if beam_end == Vector2i(-9, -9) else beam_end
+		_laser_preview.set_shot(cells,
+				_cell_center_px(GameState.bases[0] if not GameState.bases.is_empty() else target),
+				_cell_center_px(end), mark_cells, pillar_info, protected_cells)
 	_laser_preview.visible = true
 
 
@@ -946,7 +959,10 @@ func count_cover_walls() -> int:
 func damage_cover_wall_at(coord: Vector2i, layers: int = 1) -> void:
 	var cell: Cell = cells.get(coord)
 	if cell != null:
+		var before := cell.cover_wall_hp
 		cell.damage_cover_wall(layers)
+		if before > cell.cover_wall_hp:
+			cover_wall_damaged.emit(cell, cell.cover_wall_hp)
 
 
 ## 所有覆盖墙坐标（opener 拆墙目标扫描用）

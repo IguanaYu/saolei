@@ -289,15 +289,15 @@ func _phase5_recovery() -> void:
 	FM.tick(3.0, g)
 	check(FM.pillar.hp == hp0, "停火 5s 未满等待期（不恢复）")
 	GS.elapsed += 1.5            # 距末次受击 6.5s：进入恢复期
-	FM.tick(2.9)
+	FM.tick(2.9, g)
 	check(FM.pillar.hp == hp0, "恢复期步进未满 3s（不恢复）")
-	FM.tick(0.2)
+	FM.tick(0.2, g)
 	check(FM.pillar.hp == hp0 + 1, "末次受击后第 9s 首次恢复（+1，实 %d）" % FM.pillar.hp)
 	# 重复命中重置等待
 	FM.pillar.take_hit()
 	check(FM.pillar.hp == hp0, "受击扣 1（恢复被打断回退）")
 	GS.elapsed += 5.0
-	FM.tick(3.0)
+	FM.tick(3.0, g)
 	check(FM.pillar.hp == hp0, "受击重置 6s 等待（5s 不恢复）")
 
 

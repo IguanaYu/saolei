@@ -563,6 +563,7 @@ func _ensure_wall_badge() -> void:
 		return
 	_wall_badge = Label.new()
 	_wall_badge.name = "WallHpBadge"
+	_wall_badge.z_index = 5
 	_wall_badge.add_theme_font_size_override("font_size", 9)
 	_wall_badge.add_theme_color_override("font_color", Color(1.0, 0.86, 0.7))
 	_wall_badge.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.04, 0.9))
@@ -824,26 +825,41 @@ func refresh_visual() -> void:
 	elif _wall_badge != null and is_instance_valid(_wall_badge):
 		_wall_badge.visible = false
 	_refresh_cover_wall_visual(lbl)
+	_refresh_wall_state_overlay()
 	cell_state_changed.emit(self)
 
 
-## 覆盖墙视觉（程序占位）：半透明岩色盖板 + 数字淡显（总纲 §4.7 建议）；素材批后换贴图
-var _cover_wall_rect: ColorRect = null
+const WALL_STATE_OVERLAY := preload("res://scripts/visuals/wall_state_overlay.gd")
+var _cover_wall_rect: Node2D = null
+var _wall_state_overlay: Node2D = null
 
 
 func _refresh_cover_wall_visual(lbl: Label) -> void:
 	if cover_wall_hp > 0:
 		if _cover_wall_rect == null:
-			_cover_wall_rect = ColorRect.new()
+			_cover_wall_rect = WALL_STATE_OVERLAY.new()
 			_cover_wall_rect.name = "CoverWallOverlay"  # 显式命名，防遍历误匹配
-			_cover_wall_rect.position = Vector2(-14, -14)
-			_cover_wall_rect.size = Vector2(28, 28)
-			_cover_wall_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_cover_wall_rect.constructed = true
 			_cover_wall_rect.z_index = 2
 			add_child(_cover_wall_rect)
-		_cover_wall_rect.color = Color(0.32, 0.26, 0.20, 0.72)  # 岩色半透明盖板
+		_cover_wall_rect.layers = cover_wall_hp
+		_cover_wall_rect.queue_redraw()
 		_cover_wall_rect.visible = true
-		lbl.modulate = Color(1, 1, 1, 0.35)  # 底层数字淡显保留可读入口
+		lbl.modulate.a = 1.0
 	elif _cover_wall_rect != null and is_instance_valid(_cover_wall_rect):
 		_cover_wall_rect.visible = false
 		# 数字颜色由 refresh_visual 上方分支每次全量重算，无需在此恢复
+
+
+func _refresh_wall_state_overlay() -> void:
+	var grid := get_parent() as Grid
+	var show := grid != null and grid.laser_mode and not is_opened and not is_fossil
+	if show and _wall_state_overlay == null:
+		_wall_state_overlay = WALL_STATE_OVERLAY.new()
+		_wall_state_overlay.name = "ReinforcedWallOverlay"
+		_wall_state_overlay.z_index = 1
+		add_child(_wall_state_overlay)
+	if is_instance_valid(_wall_state_overlay):
+		_wall_state_overlay.layers = wall_hp
+		_wall_state_overlay.visible = show
+		_wall_state_overlay.queue_redraw()

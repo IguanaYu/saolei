@@ -9,6 +9,7 @@ signal powerup_requested
 const L2_ID := "ch01_s02"
 const L3_ID := "ch01_s03"
 const COPY_INTERMISSION := "矿石能升级。"  # 间场教学句（设计 §6-1，全关 ≤3 句之一）
+const CH02_PRESENTATION := preload("res://scripts/ui/ch02_presentation.gd")
 
 @onready var back_button: Button = $MarginContainer/VBoxContainer/TopBar/BackButton
 @onready var title_label: Label = $MarginContainer/VBoxContainer/TopBar/TitleLabel
@@ -56,12 +57,14 @@ func refresh() -> void:
 	for id in ch.level_ids:
 		if SaveSystem.is_level_cleared(id):
 			cleared += 1
-	title_label.text = "试玩矿区 · 进度 %d/%d" % [cleared, ch.level_ids.size()]
+	title_label.text = "%s · 进度 %d/%d" % [ch.display_name, cleared, ch.level_ids.size()]
 	for i in ch.level_ids.size():
 		var lvl: LevelData = LevelSystem.get_level(ch.level_ids[i])
 		var btn := Button.new()
 		btn.name = "LevelRow%02d" % (i + 1)   # 显式命名，防 get_children 遍历误匹配
 		btn.custom_minimum_size = Vector2(314, 90)
+		btn.icon = CH02_PRESENTATION.level_icon(lvl.id)
+		btn.add_theme_constant_override("icon_max_width", 24)
 		var state := "✓" if SaveSystem.is_level_cleared(lvl.id) \
 				else ("" if LevelSystem.is_level_unlocked(lvl.id) else "🔒")
 		var sname := lvl.short_name if lvl.short_name != "" else "第 %d 关" % (i + 1)

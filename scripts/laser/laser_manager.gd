@@ -114,7 +114,7 @@ func overload_at(c: Vector2i, rm = null) -> OverloadRobot:
 ## 并入同一总命中集；矿石爆发向每轮重掷——预览不画爆发格（画了必误导），画足迹描边。
 ## 返回 {cells/main/sub/refractor/chain_nodes/chain_cells/pillar/ores/ore_cells/ore_marks/
 ##       overloads/overload_cells}
-func compute_shot_geometry(base: Vector2i, target: Vector2i) -> Dictionary:
+func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_bursts := true) -> Dictionary:
 	var fm := facility_manager()
 	var rm := robot_manager()
 	var main_cells: Array = []
@@ -211,29 +211,44 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i) -> Dictionary:
 			for c in ore.footprint():
 				if not ore_marks.has(c):
 					ore_marks.append(c)
+			if not resolve_random_bursts:
+				continue  # 悬停只读足迹，既不预测也不消耗本轮随机序列
+			var burst: Dictionary = ore.burst_geometry(grid, burst_rng)
 			var one: Array = []
-			for c in ore.burst_cells(grid, burst_rng):
+			for c in burst.cells:
 				if not one.has(c):
 					one.append(c)
 				if not cells.has(c):
 					cells.append(c)
 					ore_cells.append(c)
-			ore_details.append({"ore": ore, "cells": one})
+			ore_details.append({"ore": ore, "cells": one, "rays": burst.rays})
 	# 改版 2-4 过载爆炸：束格命中机器人 → 13 格爆发（本体存活，无限次）
 	var overloads: Array = []
 	var overload_cells: Array = []
+	var overload_details: Array = []
 	if rm != null:
 		for r in rm.robots:
 			if r is OverloadRobot and beam_set.has(r.coord):
 				overloads.append(r)
-				for b in r.blast_cells(grid):
+				var blast: Array = r.blast_cells(grid)
+				overload_details.append({"robot": r, "cells": blast})
+				for b in blast:
 					if not cells.has(b):
 						cells.append(b)
 						overload_cells.append(b)
+	var endpoint: Cell = grid.get_cell(main_cells.back()) if not main_cells.is_empty() else null
+	var endpoint_solid := endpoint != null and (not endpoint.is_opened or endpoint.cover_wall_hp > 0)
+	endpoint_solid = endpoint_solid or not ores.is_empty() or not overloads.is_empty() or refractor != null
 	return {"cells": cells, "main": main_cells, "sub": sub_cells, "refractor": refractor,
 			"chain_nodes": chain_nodes, "chain_cells": chain_cells, "pillar": pillar_coord,
 			"ores": ores, "ore_details": ore_details, "ore_cells": ore_cells,
-			"ore_marks": ore_marks, "overloads": overloads, "overload_cells": overload_cells}
+			"ore_marks": ore_marks, "overloads": overloads, "overload_cells": overload_cells,
+			"overload_details": overload_details, "endpoint_solid": endpoint_solid}
+
+
+static func main_endpoint(geo: Dictionary, fallback: Vector2i) -> Vector2i:
+	var main: Array = geo.get("main", [])
+	return main.back() if not main.is_empty() else fallback
 
 
 ## 一次射击的完整结算（改版 2-4 版）：compute_shot_geometry 快照（含连爆链/矿石/过载展开）
@@ -254,6 +269,10 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 		if cell == null:
 			continue
 		if cell.is_flagged or cell.is_fossil:
+			if cell.is_flagged:
+				var fx := grid.get_node_or_null("EffectsLayer") as EffectsLayer
+				if fx != null:
+					fx.fx_flag_protected(cell)
 			continue
 		if fm != null and fm.ore_at(c) != null:
 			continue  # 矿石足迹不可破坏（束止步格照常在集，仅不结算）
@@ -303,13 +322,13 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 	if not geo.ores.is_empty():
 		GameState.result_stats["ore_bursts"] += geo.ores.size()
 		for d in geo.ore_details:
-			_play_ore_fx(d.ore, d.cells)
+			_play_ore_fx(d.ore, d.cells, d.rays)
 			ore_burst.emit(d.ore, d.cells)
 	if not geo.overloads.is_empty():
 		GameState.result_stats["overload_blasts"] += geo.overloads.size()
-		for r in geo.overloads:
-			_play_overload_fx(r)
-			overload_blast.emit(r, r.blast_cells(grid))
+		for d in geo.overload_details:
+			_play_overload_fx(d.robot, d.cells)
+			overload_blast.emit(d.robot, d.cells)
 	if geo.get("refractor", null) != null:
 		refractor_activated.emit(geo.refractor)
 	if not charged_robots.is_empty():
@@ -339,7 +358,11 @@ func _play_beam_fx(base: Vector2i, target: Vector2i, geo: Dictionary = {}) -> vo
 	# 坐标系注意（2026-10-10 修复）：EffectsLayer 是 Grid 子节点，吃 Grid 本地系；
 	# 此前误传 BoardRoot 本地的 coord_to_world 输出，束整体偏移一个 grid.position
 	# （探针实测：BASE 格全局 (500,320)，束全局 (959,430)=多加了一次 (458,110)）
-	fx.fx_laser_flash(_cell_local(base), _cell_local(target))
+	var endpoint := main_endpoint(geo, target)
+	fx.fx_laser_flash(_cell_local(base), _cell_local(endpoint))
+	var end_cell: Cell = grid.get_cell(endpoint)
+	if end_cell != null and not end_cell.is_flagged and geo.get("endpoint_solid", true):
+		fx.fx_laser_impact(end_cell)
 	if geo != null and geo.get("refractor", null) != null:
 		# 副束示意闪光（折光格→出射区质心；一束示意避免多线糊屏，逐格命中已由结算保证）
 		var sub: Array = geo.get("sub", [])
@@ -353,17 +376,17 @@ func _play_beam_fx(base: Vector2i, target: Vector2i, geo: Dictionary = {}) -> vo
 
 
 ## 改版 2-3 矿石爆发演出：爆发格短亮框 + 足迹心跳（EffectsLayer 坐标系）
-func _play_ore_fx(ore, cells: Array) -> void:
+func _play_ore_fx(ore, cells: Array, rays: Array) -> void:
 	var fx: EffectsLayer = grid.get_node_or_null("EffectsLayer") as EffectsLayer
 	if fx != null:
-		fx.fx_ore_burst(ore, cells, grid)
+		fx.fx_ore_burst(ore, cells, grid, rays)
 
 
 ## 改版 2-4 过载爆炸演出：13 格短亮框 + 本体脉冲一拍（存活语义：闪不缩）
-func _play_overload_fx(r) -> void:
+func _play_overload_fx(r, cells: Array) -> void:
 	var fx: EffectsLayer = grid.get_node_or_null("EffectsLayer") as EffectsLayer
 	if fx != null:
-		fx.fx_overload_blast(r, grid)
+		fx.fx_overload_blast(r, grid, cells)
 
 
 ## 格心 → Grid 本地像素（EffectsLayer 坐标系；格节点缺失时按公式兜底）
@@ -389,7 +412,7 @@ func _on_cell_hovered(cell: Cell) -> void:
 	# 2-5 WP2：本次将命中柱 → 柱格预警描边；hp≤2 束段变暗红、hp==1 弹「将破碎」文案；
 	# 改版 2-3/2-4：矿石足迹/过载机格描边；过载 13 格是确定形状照画，矿石爆发向
 	# 每轮重掷——从预览格集剔除爆发格（画了必误导），只留足迹描边
-	var geo := compute_shot_geometry(base, cell.coord)
+	var geo := compute_shot_geometry(base, cell.coord, false)
 	var marks: Array = []
 	for n in geo.chain_nodes:
 		marks.append(n.coord)
@@ -405,7 +428,11 @@ func _on_cell_hovered(cell: Cell) -> void:
 	if fm != null and fm.pillar != null and is_instance_valid(fm.pillar) \
 			and fm.pillar.is_alive and preview_cells.has(fm.pillar.coord):
 		pillar_info = {"coord": fm.pillar.coord, "hp": fm.pillar.hp}
-	grid.show_laser_preview(cell.coord, preview_cells, false, marks, pillar_info)
+	var protected: Array = preview_cells.filter(func(c):
+		var item: Cell = grid.get_cell(c)
+		return item != null and item.is_flagged)
+	grid.show_laser_preview(cell.coord, preview_cells, false, marks, pillar_info,
+			main_endpoint(geo, cell.coord), protected)
 
 
 func _on_cell_unhovered(_cell: Cell) -> void:

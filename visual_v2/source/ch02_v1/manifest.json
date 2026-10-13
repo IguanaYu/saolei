@@ -1,0 +1,35 @@
+{
+  "version": "ch02_v1",
+  "production_date": "2026-10-12",
+  "bitmap_tool": "Codex built-in image_gen",
+  "style_reference": "res://visual_v2/source/micro_anim_v1/opener_generated.png",
+  "background": "transparent alpha",
+  "assets": [
+    {
+      "name": "overload",
+      "original": "overload_generated.png",
+      "generated_file": "exec-5d42cce8-33e8-40be-aec1-66883539dbcf.png",
+      "frame_pixels": [24, 24],
+      "prompt": "Use case: stylized-concept. Asset type: production pixel-art game sprite sheet on TRUE TRANSPARENT alpha background. The supplied image is STYLE REFERENCE ONLY of an existing friendly mining robot, do not reproduce its drill or its exact design. Create ONE NEW friendly OVERLOAD ROBOT for the same 2D pixel cave mining game, three frames horizontally in three equal cells, identical baseline and fixed body silhouette across all frames. Compact squat charcoal steel robot, copper orange casing, two short sturdy legs, round exposed warm amber reactor at center, TWO small symmetrical electrical capacitor coils over shoulders, tiny cyan eye visor to mark friendly robot. Readable chunky 24x24-style pixel clusters, dark outline, restrained brass highlights, crisp stepped pixel shapes. No drill, no gun, no human face, no hat, no text. Three frames ONLY vary the reactor light and coil sparks: dim amber, bright amber, pale yellow pulse; the feet, hull and silhouette stay fixed. Full body centered in each equal cell, all same size, ample transparent spacing, no ground shadow, no scene, no black background, no glow extending beyond each sprite. A reusable companion, explosion does not destroy it. WIDE 3:1 sprite sheet."
+    },
+    {
+      "name": "builder",
+      "original": "builder_generated.png",
+      "generated_file": "exec-b5a511ae-d44c-44c9-9cf2-2f73628863b8.png",
+      "frame_pixels": [22, 22],
+      "prompt": "Use case: stylized-concept. Asset type: production pixel-art game sprite sheet on TRUE TRANSPARENT alpha background. Input image is STYLE REFERENCE ONLY of existing game sprites. Create ONE NEW WALL-BUILDER ENEMY BUG, three frames horizontally in three equal cells, same body and fixed baseline in all frames. A compact squat six-legged armored construction beetle carrying a chunky rough stone brick on its back, dark charcoal shell, burnt clay orange accents, small red eyes and stout pincer arms with a mason trowel shape; organic insect clearly distinct from friendly robot. Readable chunky 22x22-style pixel clusters, crisp dark outline, muted cave colors, large clear brick/backpack silhouette. Three frames vary only front pincers with subtle masonry motion and eye glint; torso, feet and stone backpack stay fixed. Full body centered in each equal cell, identical scale, generous transparent spacing. No labels, no words, no humans, no background, no shadow, no smooth painting, no extremely thin spider legs. WIDE 3:1 sprite sheet."
+    },
+    {
+      "name": "special_ore",
+      "original": "special_ore_generated.png",
+      "generated_file": "exec-dfc17de5-b8ca-4c91-b051-7b4cdf450eb3.png",
+      "frame_pixels": [48, 48],
+      "prompt": "Use case: stylized-concept. Asset type: production pixel-art neutral facility sprite sheet on TRUE TRANSPARENT alpha background. Input image is STYLE REFERENCE ONLY of the game's pixel mining aesthetic. Create ONE SPECIAL LASER CRYSTAL ORE CLUSTER, three frames horizontally in three equal cells, identical silhouette, baseline and size in all frames. A wide dark rock base that occupies a square 2x2 grid footprint, three large faceted cyan teal crystals with a pale icy central crystal and two smaller crystals at sides, warm brass mineral seams near the rock base, no machinery, no tower, no circular UI rings. A top-down/three-quarter readable cave prop matching chunky 48x48-style pixel clusters and dark outline. Three frames ONLY vary internal crystal glow: calm teal, brighter cyan, icy-white core pulse; the rock silhouette stays completely fixed. It is indestructible and repeatedly emits three short rays when hit. Full object centered, equal scale, transparent padding. No text, labels, UI, background, ground shadow or glow outside the object. WIDE 3:1 sprite sheet."
+    }
+  ],
+  "vector_sources": ["icon_laser.svg", "icon_overload_range.svg", "icon_chapter.svg"],
+  "exporter": "res://visual_v2/export_ch02_v1.cjs",
+  "output": "res://visual_v2/runtime/ch02_v1/",
+  "preparation": "equal cells; alpha bbox; common scale; bottom baseline; nearest sampling; binary runtime alpha",
+  "validation": "res://scripts/tools/verify_ch02_assets.py"
+}

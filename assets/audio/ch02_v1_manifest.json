@@ -1,0 +1,72 @@
+[
+  {
+    "file": "assets/audio/sfx/ch02_laser.wav",
+    "seconds": 0.24,
+    "peak": 0.5,
+    "rms": 0.1153,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_wall_chip.wav",
+    "seconds": 0.17,
+    "peak": 0.5,
+    "rms": 0.0686,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_wall_break.wav",
+    "seconds": 0.3,
+    "peak": 0.62,
+    "rms": 0.1022,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_charge.wav",
+    "seconds": 0.38,
+    "peak": 0.5,
+    "rms": 0.1544,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_ore_burst.wav",
+    "seconds": 0.48,
+    "peak": 0.5,
+    "rms": 0.1081,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_overload.wav",
+    "seconds": 0.46,
+    "peak": 0.62,
+    "rms": 0.1043,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_builder_rift.wav",
+    "seconds": 0.6,
+    "peak": 0.5,
+    "rms": 0.1354,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_builder_build.wav",
+    "seconds": 0.23,
+    "peak": 0.5,
+    "rms": 0.1098,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/sfx/ch02_builder_break.wav",
+    "seconds": 0.33,
+    "peak": 0.5,
+    "rms": 0.1022,
+    "loop_join": 0
+  },
+  {
+    "file": "assets/audio/bgm/bgm_ch02_v1.wav",
+    "seconds": 35.556,
+    "peak": 0.3,
+    "rms": 0.055,
+    "loop_join": 0
+  }
+]

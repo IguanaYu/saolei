@@ -25,6 +25,11 @@ var wall_style := "V2"
 
 var _jump_texts: Array[Node2D] = []  # 活跃跳字（预算与并入用）
 var _seq := 0  # 临时节点编号：同名兄弟会被 Godot 改名 @xx@2，显式唯一命名便于排查
+var _visual_rng := RandomNumberGenerator.new()
+
+
+func _ready() -> void:
+	_visual_rng.randomize()  # 新碎屑不能改变过载巡逻或筑墙工的玩法随机序列
 
 
 ## 临时节点统一取名：Kind + 序号（如 JumpText007）
@@ -217,21 +222,67 @@ func fx_laser_flash(from_local: Vector2, to_local: Vector2) -> void:
 	beam.position = from_local
 	beam.rotation = (to_local - from_local).angle()
 	add_child(beam)
-	var t := beam.create_tween()
-	t.tween_interval(0.04)  # 先亮一拍再淡出
-	t.tween_property(beam, "modulate:a", 0.0, 0.14)
-	t.tween_callback(beam.queue_free)
 
 
 ## 束本体：双层画线（辉光+亮芯），z 压过格子（随 EffectsLayer z=45）
 class LaserBeamFx extends Node2D:
 	var length_px := 0.0
+	var age := 0.0
+
+	func _process(delta: float) -> void:
+		if not GameState.game_active:
+			queue_free()
+			return
+		if not preload("res://scripts/visuals/micro_sprite_loop.gd").is_gameplay_running(self):
+			return
+		age += delta
+		if age > 0.24:
+			queue_free()
+		else:
+			queue_redraw()
 
 	func _draw() -> void:
 		var end := Vector2(length_px, 0)
-		draw_line(Vector2.ZERO, end, Color(1.0, 0.40, 0.12, 0.30), 9.0)
-		draw_line(Vector2.ZERO, end, Color(1.0, 0.78, 0.42, 0.95), 3.0)
-		draw_circle(Vector2.ZERO, 4.0, Color(1.0, 0.9, 0.6, 0.9))  # 炮口亮斑
+		var a := 1.0 - clampf((age - 0.06) / 0.18, 0, 1)
+		draw_line(Vector2.ZERO, end, Color(1.0, 0.40, 0.12, a * 0.24), 7.0)
+		draw_line(Vector2.ZERO, end, Color(1.0, 0.66, 0.25, a), 3.0)
+		draw_line(Vector2.ZERO, end, Color(1.0, 0.95, 0.75, a), 1.0)
+		draw_circle(Vector2.ZERO, 4.0 + age * 4, Color(1.0, 0.9, 0.6, a * 0.8))
+
+
+const MECHANIC_PULSE := preload("res://scripts/visuals/mechanic_pulse.gd")
+
+
+func _cell_pulse(cell: Cell, mode: String, color: Color):
+	var pulse := MECHANIC_PULSE.new()
+	pulse.name = _name("Mechanic" + mode.capitalize())
+	pulse.mode = mode
+	pulse.color = color
+	pulse.entries.append({"rect": Rect2(cell.position - Vector2(14, 14), Vector2(28, 28)), "delay": 0.0})
+	add_child(pulse)
+	return pulse
+
+
+func fx_laser_impact(cell: Cell) -> void:
+	_cell_pulse(cell, "hit", Color(1, 0.8, 0.4))
+
+
+func fx_flag_protected(cell: Cell) -> void:
+	_cell_pulse(cell, "shield", Color(0.45, 0.95, 1.0))
+
+
+func fx_builder_build(cell: Cell) -> void:
+	_cell_pulse(cell, "build", Color(1, 0.6, 0.3))
+	_fx_shards(cell, 2)
+
+
+func fx_builder_killed(local_pos: Vector2) -> void:
+	var pulse := MECHANIC_PULSE.new()
+	pulse.name = _name("BuilderBreak")
+	pulse.mode = "death"
+	pulse.color = Color(0.85, 0.55, 0.3)
+	pulse.entries.append({"rect": Rect2(local_pos - Vector2(11, 11), Vector2(22, 22)), "delay": 0.0})
+	add_child(pulse)
 
 
 ## 削层岩屑：打墙看得见（不加分不加跳字，纯命中反馈）
@@ -254,12 +305,12 @@ func fx_diamond_shatter(cell: Cell) -> void:
 		s.texture = _frame(SHARD_SHEET, i % 3, 8, 8)
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		s.modulate = Color(0.45, 0.85, 1.0)
-		s.position = cell.position + Vector2(randf_range(-3, 3), randf_range(-3, 3))
+		s.position = cell.position + Vector2(_visual_rng.randf_range(-3, 3), _visual_rng.randf_range(-3, 3))
 		add_child(s)
-		var dir := Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+		var dir := Vector2(_visual_rng.randf_range(-1, 1), _visual_rng.randf_range(-1, 1)).normalized()
 		var t := s.create_tween()
 		t.set_parallel(true)
-		t.tween_property(s, "position", s.position + dir * randf_range(5.0, 12.0), 0.16)
+		t.tween_property(s, "position", s.position + dir * _visual_rng.randf_range(5.0, 12.0), 0.16)
 		t.tween_property(s, "modulate:a", 0.0, 0.16)
 		t.chain().tween_callback(s.queue_free)
 	_fx_jump_text(cell.position + Vector2(10, -12), "+1")
@@ -303,49 +354,38 @@ class ChainBlastFrame extends Node2D:
 
 ## 改版 2-3 特殊矿石爆发演出：爆发格青蓝短亮框（Grid 本地，边界内裁切）+
 ## 足迹心跳一拍（不可破坏=不播放消耗动画，与节点收缩消失语义区分）
-func fx_ore_burst(ore: SpecialOre, cells: Array, grid) -> void:
-	var frame := ChainBlastFrame.new()
+func fx_ore_burst(ore: SpecialOre, cells: Array, grid, rays: Array = []) -> void:
+	var frame := MECHANIC_PULSE.new()
 	frame.name = _name("OreBlast")
-	frame.fill_color = Color(0.30, 0.85, 0.95, 0.22)
-	frame.edge_color = Color(0.65, 0.95, 1.0, 0.70)
+	frame.color = Color(0.35, 0.9, 1.0)
+	var center: Vector2 = ore.position - grid.position
 	for c in cells:
 		var cell: Cell = grid.get_cell(c)
-		if cell == null:
+		if cell == null or cell.is_flagged:
 			continue
-		frame.rects.append(Rect2(cell.position - Vector2(grid.cell_size / 2.0,
-				grid.cell_size / 2.0), Vector2(grid.cell_size, grid.cell_size)))
+		frame.entries.append({"rect": Rect2(cell.position - Vector2.ONE * grid.cell_size / 2.0,
+				Vector2.ONE * grid.cell_size), "delay": 0.04 + center.distance_to(cell.position) / grid.cell_size * 0.025})
+	for ray in rays:
+		frame.rays.append({"from": grid.get_cell(ray.from).position, "to": grid.get_cell(ray.to).position})
 	add_child(frame)
-	frame.modulate.a = 0.0
-	var t := frame.create_tween()
-	t.tween_property(frame, "modulate:a", 1.0, 0.03)
-	t.tween_property(frame, "modulate:a", 0.0, 0.30)
-	t.tween_callback(frame.queue_free)
-	var tw := ore.create_tween()
-	tw.tween_property(ore, "scale", Vector2(1.18, 1.18), 0.07)
-	tw.tween_property(ore, "scale", Vector2.ONE, 0.16)
+	ore.play_activate()
 
 
 ## 改版 2-4 过载爆炸演出：13 格短亮框 + 本体脉冲一拍（爆后存活：闪不缩）
-func fx_overload_blast(r: OverloadRobot, grid) -> void:
-	var frame := ChainBlastFrame.new()
+func fx_overload_blast(r: OverloadRobot, grid, snapshot_cells: Array = []) -> void:
+	var frame := MECHANIC_PULSE.new()
 	frame.name = _name("OverloadBlast")
-	frame.fill_color = Color(0.95, 0.35, 0.20, 0.22)
-	frame.edge_color = Color(1.0, 0.60, 0.35, 0.70)
-	for c in r.blast_cells(grid):
+	frame.color = Color(1.0, 0.55, 0.25)
+	var cells: Array = r.blast_cells(grid) if snapshot_cells.is_empty() else snapshot_cells
+	for c in cells:
 		var cell: Cell = grid.get_cell(c)
-		if cell == null:
+		if cell == null or cell.is_flagged:
 			continue
-		frame.rects.append(Rect2(cell.position - Vector2(grid.cell_size / 2.0,
-				grid.cell_size / 2.0), Vector2(grid.cell_size, grid.cell_size)))
+		var dist := maxi(absi(c.x - r.coord.x), absi(c.y - r.coord.y))
+		frame.entries.append({"rect": Rect2(cell.position - Vector2.ONE * grid.cell_size / 2.0,
+				Vector2.ONE * grid.cell_size), "delay": 0.025 * dist})
 	add_child(frame)
-	frame.modulate.a = 0.0
-	var t := frame.create_tween()
-	t.tween_property(frame, "modulate:a", 1.0, 0.03)
-	t.tween_property(frame, "modulate:a", 0.0, 0.25)
-	t.tween_callback(frame.queue_free)
-	var tw := r.create_tween()
-	tw.tween_property(r, "scale", Vector2(1.35, 1.35), 0.06)
-	tw.tween_property(r, "scale", Vector2.ONE, 0.16)
+	r.play_blast()
 
 
 ## 2-5 引光柱破碎：暖玉碎块飞散 + 「-50」暗红大跳字（扣分在 laser_manager 结算侧入账）
@@ -358,12 +398,12 @@ func fx_pillar_broken(cell: Cell) -> void:
 		s.texture = _frame(SHARD_SHEET, i % 3, 8, 8)
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		s.modulate = Color(0.95, 0.88, 0.6)
-		s.position = cell.position + Vector2(randf_range(-4, 4), randf_range(-8, 4))
+		s.position = cell.position + Vector2(_visual_rng.randf_range(-4, 4), _visual_rng.randf_range(-8, 4))
 		add_child(s)
-		var dir := Vector2(randf_range(-1, 1), randf_range(-1.2, 0.2)).normalized()
+		var dir := Vector2(_visual_rng.randf_range(-1, 1), _visual_rng.randf_range(-1.2, 0.2)).normalized()
 		var t := s.create_tween()
 		t.set_parallel(true)
-		t.tween_property(s, "position", s.position + dir * randf_range(8.0, 18.0), 0.30)
+		t.tween_property(s, "position", s.position + dir * _visual_rng.randf_range(8.0, 18.0), 0.30)
 		t.tween_property(s, "modulate:a", 0.0, 0.30)
 		t.chain().tween_callback(s.queue_free)
 	var node := Node2D.new()
@@ -423,14 +463,14 @@ func _fx_shards(cell: Cell, count: int) -> void:
 		s.texture = _frame(SHARD_SHEET, i % 3, 8, 8)
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		s.modulate = palette[i % 3]
-		s.position = cell.position + Vector2(randf_range(-4, 4), randf_range(-4, 4))
+		s.position = cell.position + Vector2(_visual_rng.randf_range(-4, 4), _visual_rng.randf_range(-4, 4))
 		add_child(s)
-		var dir := Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+		var dir := Vector2(_visual_rng.randf_range(-1, 1), _visual_rng.randf_range(-1, 1)).normalized()
 		var t := s.create_tween()
 		t.set_parallel(true)
 		# 位移不超过半格（14px）
 		t.tween_property(s, "position",
-			s.position + dir * randf_range(6.0, 14.0), 0.12)
+			s.position + dir * _visual_rng.randf_range(6.0, 14.0), 0.12)
 		t.tween_property(s, "modulate:a", 0.0, 0.12)
 		t.chain().tween_callback(s.queue_free)
 

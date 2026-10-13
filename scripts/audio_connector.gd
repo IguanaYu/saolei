@@ -8,11 +8,25 @@ var _flush_base_pitch: float = 1.0
 var _last_ceil_sec: int = 999
 
 
+func reset_for_level() -> void:
+	_frame_opens = 0
+	_last_ceil_sec = 999
+
+
 func _ready() -> void:
 	var main := get_parent()
 	var grid: Node = main.get_node("BoardRoot/Grid")
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
+	grid.wall_damaged.connect(func(_c, _a, _l): AudioManager.play_sfx("wall_chip"))
+	grid.cover_wall_damaged.connect(func(_c, left):
+		AudioManager.play_sfx("wall_break" if left == 0 else "wall_chip"))
+	grid.diamond_shattered.connect(func(_c, _a): AudioManager.play_sfx("wall_break", 1.35))
+	var laser: LaserManager = main.get_node("BoardRoot/LaserManager")
+	laser.laser_fired.connect(func(_c): AudioManager.play_sfx("laser"))
+	laser.robots_charged.connect(func(_r): AudioManager.play_sfx("charge"))
+	laser.ore_burst.connect(func(_o, _c): AudioManager.play_sfx("ore_burst"))
+	laser.overload_blast.connect(func(_r, _c): AudioManager.play_sfx("overload"))
 	# 踩雷：玩家原调、机器人低沉（与开格音 pitch 惯例一致）
 	grid.mine_stepped.connect(func(_c, by_actor: String): AudioManager.play_sfx("mine", 1.0 if by_actor == "player" else 0.85))
 	GameState.upgrade_changed.connect(func(_id, _lv): AudioManager.play_sfx("upgrade"))
@@ -23,6 +37,9 @@ func _ready() -> void:
 func _on_cell_opened(_cell, by_actor: String) -> void:
 	if by_actor == "drone":
 		return  # 无人机开格不配音（快速多点，避免吵）
+	if by_actor == "player_laser":
+		AudioManager.play_sfx("wall_break")  # 一枪开多格受节流聚合，不叠通用开格音
+		return
 	_flush_base_pitch = 1.0 if by_actor == "player" else 0.85
 	_frame_opens += 1
 	if _frame_opens == 1:
@@ -44,6 +61,8 @@ func _on_cell_flagged(_cell, _by_actor: String, correct: bool, first_time: bool)
 
 
 func _on_game_over(result: String) -> void:
+	_frame_opens = 0
+	AudioManager.clear_sfx()
 	match result:
 		"win":
 			AudioManager.play_sfx("win")

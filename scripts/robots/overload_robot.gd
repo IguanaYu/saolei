@@ -19,12 +19,63 @@ const STEP_OFFSETS := [
 ]
 
 var _dwell_left := 0  # 高分工位剩余停留拍数
+var _reactor_feedback: ReactorFeedback = null
 
 
 func _ready() -> void:
-	super()
 	robot_type = "overload"
-	_update_visual()
+	super()
+	_reactor_feedback = ReactorFeedback.new()
+	_reactor_feedback.name = "OverloadReactorFeedback"
+	add_child(_reactor_feedback)
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if is_instance_valid(_reactor_feedback):
+		_reactor_feedback.parked = _dwell_left > 0
+		_reactor_feedback.expanded = GameState.overload_range_level >= 1
+
+
+func play_blast() -> void:
+	if is_instance_valid(_reactor_feedback):
+		_reactor_feedback.blast_age = 0.0
+
+
+func play_range_upgrade() -> void:
+	if is_instance_valid(_reactor_feedback):
+		_reactor_feedback.upgrade_left = 0.8
+
+
+class ReactorFeedback extends Node2D:
+	var parked := false
+	var expanded := false
+	var blast_age := 1.0
+	var upgrade_left := 0.0
+	var clock := 0.0
+
+	func _process(delta: float) -> void:
+		if not MICRO_ANIMATION.is_gameplay_running(self):
+			return
+		clock += delta
+		blast_age += delta
+		upgrade_left = maxf(0, upgrade_left - delta)
+		queue_redraw()
+
+	func _draw() -> void:
+		if parked or upgrade_left > 0:
+			var color := Color(1.0, 0.75, 0.3, 0.65 + 0.2 * sin(clock * 5.0))
+			for side in [-1, 1]:
+				draw_line(Vector2(side * 12, -3), Vector2(side * 12, 4), color, 1)
+				draw_line(Vector2(side * 12, 4), Vector2(side * 9, 4), color, 1)
+		if expanded:
+			draw_rect(Rect2(-3, -13, 2, 2), Color(0.4, 0.95, 1))
+			draw_rect(Rect2(1, -13, 2, 2), Color(0.4, 0.95, 1))
+		if blast_age < 0.4:
+			var a := 1.0 - blast_age / 0.4
+			draw_circle(Vector2(0, 1), 5.0 - 2.0 * blast_age, Color(1, 0.9, 0.5, a))
+			for d in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
+				draw_line(d * 5, d * (7 + blast_age * 20), Color(1, 0.65, 0.25, a), 2)
 
 
 ## 固定步速：不走 opener/marker 双轨，也不吃充能加速（本体是炮台不是工人）

@@ -2,6 +2,7 @@ extends Control
 ## 底部商店（封闭试玩版两行）：四设备卡（价格/差额/台数/禁买原因）+ 建基地/局内升级/操作说明
 
 signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（不再硬路径取面板）
+var _height_fit_queued := false
 
 @onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton
@@ -29,6 +30,8 @@ const BUTTON_ICONS := {
 	"probe": preload("res://visual_v2/runtime/completion/ui/icons/icon_probe.png"),
 	"base": preload("res://visual_v2/runtime/completion/ui/icons/icon_base.png"),
 	"upgrade": preload("res://visual_v2/runtime/ui/icons/icon_upgrade.png"),
+	"overload": preload("res://visual_v2/runtime/ch02_v1/ui/icon_overload.png"),
+	"overload_range": preload("res://visual_v2/runtime/ch02_v1/ui/icon_overload_range.png"),
 }
 
 ## 提示行：放置模式显示放置提示（P2-03 费用/落点文案），平时显示常驻快捷键行；text 非空则更新文案
@@ -40,6 +43,8 @@ func set_placing_hint(show: bool, text := "") -> void:
 
 
 func _ready() -> void:
+	$MarginContainer/VBoxContainer.minimum_size_changed.connect(_queue_fit_height)
+	$MarginContainer/VBoxContainer/DeviceFlow.resized.connect(_queue_fit_height)
 	buy_opener_button.icon = BUTTON_ICONS.opener
 	buy_marker_button.icon = BUTTON_ICONS.marker
 	buy_detector_button.icon = BUTTON_ICONS.detector
@@ -49,8 +54,8 @@ func _ready() -> void:
 	upgrade_button.icon = BUTTON_ICONS.upgrade
 	buy_refractor_wide_button.icon = BUTTON_ICONS.guard  # 程序占位：暂借保安图标
 	buy_refractor_scatter_button.icon = BUTTON_ICONS.guard
-	buy_overload_button.icon = BUTTON_ICONS.guard  # 改版 2-4：程序占位，素材批后换
-	buy_overload_range_button.icon = BUTTON_ICONS.upgrade  # 扩爆=升级语义，借升级图标
+	buy_overload_button.icon = BUTTON_ICONS.overload
+	buy_overload_range_button.icon = BUTTON_ICONS.overload_range
 	build_base_button.icon = BUTTON_ICONS.base
 	buy_opener_button.pressed.connect(_on_buy_opener)
 	buy_marker_button.pressed.connect(_on_buy_marker)
@@ -75,6 +80,25 @@ func _ready() -> void:
 	GameState.robot_spawned.connect(func(_t): _refresh_prices())  # 赠送/购买都会抬价格阶梯
 	SaveSystem.unlock_changed.connect(func(_k): _refresh_prices())
 	_refresh_prices()
+	_queue_fit_height()
+
+
+func _queue_fit_height() -> void:
+	if _height_fit_queued:
+		return
+	_height_fit_queued = true
+	_fit_height.call_deferred()
+
+
+func _fit_height() -> void:
+	_height_fit_queued = false
+	var needed: float = maxf(180, $MarginContainer/VBoxContainer.get_combined_minimum_size().y + 24)
+	if is_equal_approx(offset_top, -needed):
+		return
+	offset_top = -needed
+	var main := get_node_or_null("/root/Main")
+	if main != null and main.is_node_ready():
+		main.call_deferred("_relayout_play_area")
 
 
 func _on_buy_opener() -> void:
@@ -233,6 +257,7 @@ func _refresh_overload_range() -> void:
 ## shop_extra 反向开闸：guard/probe 默认隐藏，L4/L5 声明后可见（level_data.gd 口径）
 func _apply_level_shop_config() -> void:
 	var lvl: LevelData = GameState.get_current_level()
+	key_hint_bar.get_node("L1").text = "发射激光" if lvl != null and lvl.laser_mode else "开格"
 	var hidden: Array = lvl.shop_hidden if lvl != null else []
 	var extra: Array = lvl.shop_extra if lvl != null else []
 	build_base_button.visible = not hidden.has("base")
@@ -246,3 +271,4 @@ func _apply_level_shop_config() -> void:
 	buy_overload_button.visible = extra.has("overload") and not hidden.has("overload")
 	buy_overload_range_button.visible = extra.has("overload_range") \
 			and not hidden.has("overload_range")
+	_queue_fit_height()

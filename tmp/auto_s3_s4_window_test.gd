@@ -232,7 +232,9 @@ func _run() -> void:
 	check(int(GS.result_stats["overload_blasts"]) >= 1, "过载引爆 ≥1 次")
 	check(await _click_button("扩爆"), "商店购「扩爆」")
 	await _sec(0.6)
+	check(GS.overload_range_level == 1, "真实点击已购买扩爆升级")
 	main._on_laser_fire_requested(ov.coord)
+	await _sec(0.10)  # 观察实际外扩格框，而非尚未推进时钟的第一帧
 	await _shot("10-s4-blast17.png")
 	check(int(GS.result_stats["overload_blasts"]) >= 2, "扩爆后引爆照常（%d）"
 			% int(GS.result_stats["overload_blasts"]))

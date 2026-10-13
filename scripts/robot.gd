@@ -20,6 +20,8 @@ func is_charged() -> bool:
 
 func apply_charge(duration_sec: float = 6.0) -> void:
 	charge_until_elapsed = maxf(charge_until_elapsed, GameState.elapsed + duration_sec)
+	_update_charge_ring()
+	_charge_ring.absorb()
 var _tick_timer: float = 0.0
 var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
@@ -59,15 +61,17 @@ func _process(delta: float) -> void:
 	_update_charge_ring()
 
 
-## 2-2 充能环（程序绘制占位）：charged 期间青色圆环 + 剩余比例，超时自隐
+## 充能进入闪光、剩余刻度与耗尽收束；只跟随显示，不驱动机器人作业。
 var _charge_ring: Node2D = null
+var _charge_was_active := false
 
 
 func _update_charge_ring() -> void:
 	var charged: bool = is_charged()
 	if not charged:
-		if _charge_ring != null and is_instance_valid(_charge_ring):
-			_charge_ring.visible = false
+		if _charge_was_active and is_instance_valid(_charge_ring):
+			_charge_ring.finish()
+		_charge_was_active = false
 		return
 	if _charge_ring == null or not is_instance_valid(_charge_ring):
 		_charge_ring = ChargeRing.new()
@@ -76,24 +80,55 @@ func _update_charge_ring() -> void:
 	var remain: float = charge_until_elapsed - GameState.elapsed
 	_charge_ring.set_progress(clampf(remain / 6.0, 0.0, 1.0))
 	_charge_ring.visible = true
+	_charge_was_active = true
 
 
 class ChargeRing extends Node2D:
 	var progress := 1.0
 	var _pulse := 0.0
+	var _flash := 0.0
+	var _fade := 0.0
+	var _active := true
+
+	func absorb() -> void:
+		_active = true
+		_flash = 0.35
+		_fade = 0.0
+		visible = true
+
+	func finish() -> void:
+		_active = false
+		_fade = 0.25
 
 	func set_progress(p: float) -> void:
 		progress = p
 		queue_redraw()
 
 	func _process(delta: float) -> void:
+		if not MICRO_ANIMATION.is_gameplay_running(self):
+			return
 		_pulse += delta
+		_flash = maxf(0.0, _flash - delta)
+		_fade = maxf(0.0, _fade - delta)
+		if not _active and _fade == 0.0:
+			visible = false
 		queue_redraw()
 
 	func _draw() -> void:
 		var alpha: float = 0.55 + 0.25 * sin(_pulse * 6.0)
+		if not _active:
+			alpha *= _fade / 0.25
+		draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 32, Color(0.1, 0.4, 0.5, alpha * 0.45), 1.0)
 		draw_arc(Vector2.ZERO, 13.0, -PI / 2.0, -PI / 2.0 + TAU * progress,
 			24, Color(0.4, 0.95, 1.0, alpha), 2.0)
+		for i in 6:
+			var angle := -PI / 2.0 + TAU * float(i) / 6.0
+			var p := Vector2.from_angle(angle) * 13.0
+			draw_rect(Rect2(p - Vector2.ONE, Vector2(2, 2)), Color(0.75, 1, 1, alpha))
+		if _flash > 0.0:
+			for i in 4:
+				var p := Vector2.from_angle(i * PI / 2.0 + _pulse) * (8.0 + 12.0 * _flash / 0.35)
+				draw_rect(Rect2(p - Vector2(1, 2), Vector2(2, 4)), Color(0.8, 1, 1, _flash / 0.35))
 
 
 func set_initial_position(start_coord: Vector2i, grid) -> void:
@@ -109,8 +144,14 @@ func _update_visual() -> void:
 		body.visible = false
 		lbl.visible = false
 		_micro_loop.configure($Skin, robot_type)
+		if $Skin.material is ShaderMaterial:
+			$Skin.material.set_shader_parameter("frame_count", Vector2(3, 1))
 		return
 	# 无皮肤类型兜底：旧色块样式
+	_micro_loop.clear()
+	$Skin.visible = false
+	body.visible = true
+	lbl.visible = true
 	if robot_type == "opener":
 		body.color = Color(0.20, 0.45, 0.95)
 		lbl.text = "⛏"

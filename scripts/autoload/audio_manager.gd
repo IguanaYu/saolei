@@ -4,6 +4,7 @@ extends Node
 
 const SFX_DIR := "res://assets/audio/sfx/"
 const BGM_PATH := "res://assets/audio/bgm/bgm_main.ogg"
+const CH02_BGM_PATH := "res://assets/audio/bgm/bgm_ch02_v1.wav"
 
 ## 音效注册表（素材落盘用统一文件名，见 docs/active/外部试玩版-v0.1-音效与BGM实施计划.md §2）
 const SOUNDS := {
@@ -17,10 +18,22 @@ const SOUNDS := {
 	"lose": "lose.ogg",
 	"ui": "ui.ogg",
 	"heartbeat": "heartbeat.ogg",
+	"laser": "ch02_laser.wav",
+	"wall_chip": "ch02_wall_chip.wav",
+	"wall_break": "ch02_wall_break.wav",
+	"charge": "ch02_charge.wav",
+	"ore_burst": "ch02_ore_burst.wav",
+	"overload": "ch02_overload.wav",
+	"builder_rift": "ch02_builder_rift.wav",
+	"builder_build": "ch02_builder_build.wav",
+	"builder_break": "ch02_builder_break.wav",
 }
 
 ## 同类音效最小重播间隔（ms）——防机器人高频开格糊成一团
-const THROTTLE_MS := {"open": 90, "flag": 80, "coin": 120}
+const THROTTLE_MS := {"open": 90, "flag": 80, "coin": 120,
+	"laser": 100, "wall_chip": 100, "wall_break": 100, "charge": 150,
+	"ore_burst": 150, "overload": 150, "builder_rift": 250,
+	"builder_build": 100, "builder_break": 150}
 
 const SFX_POOL_SIZE := 8
 
@@ -28,10 +41,15 @@ var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
 var _bgm: AudioStreamPlayer
 var _last_play_ms: Dictionary = {}
+var _sfx_epoch := 0
+var _pitch_rng := RandomNumberGenerator.new()
+var _bgm_path := ""
+var _was_tree_paused := false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_pitch_rng.randomize()
 	_load_streams()
 	for i in SFX_POOL_SIZE:
 		var p := AudioStreamPlayer.new()
@@ -50,6 +68,13 @@ func _ready() -> void:
 	play_bgm()
 
 
+func _process(_delta: float) -> void:
+	var paused := get_tree().paused
+	if paused and not _was_tree_paused:
+		clear_sfx()  # 取消暂停前的延迟开格音；BGM 与暂停面板按钮仍正常
+	_was_tree_paused = paused
+
+
 func play_sfx(sname: String, pitch := 1.0, delay_s := 0.0) -> void:
 	if not bool(GameSettings.get_value("sfx_on")):
 		return
@@ -63,19 +88,39 @@ func play_sfx(sname: String, pitch := 1.0, delay_s := 0.0) -> void:
 			return
 		_last_play_ms[sname] = now
 	if delay_s > 0.0:
-		get_tree().create_timer(delay_s).timeout.connect(
-			func(): _play_now(stream, pitch))
+		var epoch := _sfx_epoch
+		get_tree().create_timer(delay_s, false).timeout.connect(func():
+			if epoch == _sfx_epoch and not get_tree().paused:
+				_play_now(stream, pitch))
 	else:
 		_play_now(stream, pitch)
 
 
-func play_bgm() -> void:
-	if not ResourceLoader.exists(BGM_PATH):
-		push_warning("BGM 缺失：%s" % BGM_PATH)
+func clear_sfx() -> void:
+	_sfx_epoch += 1
+	_last_play_ms.clear()
+	for player in _players:
+		player.stop()
+
+
+func use_chapter_music(laser_chapter: bool) -> void:
+	play_bgm(CH02_BGM_PATH if laser_chapter else BGM_PATH)
+
+
+func play_bgm(path := BGM_PATH) -> void:
+	if _bgm_path == path and _bgm.playing:
 		return
-	var s: AudioStream = load(BGM_PATH)
+	if not ResourceLoader.exists(path):
+		push_warning("BGM 缺失：%s" % path)
+		return
+	var s: AudioStream = load(path)
 	if s is AudioStreamOggVorbis:
 		s.loop = true
+	elif s is AudioStreamWAV:
+		s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		s.loop_begin = 0
+		s.loop_end = int(s.get_length() * s.mix_rate)
+	_bgm_path = path
 	_bgm.stream = s
 	_bgm.play()
 
@@ -101,7 +146,7 @@ func _play_now(stream: AudioStream, pitch: float) -> void:
 	for p in _players:
 		if not p.playing:
 			p.stream = stream
-			p.pitch_scale = pitch * randf_range(0.96, 1.04)
+			p.pitch_scale = pitch * _pitch_rng.randf_range(0.96, 1.04)
 			p.play()
 			return
 	# 池满：丢弃（宁可丢音不可截断）

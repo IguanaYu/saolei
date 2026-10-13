@@ -17,6 +17,10 @@ var _rift: Node2D = null       # 出现前裂隙（预警 2s）
 var _wall_sequence: Array = []  # 新墙耐久序列（2-2 [1]；2-3 起 [1,1,3]）
 var _wall_seq_idx := 0
 var _my_walls: Array = []      # 本只造的墙坐标（保有上限口径；被拆/被覆盖不回收坐标，计数实时查）
+var _spawn_left := -1.0
+var _masonry_left := 0.0
+var _hit_left := 0.0
+var _grid: Grid = null
 
 signal builder_spawned(b: BuilderEnemy)
 signal builder_damaged(b: BuilderEnemy)
@@ -31,50 +35,84 @@ func _ready() -> void:
 func _update_visual() -> void:
 	$Body.visible = false
 	$IconLabel.visible = false
-	if MICRO_ANIMATION.has_animation("web"):
-		_micro_loop.configure($Skin, "web")  # 程序占位：借织网虫皮肤表；素材批后换筑墙工表
-	$Skin.modulate = Color(1.0, 0.62, 0.45)  # 暖橙染色与三虫区分
+	_micro_loop.configure($Skin, "builder")
+	$Skin.modulate = Color.WHITE
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if not _alive or not MICRO_ANIMATION.is_gameplay_running(self):
+		return
+	if _spawn_left > 0:
+		_spawn_left -= delta
+		if _spawn_left <= 0:
+			_cleanup_rift()
+			visible = true
+			builder_spawned.emit(self)
+			var pop := create_tween()
+			pop.tween_property(self, "scale", Vector2(1.18, 1.18), 0.1)
+			pop.tween_property(self, "scale", Vector2.ONE, 0.12)
+	_masonry_left = maxf(0, _masonry_left - delta)
+	_hit_left = maxf(0, _hit_left - delta)
+	if _masonry_left > 0:
+		$Skin.frame = 1
+	$Skin.modulate = Color.WHITE.lerp(Color(1.0, 0.35, 0.25), _hit_left / 0.18)
+	queue_redraw()
+
+
+func _draw() -> void:
+	# 两块装甲读作两次命中耐久；受伤后保留一枚亮点，避免只靠瞬间染色。
+	for i in HP_MAX:
+		draw_rect(Rect2(-11 + i * 5, -12, 4, 3), Color(0.07, 0.06, 0.05))
+		draw_rect(Rect2(-10 + i * 5, -11, 2, 1), Color(1, 0.65, 0.3) if i < hp else Color(0.28, 0.24, 0.21))
 
 
 ## 出场编排：先裂隙闪烁 2s（无碰撞无交互），再落地弹入
 func spawn_with_rift(start_coord: Vector2i, grid, sequence: Array) -> void:
 	_wall_sequence = sequence if not sequence.is_empty() else [1]
+	_grid = grid
 	coord = start_coord
 	position = grid.coord_to_world(start_coord)
 	visible = false
 	_rift = _make_rift(grid)
-	var tw := create_tween()
-	tw.tween_interval(2.0)
-	tw.tween_callback(func():
-		if not is_instance_valid(self):
-			return
-		if is_instance_valid(_rift):
-			_rift.queue_free()
-			_rift = null
-		visible = true
-		builder_spawned.emit(self)
-		var pop := create_tween()
-		pop.tween_property(self, "scale", Vector2(1.25, 1.25), 0.12).set_ease(Tween.EASE_OUT)
-		pop.tween_property(self, "scale", Vector2.ONE, 0.10))
+	_spawn_left = 2.0
+	AudioManager.play_sfx("builder_rift")
 
 
 func _make_rift(grid) -> Node2D:
-	var rift := Node2D.new()
+	var rift := BuilderRift.new()
 	rift.name = "BuilderRift"
 	rift.z_index = 9
-	var rect := ColorRect.new()
-	rect.name = "RiftCore"
-	rect.color = Color(1.0, 0.45, 0.2, 0.55)
-	rect.position = Vector2(-10, -10)
-	rect.size = Vector2(20, 20)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rift.add_child(rect)
 	get_parent().add_child(rift)
 	rift.position = grid.coord_to_world(coord)
-	var tw := rift.create_tween().set_loops(6)
-	tw.tween_property(rect, "color:a", 0.15, 0.16)
-	tw.tween_property(rect, "color:a", 0.7, 0.16)
 	return rift
+
+
+class BuilderRift extends Node2D:
+	var age := 0.0
+	func _process(delta: float) -> void:
+		if MICRO_ANIMATION.is_gameplay_running(self):
+			age += delta
+			queue_redraw()
+	func _draw() -> void:
+		var a := 0.45 + 0.3 * sin(age * 16)
+		draw_rect(Rect2(-12, -12, 24, 24), Color(0.3, 0.13, 0.06, 0.5))
+		draw_polyline(PackedVector2Array([Vector2(-10, 8), Vector2(-5, 2), Vector2(0, 5), Vector2(4, -3), Vector2(10, -8)]), Color(1, 0.5, 0.23, a), 2)
+		for x in [-1, 1]:
+			for y in [-1, 1]:
+				var p := Vector2(x * 12, y * 12)
+				draw_line(p, p - Vector2(x * 5, 0), Color(1, 0.7, 0.4, a), 2)
+				draw_line(p, p - Vector2(0, y * 5), Color(1, 0.7, 0.4, a), 2)
+
+
+func _cleanup_rift() -> void:
+	if is_instance_valid(_rift):
+		_rift.queue_free()
+	_rift = null
+
+
+func _exit_tree() -> void:
+	_cleanup_rift()
 
 
 ## Enemy.tick 覆写：不奔袭基地不施害——游走 + 施工（EnemyManager 驱动）
@@ -164,9 +202,11 @@ func _alive_walls(grid) -> int:
 func _play_build_fx(grid, c: Vector2i) -> void:
 	var cell: Cell = grid.get_cell(c)
 	if cell != null:
-		var tw := cell.create_tween()
-		tw.tween_property(cell, "modulate", Color(1.4, 1.1, 0.9), 0.08)
-		tw.tween_property(cell, "modulate", Color.WHITE, 0.12)
+		_masonry_left = 0.3
+		var fx := grid.get_node_or_null("EffectsLayer") as EffectsLayer
+		if fx != null:
+			fx.fx_builder_build(cell)
+		AudioManager.play_sfx("builder_build")
 
 
 ## 受击（激光每轮 ≤1 / 护卫一枪 1 伤）：归零走 Enemy.die（结算在 EnemyManager）
@@ -175,14 +215,21 @@ func take_hit(by_actor: String) -> void:
 		return
 	hp -= 1
 	builder_damaged.emit(self)
-	var tw := create_tween()
-	tw.tween_property($Skin, "modulate", Color(1.0, 0.3, 0.2), 0.06)
-	tw.tween_property($Skin, "modulate", Color(1.0, 0.62, 0.45), 0.12)
+	_hit_left = 0.18
+	queue_redraw()
+	if hp > 0:
+		AudioManager.play_sfx("wall_chip", 1.2)
 	if hp <= 0:
 		die(by_actor)
 
 
 func die(by_actor: String) -> void:
-	if _rift != null and is_instance_valid(_rift):
-		_rift.queue_free()
+	if not _alive:
+		return
+	_cleanup_rift()
+	if is_instance_valid(_grid):
+		var fx := _grid.get_node_or_null("EffectsLayer") as EffectsLayer
+		if fx != null:
+			fx.fx_builder_killed(position - _grid.position)
+	AudioManager.play_sfx("builder_break")
 	super.die(by_actor)

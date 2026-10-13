@@ -1,0 +1,149 @@
+[
+  {
+    "kind": "overload",
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceBounds": [
+      {
+        "left": 154,
+        "top": 113,
+        "width": 502,
+        "height": 492
+      },
+      {
+        "left": 109,
+        "top": 88,
+        "width": 502,
+        "height": 517
+      },
+      {
+        "left": 108,
+        "top": 73,
+        "width": 501,
+        "height": 532
+      }
+    ],
+    "frameSize": 24,
+    "pixelBounds": [
+      {
+        "left": 1,
+        "top": 3,
+        "width": 21,
+        "height": 20
+      },
+      {
+        "left": 1,
+        "top": 2,
+        "width": 21,
+        "height": 21
+      },
+      {
+        "left": 1,
+        "top": 1,
+        "width": 21,
+        "height": 22
+      }
+    ],
+    "sampling": "nearest; alpha >= 96; common scale; bottom aligned"
+  },
+  {
+    "kind": "builder",
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceBounds": [
+      {
+        "left": 35,
+        "top": 130,
+        "width": 670,
+        "height": 464
+      },
+      {
+        "left": 39,
+        "top": 130,
+        "width": 670,
+        "height": 464
+      },
+      {
+        "left": 40,
+        "top": 130,
+        "width": 649,
+        "height": 464
+      }
+    ],
+    "frameSize": 22,
+    "pixelBounds": [
+      {
+        "left": 1,
+        "top": 7,
+        "width": 20,
+        "height": 14
+      },
+      {
+        "left": 1,
+        "top": 7,
+        "width": 20,
+        "height": 14
+      },
+      {
+        "left": 1,
+        "top": 7,
+        "width": 19,
+        "height": 14
+      }
+    ],
+    "sampling": "nearest; alpha >= 96; common scale; bottom aligned"
+  },
+  {
+    "kind": "special_ore",
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceBounds": [
+      {
+        "left": 85,
+        "top": 90,
+        "width": 604,
+        "height": 572
+      },
+      {
+        "left": 85,
+        "top": 90,
+        "width": 603,
+        "height": 572
+      },
+      {
+        "left": 85,
+        "top": 90,
+        "width": 604,
+        "height": 572
+      }
+    ],
+    "frameSize": 48,
+    "pixelBounds": [
+      {
+        "left": 1,
+        "top": 3,
+        "width": 46,
+        "height": 44
+      },
+      {
+        "left": 1,
+        "top": 3,
+        "width": 46,
+        "height": 44
+      },
+      {
+        "left": 1,
+        "top": 3,
+        "width": 46,
+        "height": 44
+      }
+    ],
+    "sampling": "nearest; alpha >= 96; common scale; bottom aligned"
+  }
+]
