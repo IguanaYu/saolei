@@ -80,7 +80,7 @@ func _build_static() -> void:
 	_bg_rect.texture = CAVE_BG
 	_bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_bg_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_bg_rect.modulate = Color(0.72, 0.72, 0.72)
+	_bg_rect.modulate = Color(0.42, 0.42, 0.42)
 	_bg_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_bg_rect)

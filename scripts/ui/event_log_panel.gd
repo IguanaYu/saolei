@@ -18,6 +18,9 @@ func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE   # 底板不接鼠标；滚轮翻阅由 LogText 自带滚动接管
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
+	visibility_changed.connect(func():
+		if is_visible_in_tree():
+			_log.scroll_to_line(maxi(0, _log.get_line_count() - 1)))
 
 
 func setup(title_text: String) -> void:
@@ -31,6 +34,9 @@ func clear_log() -> void:
 
 ## text_bbcode：已带主体颜色标签的完整片段，时间戳在这里统一补
 func log_event(text_bbcode: String) -> void:
+	var scroll := _log.get_v_scroll_bar()
+	# 读旧记录时维持当前位置；关闭记录时仍接收事件，重新打开看最新。
+	_log.scroll_following = not is_visible_in_tree() or scroll.value + scroll.page >= scroll.max_value - 2
 	var t := int(GameState.elapsed)
 	_entries.append("[color=%s][%d:%02d][/color] %s" % [STAMP_COLOR, t / 60, t % 60, text_bbcode])
 	if _entries.size() > MAX_ENTRIES:

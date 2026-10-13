@@ -384,8 +384,7 @@ func _set_view_top(target: float, animate: bool) -> void:
 
 
 ## 布局三合一：BoardRoot 缩放适配 + Grid 视口锚定（替换旧 _center_grid 的"整盘居中"）。
-## s = min(1, 宽适配, 高适配)：高适配按「可视窗」而非整盘算——高塔盘只要求一屏装下；
-## 现有 16×16/每日挑战盘 s=1 且居中公式退化为原实现，渲染零变化。
+## 等比缩放上限 1.5；高适配按「可视窗」而非整盘算，高塔盘只要求一屏装下。
 func _layout_board() -> void:
 	var w := cols * cell_size
 	var h := rows * cell_size
@@ -394,18 +393,20 @@ func _layout_board() -> void:
 	var window_h := view_window_px()
 	var s := 1.0
 	if w > 0.0 and window_h > 0.0:
-		s = minf(1.0, minf(area.size.x / w, area.size.y / window_h))
+		s = minf(1.5, minf(area.size.x / w, area.size.y / window_h))
 	var parent2d := get_parent() as Node2D
 	if parent2d != null:
 		parent2d.scale = Vector2(s, s)  # BoardRoot：机器人/虫/Boss 同缩放
 	_view_top_px = clampf(_view_top_px, 0.0, view_range_px())
-	# 水平：整盘宽居中；垂直：单屏盘保持居中（原 _center_grid 行为），高塔盘可视窗顶对齐
+	if parent2d != null and parent2d.has_method("set_clip_rect"):
+		parent2d.set_clip_rect(area, view_range_px() > 0)
+	# 先在画布坐标居中，再换算为 BoardRoot 的缩放前坐标。
 	var y_pos: float
 	if view_range_px() <= 0.0:
-		y_pos = area.position.y + (area.size.y / s - h) / 2.0
+		y_pos = area.position.y / s + (area.size.y / s - h) / 2.0
 	else:
 		y_pos = area.position.y / s - _view_top_px
-	position = Vector2(area.position.x + (area.size.x / s - w) / 2.0, y_pos)
+	position = Vector2(area.position.x / s + (area.size.x / s - w) / 2.0, y_pos)
 	view_changed.emit(_view_top_px)
 
 

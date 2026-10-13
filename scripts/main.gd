@@ -160,6 +160,10 @@ func _ready() -> void:
 		_on_splash_finished()
 	# 暂停
 	hud.pause_requested.connect(_toggle_pause)
+	hud.settings_requested.connect(func():
+		if _in_game():
+			_open_pause()
+			settings_panel.open())
 	pause_panel.resume_requested.connect(_resume)
 	pause_panel.rules_requested.connect(func(): rules_panel.open())
 	pause_panel.settings_requested.connect(func(): settings_panel.open())
@@ -250,6 +254,9 @@ func _ready() -> void:
 	var audio_connector := AudioConnector.new()
 	audio_connector.name = "AudioConnector"
 	add_child(audio_connector)
+	shop.attach_panels(upgrade_panel, $UILayer/PlayerLogPanel, $UILayer/RobotLogPanel)
+	hud.bind_money_label(shop.money_label)
+	_relayout_play_area.call_deferred()
 
 
 # ---- 闪屏 / 主菜单 ----
@@ -555,6 +562,8 @@ func _in_game() -> bool:
 ## 顺带复位光标形状与商店提示行（_exit_placing_mode 全覆盖这三件）
 func _close_level_overlays() -> void:
 	upgrade_panel.close()
+	shop.reset_view()
+	hud.clear_toast()
 	_exit_placing_mode()
 	grid.hide_laser_preview()
 
@@ -571,15 +580,24 @@ func _on_game_phase_changed(phase: String) -> void:
 				shop.set_placing_hint(false)
 
 
-## 棋盘可用区域 = 视口 − HUD 顶栏 − 底部商店（P1-04：棋盘/洞窟框/教学高亮不再压商店）。
+## A 版布局：顶部信息栏、右侧商店；棋盘使用剩余空间，所有面板共享同一边界。
 ## 进关与窗口变化时重算；联动 grid 居中 → 场上实体按缓存 coord 重投影 → 教学聚光重摆。
 ## CaveEnv 自订阅 viewport 变化（deferred），此时读到的已是更新后的 grid 位置
 func _relayout_play_area() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
-	var top: float = hud.get_global_rect().end.y
-	var shop_top: float = shop.get_global_rect().position.y
-	_play_area_rect = Rect2(0.0, top, vp.x, maxf(0.0, shop_top - top))
+	hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	hud.position = Vector2(24, 20)
+	hud.size = Vector2(vp.x - 48, 78)
+	shop.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	var shop_width: float = 270 if vp.x >= 960 else 238
+	shop.position = Vector2(vp.x - shop_width - 24, 122)
+	shop.size = Vector2(shop_width, vp.y - 146)
+	_play_area_rect = Rect2(54, 154, maxf(100, shop.position.x - 104), maxf(100, vp.y - 232))
 	grid.set_play_area(_play_area_rect)
+	var board_size: Vector2 = Vector2(grid.cols * grid.cell_size, grid.view_window_px()) * $BoardRoot.scale
+	var board_top: Vector2 = grid.global_position + Vector2(0, grid._view_top_px) * $BoardRoot.scale
+	hud.manual_readout.global_position = board_top + Vector2(0, board_size.y + 30)
+	shop.layout_panels.call_deferred()
 	robot_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
@@ -850,7 +868,8 @@ func _process(delta: float) -> void:
 	GameState.tick_cd(delta)
 	if GameState.continue_mode:
 		# 继续挑战：倒计时冻结（CD 照计，乱插旗刷分自限依赖此）
-		robot_manager.tick_all(delta, grid)
+		if shop.robots_working:
+			robot_manager.tick_all(delta, grid)
 		return
 	if GameState.has_time_limit():
 		GameState.time_left -= delta
@@ -862,7 +881,8 @@ func _process(delta: float) -> void:
 			else:
 				_end_game("timeout")
 			return
-	robot_manager.tick_all(delta, grid)
+	if shop.robots_working:
+		robot_manager.tick_all(delta, grid)
 	enemy_manager.tick(delta, grid)  # L4 敌虫：与机器人同点驱动，pause/结算天然停摆
 	boss_manager.tick(delta, grid)   # L5 Boss：阶段机/出招计时（非 Boss 关 tick 内部短路）
 	facility_manager.tick(delta, grid)  # 2-5 引光柱恢复（2-4 无柱=no-op；三重门天然冻结）
@@ -901,13 +921,25 @@ func _input(event: InputEvent) -> void:
 	# 任一菜单覆盖层显示时不处理游戏输入
 	if not _in_game():
 		return
+	# 世界层遮罩不会自动屏蔽物理拾取：高塔窗外的格子不能被点击。
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT] \
+			and grid.view_range_px() > 0 and not _play_area_rect.has_point(event.position):
+		get_viewport().set_input_as_handled()
+		return
 	# 数字键 1-4 快捷放置机器人
-	if event is InputEventKey and event.pressed and not event.echo:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and not (event.ctrl_pressed or event.alt_pressed or event.meta_pressed):
+		var focused := get_viewport().gui_get_focus_owner()
+		if focused is LineEdit or focused is TextEdit:
+			return
 		if _try_robot_shortcut(event.keycode):
 			get_viewport().set_input_as_handled()
 			return
 	# 高塔地图：滚轮滚动视口（与箭头按钮同一步长/补间；不可滚时是空操作）
 	if event is InputEventMouseButton and event.pressed:
+		if _ui_hit($UILayer, event.position):
+			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			grid.scroll_view(-1)
 			return
@@ -965,6 +997,9 @@ func _handle_escape() -> void:
 	if upgrade_panel.visible:
 		upgrade_panel.close()
 		return  # 局内升级浮层：ESC 先收它，再按原规则开暂停
+	if shop.view == "logs":
+		shop.select_view("buy")
+		return
 	if ore_shop.visible:
 		ore_shop.hide()
 		return  # 矿石商店浮层（主菜单/选关/结算页均可开）：ESC 只退一层先收它

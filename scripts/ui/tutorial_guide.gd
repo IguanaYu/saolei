@@ -138,9 +138,14 @@ func _spot_rect(step: Dictionary) -> Rect2:
 	var node: Node = step.node
 	if node is Control:
 		return (node as Control).get_global_rect()
-	# Node2D（如棋盘 Grid）：用 transform 原点 + 指定尺寸
+	# 棋盘聚光始终对应实际可视窗，含父节点等比缩放和高塔滚动偏移。
+	if node is Grid:
+		var grid := node as Grid
+		return grid.get_global_transform_with_canvas() * Rect2(
+			Vector2(0, grid._view_top_px), Vector2(grid.cols * grid.cell_size, grid.view_window_px()))
+	# 其他 Node2D：指定尺寸也要随完整变换缩放。
 	var t: Transform2D = (node as Node2D).get_global_transform_with_canvas()
-	return Rect2(t.origin, step.get("size", Vector2(448, 448)))
+	return t * Rect2(Vector2.ZERO, step.get("size", Vector2(448, 448)))
 
 
 ## 四块暗幕拼出聚光洞 + 金色虚框（用 4 条细矩形近似）

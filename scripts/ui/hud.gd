@@ -1,5 +1,5 @@
 extends Control
-## 顶部 HUD：图标化资源条（钱/矿石/积分）+ 命数心形 + 倒计时 + 暂停按钮 + 提示
+## A 版关卡信息栏：目标、时间、生命、设置；金币锚点移到小队商店。
 
 const HEART_FULL := preload("res://visual_v2/runtime/ui/icons/icon_heart.png")
 const HEART_EMPTY := preload("res://visual_v2/runtime/ui/icons/icon_heart_empty.png")
@@ -7,6 +7,15 @@ const MAX_HEARTS := 3
 const GOLD := Color(1.0, 0.753, 0.29)  # 矿金 #f0c04a，与盘面跳字同色
 
 signal pause_requested
+signal settings_requested
+const UI := preload("res://scripts/ui/game_ui_style.gd")
+var _objective_text := ""
+var _goal_total: Label
+var manual_readout: HBoxContainer
+var _manual_label: Label
+var _pips: Array[ColorRect] = []
+var _readout_elapsed := 0.0
+var _idle_warning := false
 
 @onready var money_label: Label = $MarginContainer/VBoxContainer/TopRow/MoneyPanel/ResBox/MoneyLabel
 @onready var level_title_label: Label = $MarginContainer/VBoxContainer/TopRow/MiddleBox/LevelTitleLabel
@@ -29,9 +38,11 @@ var _last_money: int = -1
 var _gain_popup: Label = null
 var _gain_tween: Tween = null
 var _score_fx_tween: Tween = null  # 总分脉冲专用（连续拍重叠时先杀旧防抖动）
+var _toast_tween: Tween
 
 
 func _ready() -> void:
+	_build_compact_ui()
 	money_label.add_to_group("hud_money")  # 卸货飞币动效的落点（EffectsLayer 查组取位置）
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.score_changed.connect(_on_score_changed)
@@ -39,10 +50,114 @@ func _ready() -> void:
 	GameState.time_changed.connect(_on_time_changed)
 	GameState.game_phase_changed.connect(_on_game_phase_changed)
 	GameState.objective_progress_updated.connect(_on_objective_progress_updated)
-	$MarginContainer/VBoxContainer/TopRow/RightPanel/RightBox/PauseButton.pressed.connect(
-		func(): pause_requested.emit())
 	_refresh_all()
 	_on_game_phase_changed(GameState.game_phase)
+
+
+func _build_compact_ui() -> void:
+	$MarginContainer.hide()
+	var surface := PanelContainer.new()
+	surface.name = "MissionSurface"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	surface.add_theme_stylebox_override("panel", UI.panel())
+	add_child(surface)
+	var row := HBoxContainer.new()
+	row.name = "MissionRow"
+	row.add_theme_constant_override("separation", 22)
+	surface.add_child(row)
+	level_title_label.reparent(row)
+	level_title_label.custom_minimum_size.x = 174
+	level_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	level_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_title_label.add_theme_font_size_override("font_size", 18)
+	level_title_label.add_theme_color_override("font_color", UI.INK)
+	var goal := VBoxContainer.new()
+	goal.name = "MissionGoal"
+	goal.size_flags_horizontal = SIZE_EXPAND_FILL
+	goal.alignment = BoxContainer.ALIGNMENT_CENTER
+	goal.add_theme_constant_override("separation", 7)
+	row.add_child(goal)
+	var caption: HBoxContainer = objective_label.get_parent()
+	caption.reparent(goal)
+	caption.alignment = BoxContainer.ALIGNMENT_BEGIN
+	objective_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	objective_label.clip_text = true
+	objective_label.add_theme_font_size_override("font_size", 13)
+	objective_label.add_theme_color_override("font_color", UI.SOFT)
+	score_label.reparent(caption)
+	score_label.add_theme_font_size_override("font_size", 16)
+	_goal_total = UI.label("", "GoalTotal", 12, UI.SOFT)
+	caption.add_child(_goal_total)
+	objective_progress_bar.reparent(goal)
+	objective_progress_bar.custom_minimum_size.y = 5
+	var track := StyleBoxFlat.new()
+	track.bg_color = UI.LINE
+	objective_progress_bar.add_theme_stylebox_override("background", track)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = UI.SIGNAL
+	objective_progress_bar.add_theme_stylebox_override("fill", fill)
+	var status := HBoxContainer.new()
+	status.name = "Survival"
+	status.add_theme_constant_override("separation", 8)
+	row.add_child(status)
+	var clock: TextureRect = time_label.get_parent().get_node("ClockIcon")
+	clock.reparent(status)
+	clock.custom_minimum_size = Vector2(16, 16)
+	clock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	time_label.reparent(status)
+	time_label.add_theme_font_size_override("font_size", 20)
+	for h in hearts:
+		h.reparent(status)
+		h.custom_minimum_size = Vector2(17, 17)
+		h.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var settings := Button.new()
+	settings.name = "SettingsButton"
+	settings.text = "⚙"
+	settings.tooltip_text = "设置"
+	settings.custom_minimum_size = Vector2(36, 36)
+	UI.button(settings, 20)
+	settings.add_theme_font_override("font", ThemeDB.fallback_font)
+	status.add_child(settings)
+	settings.pressed.connect(func(): settings_requested.emit())
+	manual_readout = HBoxContainer.new()
+	manual_readout.name = "ManualReadout"
+	manual_readout.mouse_filter = MOUSE_FILTER_PASS
+	add_child(manual_readout)
+	_manual_label = UI.label("", "ManualCharges", 12, UI.SOFT)
+	manual_readout.add_child(_manual_label)
+	for i in 7:
+		var pip := ColorRect.new()
+		pip.name = "ChargePip%d" % i
+		pip.custom_minimum_size = Vector2(10, 4)
+		pip.size_flags_vertical = SIZE_SHRINK_CENTER
+		pip.mouse_filter = MOUSE_FILTER_IGNORE
+		manual_readout.add_child(pip)
+		_pips.append(pip)
+	_refresh_manual()
+
+
+func bind_money_label(target: Label) -> void:
+	money_label.remove_from_group("hud_money")
+	money_label = target
+	money_label.add_to_group("hud_money")
+	_on_money_changed(GameState.money)
+
+
+func _process(delta: float) -> void:
+	_readout_elapsed += delta
+	if _readout_elapsed >= 0.1:
+		_readout_elapsed = 0
+		_refresh_manual()
+
+
+func _refresh_manual() -> void:
+	var count: int = GameState.cd_free_clicks_left if GameState.cd_phase == "free" else GameState.cd_charges
+	_manual_label.text = "手动 ∞" if GameState.cd_phase == "off" else (
+		"手动 %d 次" % count if GameState.cd_phase == "free" else "手动 %d/%d" % [count, GameState.cd_max_charges])
+	manual_readout.tooltip_text = "机器人无可执行操作，可手动破局" if _idle_warning else "每 %.1f 秒恢复一次" % GameState.cd_duration
+	for i in _pips.size():
+		_pips[i].visible = GameState.cd_phase == "cooldown"
+		_pips[i].color = UI.SIGNAL if i < count else UI.LINE
 
 
 ## 局内关名（"第 1 关 · 自动扫雷"）；空串隐藏
@@ -52,12 +167,14 @@ func set_level_title(text: String) -> void:
 
 
 func set_idle_warning(show: bool) -> void:
-	idle_hint_label.visible = show
+	# 战报仍记录空闲状态；提醒按需悬停查看，不增加常驻信息行。
+	_idle_warning = show
+	_refresh_manual()
 
 
 ## 暂停面板头部目标行的来源（P5 重排后路径变，接口不变）
 func get_objective_text() -> String:
-	return objective_label.text
+	return _objective_text
 
 
 func _on_game_phase_changed(phase: String) -> void:
@@ -100,11 +217,10 @@ func _on_money_changed(v: int) -> void:
 
 
 ## 进账浮字：金币数字右侧弹「+N」上浮淡出（与盘面跳字同语言）；
-## 窗口期内连续进账合并累计并重挂淡出，不逐笔刷屏。挂 HUD 根节点而非
-## ResBox/MoneyPanel——容器会自动重排子节点，会顶乱现有资源条布局
+## 窗口期内连续进账合并累计并重挂淡出，不逐笔刷屏。挂余额标签而非容器，
+## 避免参与容器布局，同时保持在商店面板上方。
 func _show_gain_popup(amount: int) -> void:
-	var anchor: Vector2 = get_global_transform().affine_inverse() \
-			* money_label.get_global_rect().end + Vector2(5.0, -2.0)
+	var anchor := Vector2(money_label.size.x + 5.0, -2.0)
 	if _gain_popup == null or not is_instance_valid(_gain_popup):
 		_gain_popup = Label.new()
 		_gain_popup.name = "MoneyGainPopup"  # 显式命名，避免遍历误匹配
@@ -113,7 +229,7 @@ func _show_gain_popup(amount: int) -> void:
 		_gain_popup.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 		_gain_popup.add_theme_constant_override("outline_size", 3)
 		_gain_popup.set_meta("amount", 0)
-		add_child(_gain_popup)
+		money_label.add_child(_gain_popup)
 	elif _gain_tween != null and _gain_tween.is_valid():
 		_gain_tween.kill()
 	_gain_popup.position = anchor
@@ -208,7 +324,13 @@ func _on_time_changed(t: float) -> void:
 
 
 func _on_objective_progress_updated(text: String, current: int, total: int) -> void:
-	objective_label.text = text
+	_objective_text = text
+	var obj: ObjectiveData = GameState.current_objective
+	var score_goal: bool = obj != null and obj.type == ObjectiveData.Type.REACH_SCORE
+	objective_label.text = "目标积分" if score_goal else text
+	score_label.visible = score_goal
+	_goal_total.visible = score_goal
+	_goal_total.text = "/ %d" % total
 	objective_label.visible = text != ""
 	# L5 拔牙关目标文字配牙图标（FIND_ALL_MINES；其他目标类型不显示）
 	objective_tooth_icon.visible = text != "" and _objective_is_teeth()
@@ -228,10 +350,17 @@ func _objective_is_teeth() -> bool:
 
 
 func show_toast(text: String, duration: float = 3.0) -> void:
+	clear_toast()
 	toast_label.text = text
 	toast_panel.visible = true
 	toast_panel.modulate.a = 1.0
-	var t := create_tween()
-	t.tween_interval(duration)
-	t.tween_property(toast_panel, "modulate:a", 0.0, 0.5)
-	t.tween_callback(func(): toast_panel.visible = false)
+	_toast_tween = create_tween()
+	_toast_tween.tween_interval(duration)
+	_toast_tween.tween_property(toast_panel, "modulate:a", 0.0, 0.5)
+	_toast_tween.tween_callback(func(): toast_panel.visible = false)
+
+
+func clear_toast() -> void:
+	if _toast_tween != null and _toast_tween.is_valid():
+		_toast_tween.kill()
+	toast_panel.hide()

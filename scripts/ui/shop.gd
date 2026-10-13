@@ -1,8 +1,24 @@
 extends Control
-## 底部商店（封闭试玩版两行）：四设备卡（价格/差额/台数/禁买原因）+ 建基地/局内升级/操作说明
+## A 版右侧商店：购置/升级/按需日志共享内容区，快捷购机始终可见。
 
-signal upgrade_open_requested  # 局内升级按钮 → main 统一开浮层（不再硬路径取面板）
-var _height_fit_queued := false
+signal upgrade_open_requested  # 局内升级按钮 → main 打开商店内容区的升级页
+const UI := preload("res://scripts/ui/game_ui_style.gd")
+var money_label: Label
+var content: Control
+var purchase_scroll: ScrollContainer
+var records_button: Button
+var player_log_button: Button
+var robot_log_button: Button
+var auto_button: Button
+var buy_tab: Button
+var _quick_buttons: Dictionary = {}
+var _upgrades: Control
+var _player_log: Control
+var _robot_log: Control
+var view := "buy"
+var log_view := "player"
+var robots_working := true
+var _cancel_placement: Button
 
 @onready var buy_opener_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyOpenerButton
 @onready var buy_marker_button: Button = $MarginContainer/VBoxContainer/DeviceFlow/BuyMarkerButton
@@ -34,24 +50,24 @@ const BUTTON_ICONS := {
 	"overload_range": preload("res://visual_v2/runtime/ch02_v1/ui/icon_overload_range.png"),
 }
 
-## 提示行：放置模式显示放置提示（P2-03 费用/落点文案），平时显示常驻快捷键行；text 非空则更新文案
+## 提示行只在放置期间显示；text 非空则更新费用/落点文案。
 func set_placing_hint(show: bool, text := "") -> void:
 	if text != "":
 		hint_label.text = text
 	hint_label.visible = show
-	key_hint_bar.visible = not show
+	_cancel_placement.visible = show and get_parent().get_parent().placing_mode != ""
+	_refresh_prices()
+	# 快捷入口不随放置提示消失；说明行仅在正在放置时出现。
 
 
 func _ready() -> void:
-	$MarginContainer/VBoxContainer.minimum_size_changed.connect(_queue_fit_height)
-	$MarginContainer/VBoxContainer/DeviceFlow.resized.connect(_queue_fit_height)
+	_build_compact_ui()
 	buy_opener_button.icon = BUTTON_ICONS.opener
 	buy_marker_button.icon = BUTTON_ICONS.marker
 	buy_detector_button.icon = BUTTON_ICONS.detector
 	buy_miner_button.icon = BUTTON_ICONS.miner
 	buy_guard_button.icon = BUTTON_ICONS.guard
 	buy_probe_button.icon = BUTTON_ICONS.probe
-	upgrade_button.icon = BUTTON_ICONS.upgrade
 	buy_refractor_wide_button.icon = BUTTON_ICONS.guard  # 程序占位：暂借保安图标
 	buy_refractor_scatter_button.icon = BUTTON_ICONS.guard
 	buy_overload_button.icon = BUTTON_ICONS.overload
@@ -78,27 +94,205 @@ func _ready() -> void:
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_prices())
 	GameState.base_placed.connect(func(_c): _refresh_prices())
 	GameState.robot_spawned.connect(func(_t): _refresh_prices())  # 赠送/购买都会抬价格阶梯
+	GameState.game_phase_changed.connect(func(_p): _refresh_prices())
 	SaveSystem.unlock_changed.connect(func(_k): _refresh_prices())
 	_refresh_prices()
-	_queue_fit_height()
 
 
-func _queue_fit_height() -> void:
-	if _height_fit_queued:
+func _build_compact_ui() -> void:
+	# 保留已绑定的按钮对象和购买逻辑，只迁移视觉树。
+	$MarginContainer.hide()
+	var surface := PanelContainer.new()
+	surface.name = "SquadSurface"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	surface.add_theme_stylebox_override("panel", UI.panel())
+	add_child(surface)
+	var body := VBoxContainer.new()
+	body.name = "SquadBody"
+	body.add_theme_constant_override("separation", 12)
+	surface.add_child(body)
+	var heading := HBoxContainer.new()
+	heading.name = "ShopHeading"
+	body.add_child(heading)
+	var title := UI.label("小队商店", "Title")
+	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	heading.add_child(title)
+	heading.add_child(UI.icon(preload("res://visual_v2/runtime/ui/icons/icon_coin.png"), "Coin"))
+	money_label = UI.label(str(GameState.money), "Balance", 22, UI.GOLD)
+	heading.add_child(money_label)
+	var tabs := HBoxContainer.new()
+	tabs.name = "ShopTabs"
+	body.add_child(tabs)
+	buy_tab = _tab("购置", "BuyTab", tabs)
+	buy_tab.pressed.connect(func(): select_view("buy"))
+	upgrade_button.reparent(tabs)
+	upgrade_button.text = "升级"
+	upgrade_button.custom_minimum_size = Vector2(54, 34)
+	UI.button(upgrade_button, 13)
+	var spacer := Control.new()
+	spacer.name = "TabSpacer"
+	spacer.size_flags_horizontal = SIZE_EXPAND_FILL
+	spacer.mouse_filter = MOUSE_FILTER_IGNORE
+	tabs.add_child(spacer)
+	records_button = _tab("记录", "RecordsToggle", tabs)
+	records_button.pressed.connect(func(): select_view("buy" if view == "logs" else "logs"))
+	content = Control.new()
+	content.name = "ShopContent"
+	content.size_flags_vertical = SIZE_EXPAND_FILL
+	content.mouse_filter = MOUSE_FILTER_IGNORE
+	body.add_child(content)
+	purchase_scroll = ScrollContainer.new()
+	purchase_scroll.name = "PurchaseScroll"
+	purchase_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	purchase_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content.add_child(purchase_scroll)
+	var devices := VBoxContainer.new()
+	devices.name = "Purchases"
+	devices.size_flags_horizontal = SIZE_EXPAND_FILL
+	devices.add_theme_constant_override("separation", 8)
+	purchase_scroll.add_child(devices)
+	for b in [buy_opener_button, buy_marker_button, buy_detector_button, buy_miner_button,
+			buy_guard_button, buy_probe_button, buy_refractor_wide_button,
+			buy_refractor_scatter_button, buy_overload_button, buy_overload_range_button, build_base_button]:
+		b.reparent(devices)
+		b.custom_minimum_size = Vector2(0, 68)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.expand_icon = true
+		UI.button(b, 13)
+		var badge: Node = b.get_node_or_null("KeyBadge")
+		if badge != null:
+			badge.hide()  # 键位统一由下方常驻入口承载。
+	var filters := HBoxContainer.new()
+	filters.name = "LogFilters"
+	filters.visible = false
+	content.add_child(filters)
+	player_log_button = _tab("你的行动", "PlayerLogTab", filters)
+	robot_log_button = _tab("机器人作业", "RobotLogTab", filters)
+	player_log_button.pressed.connect(func(): log_view = "player"; _refresh_view())
+	robot_log_button.pressed.connect(func(): log_view = "robot"; _refresh_view())
+	hint_label.reparent(body)
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	hint_label.add_theme_font_size_override("font_size", 12)
+	_cancel_placement = _tab("取消放置", "CancelPlacement", body)
+	_cancel_placement.hide()
+	_cancel_placement.pressed.connect(func(): get_parent().get_parent()._exit_placing_mode())
+	var quick := HBoxContainer.new()
+	quick.name = "RobotShortcuts"
+	quick.add_theme_constant_override("separation", 5)
+	body.add_child(quick)
+	var types := ["opener", "marker", "detector", "miner"]
+	for i in types.size():
+		var type: String = types[i]
+		var b := Button.new()
+		b.name = type.to_pascal_case() + "Shortcut"
+		b.size_flags_horizontal = SIZE_EXPAND_FILL
+		b.custom_minimum_size = Vector2(0, 68)
+		UI.button(b, 11)
+		quick.add_child(b)
+		var box := VBoxContainer.new()
+		box.name = "ShortcutFace"
+		box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		box.offset_left = 3
+		box.offset_right = -3
+		box.offset_top = 6
+		box.mouse_filter = MOUSE_FILTER_IGNORE
+		b.add_child(box)
+		var row := HBoxContainer.new()
+		row.name = "KeyRow"
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.mouse_filter = MOUSE_FILTER_IGNORE
+		box.add_child(row)
+		row.add_child(UI.icon(BUTTON_ICONS[type], "RobotIcon", 20))
+		row.add_child(UI.label(str(i + 1), "Key", 12, UI.SIGNAL))
+		var caption := UI.label("", "Caption", 10)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.clip_text = true
+		box.add_child(caption)
+		_quick_buttons[type] = b
+		b.pressed.connect(func(): try_buy(type))
+	auto_button = _tab("暂停自动作业", "AutoWorkToggle", body)
+	auto_button.pressed.connect(func():
+		robots_working = not robots_working
+		auto_button.text = "暂停自动作业" if robots_working else "启动自动作业"
+		GameState.game_event_logged.emit("启动自动作业" if robots_working else "暂停自动作业", "player", "dim"))
+	_refresh_view()
+
+
+func _tab(text: String, node_name: String, parent: Node) -> Button:
+	var b := Button.new()
+	b.name = node_name
+	b.text = text
+	b.custom_minimum_size = Vector2(0, 34)
+	UI.button(b, 13)
+	parent.add_child(b)
+	return b
+
+
+## 面板保持 UILayer 下的原路径，由商店统一分配内容矩形。
+func attach_panels(upgrades: Control, player_log: Control, robot_log: Control) -> void:
+	_upgrades = upgrades
+	_player_log = player_log
+	_robot_log = robot_log
+	# 日志原先在 UILayer 最底部；移到商店之后，避免被商店底板盖住。
+	get_parent().move_child(_player_log, get_index() + 1)
+	get_parent().move_child(_robot_log, _player_log.get_index() + 1)
+	_upgrades.visibility_changed.connect(func():
+		if _upgrades.visible:
+			view = "upgrade"
+		elif view == "upgrade":
+			view = "buy"
+		_refresh_view())
+	content.resized.connect(layout_panels)
+	for p in [_player_log, _robot_log]:
+		p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		p.get_node("Margin/VBox/TitleLabel").hide()
+		var margin: MarginContainer = p.get_node("Margin")
+		for side in ["left", "right", "top", "bottom"]:
+			margin.add_theme_constant_override("margin_" + side, 0)
+		p.get_node("Margin/VBox/LogText").add_theme_font_size_override("normal_font_size", 13)
+	_refresh_view()
+
+
+func select_view(next: String) -> void:
+	if next == "upgrade":
+		upgrade_open_requested.emit()
 		return
-	_height_fit_queued = true
-	_fit_height.call_deferred()
+	if _upgrades != null:
+		_upgrades.close()
+	view = next
+	_refresh_view()
 
 
-func _fit_height() -> void:
-	_height_fit_queued = false
-	var needed: float = maxf(180, $MarginContainer/VBoxContainer.get_combined_minimum_size().y + 24)
-	if is_equal_approx(offset_top, -needed):
+func reset_view() -> void:
+	select_view("buy")
+	robots_working = true
+	auto_button.text = "暂停自动作业"
+
+
+func _refresh_view() -> void:
+	if content == null:
 		return
-	offset_top = -needed
-	var main := get_node_or_null("/root/Main")
-	if main != null and main.is_node_ready():
-		main.call_deferred("_relayout_play_area")
+	purchase_scroll.visible = view == "buy"
+	content.get_node("LogFilters").visible = view == "logs"
+	for pair in [[buy_tab, "buy"], [upgrade_button, "upgrade"], [records_button, "logs"]]:
+		pair[0].modulate = UI.SIGNAL if view == pair[1] else Color.WHITE
+	player_log_button.modulate = UI.SIGNAL if log_view == "player" else Color.WHITE
+	robot_log_button.modulate = UI.SIGNAL if log_view == "robot" else Color.WHITE
+	if _player_log != null:
+		_player_log.visible = view == "logs" and log_view == "player"
+		_robot_log.visible = view == "logs" and log_view == "robot"
+	layout_panels()
+
+
+func layout_panels() -> void:
+	if _upgrades == null:
+		return
+	var r := content.get_global_rect()
+	for p in [_upgrades, _player_log, _robot_log]:
+		p.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		p.position = r.position + Vector2(0, 40 if p != _upgrades else 0)
+		p.size = Vector2(r.size.x, maxf(0, r.size.y - (40 if p != _upgrades else 0)))
 
 
 func _on_buy_opener() -> void:
@@ -145,6 +339,9 @@ func _buy(robot_type: String) -> void:
 
 ## 购买入口（按钮/快捷键共用）：直购直出，成功=机器人已在基地旁出生
 func try_buy(robot_type: String) -> bool:
+	if get_parent().get_parent().placing_mode != "":
+		get_parent().get_parent().hud.show_toast("请先完成或取消放置", 2)
+		return false
 	if not can_buy(robot_type):
 		return false
 	var main := get_node("/root/Main")
@@ -152,6 +349,11 @@ func try_buy(robot_type: String) -> bool:
 
 
 func can_buy(robot_type: String) -> bool:
+	if GameState.game_phase == "placing_base":
+		return false
+	var main := get_node_or_null("/root/Main")
+	if main != null and main.placing_mode != "":
+		return false
 	if lock_reason(robot_type) != "":
 		return false
 	if GameState.money < GameState.get_robot_price(robot_type):
@@ -189,7 +391,7 @@ func _on_build_base() -> void:
 
 
 func _on_upgrade() -> void:
-	upgrade_open_requested.emit()
+	select_view("buy" if view == "upgrade" else "upgrade")
 
 
 func _on_money_changed(_v: int) -> void:
@@ -211,24 +413,36 @@ func _refresh_prices() -> void:
 	_refresh_overload_range()
 	# 基地价格递增：第 1 个 80，第 2 个 160 ...
 	var base_price: int = GameState.get_base_price()
-	build_base_button.text = "建基地 ¥%d" % base_price
-	build_base_button.disabled = GameState.money < base_price
+	build_base_button.text = "新建基地  %d +\n已建 %d 座" % [base_price, GameState.base_count]
+	build_base_button.disabled = GameState.game_phase == "placing_base" or GameState.money < base_price
+	money_label.text = str(GameState.money)
+	var names := {"opener": "开墙", "marker": "标雷", "detector": "检测", "miner": "矿工"}
+	for type in _quick_buttons:
+		var b: Button = _quick_buttons[type]
+		var reason := lock_reason(type)
+		var price: int = GameState.get_robot_price(type)
+		b.disabled = not can_buy(type)
+		b.modulate = Color(1, 1, 1, 0.45) if b.disabled else Color.WHITE
+		b.tooltip_text = "%s · %s" % [names[type], reason if reason != "" else "%d 金币 · 已有 %d 台" % [price, GameState.get_robot_purchased_count(type)]]
+		b.get_node("ShortcutFace/Caption").text = "%s\n%s" % [names[type], "未开放" if reason != "" else str(price)]
 
 
 ## 设备卡：锁原因 / 价格+差额+已有台数（买不起写明差多少）
 func _refresh_one(btn: Button, robot_type: String, display_name: String) -> void:
 	var reason := lock_reason(robot_type)
 	if reason != "":
-		btn.text = "🔒 %s\n%s" % [display_name, reason]
+		btn.text = "%s\n%s" % [display_name, reason]
+		btn.tooltip_text = reason
 		btn.disabled = true
 		return
 	var price: int = GameState.get_robot_price(robot_type)
 	var owned: int = GameState.get_robot_purchased_count(robot_type)
 	if GameState.money < price:
-		btn.text = "%s ¥%d\n差 ¥%d · 已有 %d 台" % [display_name, price, price - GameState.money, owned]
+		btn.text = "%s ×%d    %d +\n还差 %d 金币" % [display_name, owned, price, price - GameState.money]
 	else:
-		btn.text = "%s ¥%d\n已有 %d 台" % [display_name, price, owned]
-	btn.disabled = GameState.money < price
+		btn.text = "%s ×%d    %d +" % [display_name, owned, price]
+	btn.tooltip_text = "%s：%d 金币，已有 %d 台" % [display_name, price, owned]
+	btn.disabled = not can_buy(robot_type)
 
 
 ## 追加拍板 #11：「扩爆」卡——三态：未购机器人（锁）/ 可购（含差价）/ 已升级（锁）
@@ -257,9 +471,10 @@ func _refresh_overload_range() -> void:
 ## shop_extra 反向开闸：guard/probe 默认隐藏，L4/L5 声明后可见（level_data.gd 口径）
 func _apply_level_shop_config() -> void:
 	var lvl: LevelData = GameState.get_current_level()
-	key_hint_bar.get_node("L1").text = "发射激光" if lvl != null and lvl.laser_mode else "开格"
 	var hidden: Array = lvl.shop_hidden if lvl != null else []
 	var extra: Array = lvl.shop_extra if lvl != null else []
+	buy_opener_button.visible = not hidden.has("opener")
+	buy_marker_button.visible = not hidden.has("marker")
 	build_base_button.visible = not hidden.has("base")
 	upgrade_button.visible = not hidden.has("upgrade")
 	buy_detector_button.visible = not hidden.has("detector")
@@ -271,4 +486,3 @@ func _apply_level_shop_config() -> void:
 	buy_overload_button.visible = extra.has("overload") and not hidden.has("overload")
 	buy_overload_range_button.visible = extra.has("overload_range") \
 			and not hidden.has("overload_range")
-	_queue_fit_height()

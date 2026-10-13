@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="2_grid"]
@@ -28,6 +28,7 @@
 [ext_resource type="Script" path="res://scripts/ui/event_log_connector.gd" id="26_elc"]
 [ext_resource type="Script" path="res://scripts/boss/boss_manager.gd" id="27_bm"]
 [ext_resource type="Script" path="res://scripts/ui/escape_router.gd" id="28_er"]
+[ext_resource type="Script" path="res://scripts/visuals/board_viewport.gd" id="29_board_view"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -53,6 +54,7 @@ script = ExtResource("11_cave_env")
 ; 棋盘世界容器（2026-10-04 高塔地图）：统一承载缩放(BoardRoot.scale)——
 ; 棋盘/机器人/虫/Boss 同缩放;Grid.position 携带视口滚动偏移(网格本地 unscaled 单位)
 [node name="BoardRoot" type="Node2D" parent="."]
+script = ExtResource("29_board_view")
 
 [node name="Grid" type="Node2D" parent="BoardRoot"]
 script = ExtResource("2_grid")

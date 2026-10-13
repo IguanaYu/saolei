@@ -152,11 +152,8 @@ func _on_game_over(result: String) -> void:
 # ---- 空闲播报（旧 TeamPanel 的"空闲原因"迁移：全员空闲时只报一次，恢复不报）----
 
 func _poll_idle() -> void:
-	# 显隐挂 game_active（沿用旧侧栏口径；结算/菜单期全屏面板盖住，隐藏不抢戏）
-	var active: bool = GameState.game_active
-	_player_log.visible = active
-	_robot_log.visible = active
-	if not active:
+	# 显隐由商店的记录开关控制；空闲检测和持续记录独立于面板显示。
+	if not GameState.game_active:
 		return
 	var counts := {}
 	var idles := {}

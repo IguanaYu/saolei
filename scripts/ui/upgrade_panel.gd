@@ -26,6 +26,10 @@ var _row_ids: Dictionary = {}  # row 节点 → 轨 id（queue_free 中的行由
 
 func _ready() -> void:
 	hide()
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	$MarginContainer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	$MarginContainer/VBoxContainer/TitleLabel.hide()
+	close_button.hide()
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.upgrade_changed.connect(func(_id, _lv): _refresh_all())
 	close_button.pressed.connect(close)
@@ -76,8 +80,8 @@ func _rebuild_rows_if_needed() -> void:
 
 
 ## 行节点显式命名（如 OpenerMoveRow），避免 get_children() 遍历误匹配
-## 两行式紧凑行：上行 名称+当前等级，下行 整宽购买按钮；字号对齐主题常规（名称/按钮 16），
-## 2026-10-03 反馈"显示不全"后从小字号(13/14)上调。BuyButton 必须保持为 row 直接子节点
+## 两行式紧凑行：上行名称+当前等级，下行整宽购买按钮，适配侧栏。
+## BuyButton 必须保持为 row 直接子节点
 ## （_refresh_row 与 tmp/test_batch_a 按此路径取）
 func _make_row(upgrade_id: String) -> VBoxContainer:
 	var row := VBoxContainer.new()
@@ -89,18 +93,18 @@ func _make_row(upgrade_id: String) -> VBoxContainer:
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_font_size_override("font_size", 13)
 	name_label.clip_text = true
 	name_label.text = TRACK_NAMES.get(upgrade_id, upgrade_id)
 	var level_label := Label.new()
 	level_label.name = "LevelLabel"
-	level_label.add_theme_font_size_override("font_size", 14)
+	level_label.add_theme_font_size_override("font_size", 12)
 	head.add_child(name_label)
 	head.add_child(level_label)
 	var buy_button := Button.new()
 	buy_button.name = "BuyButton"
-	buy_button.custom_minimum_size = Vector2(0, 40)
-	buy_button.add_theme_font_size_override("font_size", 16)
+	buy_button.custom_minimum_size = Vector2(0, 32)
+	preload("res://scripts/ui/game_ui_style.gd").button(buy_button, 13)
 	buy_button.clip_text = true
 	buy_button.pressed.connect(func() -> void: GameState.purchase_upgrade(upgrade_id))
 	row.add_child(head)
