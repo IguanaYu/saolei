@@ -114,6 +114,7 @@ func _make_effects_layer() -> void:
 ## 贴图规格见 docs/active/局内交互视觉资产盘点-v1.md（tile_hover / place_valid / place_invalid）
 var _hover_overlay: Sprite2D = null
 var _hover_tex: Dictionary = {}
+var _hover_cell: Cell = null  # 当前悬停格（集中采样，见 _update_hover）
 
 ## L4 探测 3×3 范围预览（P2-03/P3-02：程序绘制，与 _trigger_probe 同口径——盘外格截断）
 class ProbePreview extends Node2D:
@@ -448,8 +449,6 @@ func init_empty_grid() -> void:
 			cell.cell_double_clicked.connect(_on_cell_double_clicked)
 			cell.cell_obstacle_cleared.connect(_on_cell_obstacle_cleared)
 			cell.cover_wall_destroyed.connect(_on_cover_wall_destroyed)
-			cell.mouse_entered.connect(_on_cell_mouse_entered.bind(cell))
-			cell.mouse_exited.connect(_on_cell_mouse_exited.bind(cell))
 			cells[coord] = cell
 	# 全格建完后统一重算一遍岩壁描边：Cell._ready 时右/下邻居尚未入 cells，
 	# 会被当地图外=开侧，未开岩壁右/下面挂出假描边（2026-10-06 远岩金线 bug）
@@ -468,16 +467,28 @@ func init_empty_grid() -> void:
 	if _laser_preview != null:
 		_laser_preview.visible = false
 		_laser_preview.clear_shot()
+	_hover_cell = null  # 旧盘格已回收，下一帧采样按首次进入重发悬停
 	if _fx != null:
 		_fx.clear_all()  # 重开新盘清空岩屑/跳字/飞币等临时动效
 
 
-func _on_cell_mouse_entered(cell: Cell) -> void:
-	cell_hovered.emit(cell)
+## 悬停统一走每帧光标采样，不再用逐格 Area2D 的 mouse_entered/exited：
+## 物理拾取在相邻格间直移时丢事件（地图外进格有、格间移动无，2026-10-17
+## 用户复报的"激光预览不跟随换格"），集中算坐标只在换格时发信号。
+func _process(_delta: float) -> void:
+	_update_hover(to_local(get_global_mouse_position()))
 
 
-func _on_cell_mouse_exited(cell: Cell) -> void:
-	cell_unhovered.emit(cell)
+func _update_hover(local_pos: Vector2) -> void:
+	var coord := Vector2i(floori(local_pos.x / cell_size), floori(local_pos.y / cell_size))
+	var next: Cell = cells.get(coord)
+	if next == _hover_cell:
+		return
+	if _hover_cell != null and is_instance_valid(_hover_cell):
+		cell_unhovered.emit(_hover_cell)
+	_hover_cell = next
+	if next != null:
+		cell_hovered.emit(next)
 
 
 ## 原地切换岩壁风格（不重置局面）：调试键 F5 / 章节主题用

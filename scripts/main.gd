@@ -909,7 +909,9 @@ func _input(event: InputEvent) -> void:
 	# 暂停树里本函数已停摆，不能再承担 Esc 分层（2026-10-03 盲测 F01）
 	# 教学可见时，落在教学控件（气泡/跳过）上的点击放行给它们，不走局内输入
 	# （放置模式会 set_input_as_handled 把「跳过」的左键吞掉，回归 2026-10-01 P1）
-	if tutorial_guide.visible and event is InputEventMouseButton \
+	# null 防护：场景装载窗口期 @onready 未赋值时 _input 已可被触发（合成/连打输入）
+	if tutorial_guide != null and tutorial_guide.visible \
+			and event is InputEventMouseButton \
 			and tutorial_guide.is_point_on_chrome(event.position):
 		return
 	# 可见 UI 控件命中的左键留给 GUI（2026-10-11 修复：放基地/放置阶段 _input 吞掉
