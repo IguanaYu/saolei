@@ -53,6 +53,7 @@ signal fire_extinguish_requested(coord: Vector2i)  # L5 灭火：点任一火格
 ## 第二章激光矿场（2-1 WP3）：左键发射请求（laser_mode 关卡在点击分流处改道）、
 ## 多层墙被削一层（不开格）、未标钻石被打碎（+1 分 0 金不扣命，不走 mine_stepped）
 signal laser_fire_requested(target: Vector2i)
+signal laser_beam_pressed(target: Vector2i)  # 3-1 蓄能光束：左键按下（长按起束，松手断束）
 signal wall_damaged(cell, by_actor: String, layers_left: int)
 signal diamond_shattered(cell, by_actor: String)
 signal cover_wall_destroyed(cell)   # 2-2 覆盖墙拆完（Cell 级信号在此中继，main 连一次）
@@ -68,6 +69,8 @@ var rewarded_flags: Dictionary = {}
 
 # 第二章激光矿场：true 时左键=发射激光（基地→点击格），右键/和弦照旧（LevelData.laser_mode）
 var laser_mode := false
+# 3-1 蓄能光束：true 时左键按下=长按持续束（BeamLaser 接管；免 CD 不耗动作，能量条是唯一约束）
+var laser_beam_mode := false
 
 # 2-4 中立设施占格表（coord → true；FacilityManager 是唯一写入方）：
 # 存活连爆节点/引光柱格不可走不可放；设施消耗后由管理器解除=格恢复普通
@@ -1132,6 +1135,11 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
 	board_clicked.emit()
+	# 3-1 蓄能光束关：左键按下=起束请求。能量条是唯一约束——不吃动作、不吃 CD，
+	# 所以分流必须放在 is_player_blocked 之前（CD 耗尽也能照常开束）
+	if laser_beam_mode:
+		laser_beam_pressed.emit(cell.coord)
+		return
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
@@ -1195,6 +1203,11 @@ func _on_cell_double_clicked(cell: Cell) -> void:
 	if not GameState.game_active:
 		return
 	board_clicked.emit()
+	# 蓄能光束关：快速连点会走双击路径（cell.gd 阈值 0.35s），第二按在此兜底成起束，
+	# 否则点射节奏里隔次的按下会被吞（起不了束）
+	if laser_beam_mode:
+		laser_beam_pressed.emit(cell.coord)
+		return
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return

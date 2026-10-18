@@ -351,6 +351,11 @@ func _register_recent_opened(beam: Array) -> void:
 			recent_laser_opened.erase(c)
 
 
+## 3-1 蓄能光束供：束头啃出状态变化的格同口径入账（筑墙工施工优先级共用一份记录）
+func note_beam_opened(coords: Array) -> void:
+	_register_recent_opened(coords)
+
+
 func _play_beam_fx(base: Vector2i, target: Vector2i, geo: Dictionary = {}) -> void:
 	var fx: EffectsLayer = grid.get_node_or_null("EffectsLayer") as EffectsLayer
 	if fx == null:
@@ -401,6 +406,8 @@ func _cell_local(c: Vector2i) -> Vector2:
 # ---- 悬停预览（公开几何，与结算共用 LaserGeometry；不泄雷，总纲 §4.5）----
 
 func _on_cell_hovered(cell: Cell) -> void:
+	if grid.laser_beam_mode:
+		return  # 3-1 蓄能光束关：悬停预览归 BeamLaser（能量投影），点射束预览不画
 	if not is_laser_level() or not GameState.game_active or get_tree().paused:
 		grid.hide_laser_preview()
 		return

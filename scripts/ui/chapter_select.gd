@@ -24,8 +24,11 @@ func refresh() -> void:
 		btn.custom_minimum_size = Vector2(240, 118)
 		var unlocked: bool = LevelSystem.is_chapter_unlocked(ch.id)
 		if unlocked:
+			var subtitle := "激光 · 晶簇 · 过载" if ch.id == "ch02" else _module_hint(ch.unlock_module)
+			if ch.id == "ch03":
+				subtitle = "蓄能 · 持续光束（试验）"  # 3-1 改版试验章；正式实装时换回模块提示
 			btn.text = "%s %s\n%s\n%s" % [ch.id.to_upper(), ch.display_name,
-					"激光 · 晶簇 · 过载" if ch.id == "ch02" else _module_hint(ch.unlock_module),
+					subtitle,
 					_chapter_progress(ch)]
 		else:
 			btn.text = "%s %s\n🔒" % [ch.id.to_upper(), ch.display_name]

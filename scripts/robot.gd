@@ -12,6 +12,8 @@ var tick_interval: float = 2.0
 
 # ---- 2-2 激光充能（设计 §6.1：6s 移动/作业 ×2，刷新不叠倍率，与升级档位相乘）----
 var charge_until_elapsed: float = -1.0
+# 3-1 蓄能光束：true=正被光束照住（BeamLaser 每帧写）——暂停移动/作业，站定充电
+var beam_charging := false
 
 
 func is_charged() -> bool:
@@ -59,6 +61,9 @@ func _process(delta: float) -> void:
 	if MICRO_ANIMATION.is_gameplay_running(self):
 		_micro_loop.advance(delta)
 	_update_charge_ring()
+	# 3-1 蓄能光束：被照住时皮肤提亮（充能小弧画在 BeamLaser；这里是本体反馈）
+	var glow := Color(1.3, 1.3, 1.05) if beam_charging else Color.WHITE
+	$Skin.modulate = $Skin.modulate.lerp(glow, minf(1.0, delta * 12.0))
 
 
 ## 充能进入闪光、剩余刻度与耗尽收束；只跟随显示，不驱动机器人作业。
@@ -179,6 +184,9 @@ func _update_visual() -> void:
 
 
 func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
+	# 3-1 蓄能光束：照住即停机充电（计时冻结；充能进度记账在 BeamLaser._irradiate）
+	if beam_charging:
+		return
 	# 节奏分离（设计 §9.4）：opener/marker 的移动/工作间隔独立计时；
 	# detector/miner 单间隔不变（走 get_speed_interval 兼容口径）
 	if robot_type == "opener" or robot_type == "marker":

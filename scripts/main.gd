@@ -54,6 +54,8 @@ var ch02_s4_director: Ch02S4Director = null
 var ch02_s5_director: Ch02S5Director = null
 # 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
 var laser_manager: LaserManager = null
+# 3-1 蓄能光束控制器（Grid 子节点，长按持续束；非光束关空转）
+var beam_laser: BeamLaser = null
 # 第二章中立设施管理器（2-4 连爆节点 + 2-5 引光柱；BoardRoot 下同 laser 先例）
 var facility_manager: FacilityManager = null
 # 胜利结算演出编排（docs/active/胜利结算算分动画-方案-v1.md；胜利时先演后弹面板）
@@ -213,6 +215,11 @@ func _ready() -> void:
 	laser_manager.name = "LaserManager"  # 显式命名，避免遍历误匹配
 	$BoardRoot.add_child(laser_manager)
 	laser_manager.setup(grid, enemy_manager)
+	# 3-1 蓄能光束（Grid 子节点：吃 Grid 本地系画束/预览/能量条）
+	beam_laser = BeamLaser.new()
+	beam_laser.name = "BeamLaser"  # 显式命名，避免遍历误匹配
+	grid.add_child(beam_laser)
+	beam_laser.setup(grid, robot_manager, enemy_manager, laser_manager)
 	ch02_s1_director = Ch02S1Director.new()
 	ch02_s1_director.name = "Ch02S1Director"
 	add_child(ch02_s1_director)
@@ -247,6 +254,7 @@ func _ready() -> void:
 	enemy_manager.builder_now.connect(func(_b): tutorial_guide.notify_event("builder_spawned"))
 	enemy_manager.builder_hurt.connect(func(_b): tutorial_guide.notify_event("builder_damaged"))
 	grid.laser_fire_requested.connect(_on_laser_fire_requested)
+	grid.laser_beam_pressed.connect(_on_laser_beam_requested)
 	grid.wall_damaged.connect(_on_wall_damaged)
 	grid.diamond_shattered.connect(_on_diamond_shattered)
 	grid.cover_wall_destroyed.connect(_on_cover_wall_destroyed)
@@ -401,7 +409,7 @@ func _start_daily() -> void:
 
 func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	AudioManager.clear_sfx()
-	AudioManager.use_chapter_music(lvl != null and lvl.laser_mode)
+	AudioManager.use_chapter_music(lvl != null and (lvl.laser_mode or lvl.laser_beam_mode))
 	get_node("AudioConnector").reset_for_level()
 	if lvl.chapter_id != "":
 		_current_chapter_id = lvl.chapter_id  # 选关页落在进度章（2026-10-11 章节页复活配套）
@@ -430,7 +438,9 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
 		grid.wall_style = wall_style if wall_style != "" else chapter_style
-		grid.laser_mode = lvl.laser_mode  # 第二章：左键改道激光发射（非激光关恒 false）
+		grid.laser_mode = lvl.laser_mode or lvl.laser_beam_mode  # 3-1 蓄能关沿用第二章环境/碎钻口径
+		grid.laser_beam_mode = lvl.laser_beam_mode  # 点击分流改走 BeamLaser（长按持续束）
+		beam_laser.reset_for_level()
 		laser_manager.reset_for_level()
 		enemy_manager.builders_enabled = lvl.builders        # 2-2 起筑墙工
 		enemy_manager.builder_wall_sequence = lvl.builder_wall_sequence
@@ -438,7 +448,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		grid.configure(lvl.grid_size.x, lvl.grid_size.y, lvl.mine_count)
 		_relayout_play_area()  # 棋盘在扣除 HUD/商店后的可用区内居中（P1-04）
 		$CaveEnv.layout_env()  # 地图尺寸变化后重排洞窟边框/道具（读的是已更新的棋盘位）
-		$CaveEnv.set_laser_chapter(lvl.laser_mode)
+		$CaveEnv.set_laser_chapter(lvl.laser_mode or lvl.laser_beam_mode)
 		# 固定盘面：直接装载雷位/预开区/预置基地，跳过放基地阶段
 		if lvl.has_fixed_board():
 			grid.apply_fixed_board({
@@ -1497,6 +1507,16 @@ func _on_laser_fire_requested(coord: Vector2i) -> void:
 	if not laser_manager.try_fire(coord):
 		return
 	GameState.consume_player_action()  # 空射也扣（总纲 §5.1）；发射含奖励结算在 try_fire 内
+
+
+## 3-1 蓄能光束：左键按下（grid 点击/双击分流转发）。放置模式让位（这按下属于放机器人）；
+## 光束不耗动作不吃 CD，能量条是唯一约束——转发前不做 CD 检查
+func _on_laser_beam_requested(coord: Vector2i) -> void:
+	if beam_laser == null or grid == null or not grid.laser_beam_mode:
+		return
+	if placing_mode != "":
+		return
+	beam_laser.request_start(coord)
 
 
 func _on_wall_damaged(_cell, _by_actor: String, _layers_left: int) -> void:

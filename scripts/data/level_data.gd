@@ -29,6 +29,8 @@ var shape_mask: Array = []                  # 形状掩码（L形等异形盘）
 
 # ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/）----
 var laser_mode: bool = false                # true：左键=发射激光（基地→点击格），右键/和弦照旧
+var laser_beam_mode: bool = false           # 3-1 蓄能光束：长按=持续光束（能量条约束，不耗动作）；
+                                            # 隐含 laser_mode 的音乐/洞窟/碎钻口径，但点击分流走 BeamLaser
 var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷位独立；其余未开格默认 1 层）
 var builders: bool = false                  # 2-2 起筑墙工（12s 首出/25s 补/上限 2）
 var preset_refractor: Dictionary = {}      # 2-3 预设折光驻点 {coord: Vector2i, config: "wide"|"scatter"}；空=无（赠送落此处不走 BFS）

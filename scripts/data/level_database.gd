@@ -7,12 +7,14 @@ const MAX_DENSITY := 0.16  # 雷密度上限，超过会变成猜雷（体验崩
 
 const CHAPTER_DENSITY := [0.10, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15, 0.155, 0.16, 0.16, 0.16, 0.16]
 const CHAPTER_MODULE := ["opener_marker", "detector", "miner", "tower", "drone", "", "", "", "", "", "", ""]
-const CHAPTER_NAMES := ["新手村", "激光矿场", "产业链", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
+const CHAPTER_NAMES := ["新手村", "激光矿场", "蓄能光束", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
 
 ## 实装章节白名单（2026-10-11 用户拍板）：章节页/进度直进只认这些；
 ## 其余章节是老路线图的模板桩关卡（随机盘+通用目标），不进 UI 不做进度目标。
 ## 新章实装后在 _build 的 elif 链加 _apply 的同时把 id 加进这里。
-const IMPLEMENTED_CHAPTERS := ["ch01", "ch02"]
+## ch03 现只有 3-1（蓄能光束改版试验关，复制 2-2 盘面换新激光机制）；3-2~3-5 仍是模板桩，
+## 选关页可见可进（试玩期全解锁），别当正式内容。原「产业链」章名待 3 章正式实装时改回。
+const IMPLEMENTED_CHAPTERS := ["ch01", "ch02", "ch03"]
 # 章内 5 关"舒适度"乘子（spike-valley 模板）：越高越简单
 # 关1 爽 → 关2 顺 → 关3 Spike 卡关 → 关4 Valley 碾压 → 关5 Boss 难度尖峰
 const WITHIN_EASE := [1.20, 1.00, 0.85, 1.05, 0.65]
@@ -75,6 +77,9 @@ func _build() -> void:
 				_apply_laser_s4(lvl)
 			elif ch_idx == 1 and s_idx == 4:
 				_apply_laser_s5(lvl)
+			# 3-1「蓄能光束」（2026-10-17）：持续激光改版垂直切片——复制 2-2 盘面换新机制
+			elif ch_idx == 2 and s_idx == 0:
+				_apply_beam_s1(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -602,6 +607,53 @@ func _apply_laser_s5(lvl: LevelData) -> void:
 	lvl.fixed_base = FixedBoards.CH2_S5.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S5.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S5.walls)
+
+
+## 3-1「蓄能光束」（2026-10-17）：持续激光改版垂直切片——盘面/经济/敌人完全复制 2-2，
+## 唯一变量是激光机制：点击发射 → 长按持续光束（能量条 5s 回满/满管 5s，0.5s 破一层墙，
+## 松手断束，激光不再耗动作）。照机器人=暂停+充电（2s 充满换 6s 双速），光路上筑墙工 0.5s/伤。
+## 数值沿 2-2 的烘焙结论（目标 220/228 容量），待按新机制实测后重调
+func _apply_beam_s1(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 24
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.REACH_SCORE
+	obj.target_value = 220
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 180.0
+	lvl.start_gold = 100
+	lvl.start_lives = 0
+	lvl.free_clicks = 5
+	lvl.free_correct_flags = 0
+	lvl.cooldown_sec = 3.0
+	lvl.cooldown_after_purchase = -1.0
+	lvl.laser_mode = true           # 复用第二章音乐/洞窟环境/碎钻口径
+	lvl.laser_beam_mode = true      # 点击分流改走 BeamLaser（长按持续束）
+	lvl.builders = true
+	lvl.builder_wall_sequence = [1]
+	lvl.shop_hidden = ["base", "detector", "miner", "drone", "probe", "debug"]
+	lvl.shop_limits = {"guard": 1}
+	lvl.shop_extra = ["guard"]
+	lvl.allowed_modules = ["opener", "marker", "guard"]
+	lvl.upgrades_hidden = ["discount"]
+	lvl.upgrade_speed_prices = [50, 70, 100]
+	lvl.upgrade_speed_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_work_levels = [2.0, 1.6, 1.3, 1.0]
+	lvl.upgrade_tracks = ["opener_move", "opener_work", "marker_move", "marker_work"]
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.allow_continue = true
+	lvl.time_bonus_per_sec = 3
+	lvl.base_price_flat = 80
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "蓄能"
+	lvl.intro_line = "长按蓄能开束：逐格破墙，照住机器人充电。"
+	lvl.mechanic_tags = ["蓄能激光", "充能", "筑墙工"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S2.mines)
+	lvl.fixed_base = FixedBoards.CH2_S2.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S2.preopen)
+	lvl.reinforced_walls.assign(FixedBoards.CH2_S2.walls)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

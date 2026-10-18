@@ -28,6 +28,10 @@ func get_implemented_chapters() -> Array:
 
 
 func is_chapter_unlocked(ch_id: String) -> bool:
+	# 试玩测试期与 is_level_unlocked 同口径：实装章节页全开（作者/试玩者随时进任意章；
+	# 正式版恢复纯存档链解锁——清上一章末关开下一章）
+	if get_implemented_chapters().any(func(ch): return ch.id == ch_id):
+		return true
 	return SaveSystem.is_chapter_unlocked(ch_id)
 
 
