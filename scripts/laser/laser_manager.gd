@@ -301,7 +301,7 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 		for c in charge_set:
 			for r in rm.robots:
 				if (r.robot_type == "opener" or r.robot_type == "marker") 				and r.coord == c and not charged_robots.has(r):
-					r.apply_charge(6.0)
+					r.grant_beam_energy(60.0)  # 点击式激光一次命中=+60（6s 双速当量）
 					charged_robots.append(r)
 	# 2-4 节点消耗：同轮触发标记已在快照 BFS 保证一次；消耗后格恢复普通（Q2）
 	if fm != null and not geo.chain_nodes.is_empty():

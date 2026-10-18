@@ -10,20 +10,26 @@ extends Node2D
 var coord: Vector2i = Vector2i(-1, -1)
 var tick_interval: float = 2.0
 
-# ---- 2-2 激光充能（设计 §6.1：6s 移动/作业 ×2，刷新不叠倍率，与升级档位相乘）----
-var charge_until_elapsed: float = -1.0
-# 3-1 蓄能光束：true=正被光束照住（BeamLaser 每帧写）——暂停移动/作业，站定充电
+# ---- 激光充能（3-1 改版：能量池——充能条与续航合并为一条，拍板 2026-10-18）----
+# 上限 80 点；被光束照住=暂停作业+灌能（BeamLaser 每 0.5s 记 +20，点击式激光一次
+# 命中=+60=6s 双速当量）；非照住时双速工作每秒耗 10（满管≈8s）；耗尽回常速。
+# 升级档 × 充能态仍复乘（tick_interval ×0.5 口径不变）
+const BEAM_ENERGY_MAX := 80.0
+const BEAM_DRAIN_PER_SEC := 10.0
+var beam_energy: float = 0.0
+# true=正被光束照住（BeamLaser 每帧写）——暂停移动/作业、停耗、只进不耗
 var beam_charging := false
 
 
 func is_charged() -> bool:
-	return GameState.elapsed < charge_until_elapsed
+	return beam_energy > 0.0
 
 
-func apply_charge(duration_sec: float = 6.0) -> void:
-	charge_until_elapsed = maxf(charge_until_elapsed, GameState.elapsed + duration_sec)
+func grant_beam_energy(points: float) -> void:
+	beam_energy = minf(BEAM_ENERGY_MAX, beam_energy + points)
 	_update_charge_ring()
-	_charge_ring.absorb()
+	if _charge_ring != null and is_instance_valid(_charge_ring):
+		_charge_ring.absorb()
 var _tick_timer: float = 0.0
 var _current_target: Variant = null  # Vector2i 或 null
 var _state: String = "idle"  # "idle" | "moving" | "working"
@@ -60,19 +66,22 @@ func _process(delta: float) -> void:
 	# 钻头、旗、探头、灯各自轻循环，不按移动/作业切换动作。
 	if MICRO_ANIMATION.is_gameplay_running(self):
 		_micro_loop.advance(delta)
+	# 能量池动态：照住=只进不耗（灌能入账在 BeamLaser，0.5s 一记）；否则每秒耗 10
+	if not beam_charging and beam_energy > 0.0:
+		beam_energy = maxf(0.0, beam_energy - BEAM_DRAIN_PER_SEC * delta)
 	_update_charge_ring()
 	# 3-1 蓄能光束：被照住时皮肤提亮（充能小弧画在 BeamLaser；这里是本体反馈）
 	var glow := Color(1.3, 1.3, 1.05) if beam_charging else Color.WHITE
 	$Skin.modulate = $Skin.modulate.lerp(glow, minf(1.0, delta * 12.0))
 
 
-## 充能进入闪光、剩余刻度与耗尽收束；只跟随显示，不驱动机器人作业。
+## 充能环=能量池余量（照住时即时起环看灌入，双速工作时肉眼可见地耗下去）
 var _charge_ring: Node2D = null
 var _charge_was_active := false
 
 
 func _update_charge_ring() -> void:
-	var charged: bool = is_charged()
+	var charged: bool = is_charged() or beam_charging
 	if not charged:
 		if _charge_was_active and is_instance_valid(_charge_ring):
 			_charge_ring.finish()
@@ -82,8 +91,7 @@ func _update_charge_ring() -> void:
 		_charge_ring = ChargeRing.new()
 		_charge_ring.name = "ChargeRing"  # 显式命名，防遍历误匹配
 		add_child(_charge_ring)
-	var remain: float = charge_until_elapsed - GameState.elapsed
-	_charge_ring.set_progress(clampf(remain / 6.0, 0.0, 1.0))
+	_charge_ring.set_progress(clampf(beam_energy / BEAM_ENERGY_MAX, 0.0, 1.0))
 	_charge_ring.visible = true
 	_charge_was_active = true
 
@@ -198,8 +206,8 @@ func accumulate_and_maybe_tick(delta: float, grid, locked: Dictionary) -> void:
 	if grid.is_slime_nearby(coord):
 		tick_interval *= 2.0
 		GameState.result_stats["slowed_seconds"] += delta
-	# 2-2 激光充能：作业机器人 6s 内移动/作业 ×2（查档表后乘系数=升级×充能复乘口径；
-	# guard/detector/miner 不吃——设计只承诺开墙/标雷机器人，Q1 决策记录）
+	# 3-1 激光充能：能量池 >0 期间移动/作业 ×2（查档表后乘系数=升级×充能复乘口径；
+	# guard/detector/miner 不吃——充能只对 opener/marker 生效，Q1 决策记录）
 	if is_charged() and (robot_type == "opener" or robot_type == "marker"):
 		tick_interval *= 0.5
 	_tick_timer += delta

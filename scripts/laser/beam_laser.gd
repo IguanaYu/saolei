@@ -9,7 +9,8 @@ extends Node2D
 ##   放出持续光束，束头逐格啃墙（每层 0.5s）；按住期间方向锁死，不随鼠标转向；
 ##   已开无墙/旗/化石格瞬间通过（不花时间）；松手 / 能量耗尽 / 出盘 = 断束。
 ##   能量 100：按住 -20/s，松手 +20/s（满管 ≈5s ≈ 10 层墙）；能量 <10 不起束（啃不动一层）。
-##   照住 opener/marker：暂停作业 + 充电（照满 2s 换 6s 双速，进度保留，可持续续充）。
+##   照住 opener/marker：暂停作业 + 灌能（0.5s 一记 +20；池上限 80、双速工作耗
+##   10/s——充能条与续航合一，照 2s 满 = 8s 双速，进度保留）。
 ##   照住筑墙工：每 0.5s 挨 1 伤（会走就会离开光路）。
 ##   激光不再消耗动作额度（插旗照旧吃）；胜负仍走 REACH_SCORE（开格信号原管线）。
 ##
@@ -21,8 +22,8 @@ const DRAIN_PER_SEC := 20.0
 const REGEN_PER_SEC := 20.0
 const SEC_PER_HIT := 0.5                      # 每削一层墙/覆盖墙的照射时长
 const HIT_ENERGY := DRAIN_PER_SEC * SEC_PER_HIT  # 10：预览口径 能量÷10=还能啃几层
-const ROBOT_CHARGE_SEC := 2.0                 # 照满 2s → 6s 双速
-const ROBOT_BUFF_SEC := 6.0
+const ROBOT_PIP_SEC := 0.5                    # 照住机器人每 0.5s 灌一记
+const ROBOT_PIP_ENERGY := 20.0                # 一记 +20（池上限 80 → 照 2s 充满 = 8s 双速）
 const BUILDER_HIT_SEC := 0.5                  # 光路上筑墙工每 0.5s 挨 1 伤
 
 var grid: Grid = null
@@ -36,7 +37,7 @@ var ray: Array = []            # Vector2i 八向射线（不含基地；盘内�
 var head_idx := -1             # 正在啃的格下标
 var cell_progress := 0.0       # 当前格已照时长（断束不清零=物理余温，续照续算）
 var _builder_acc: Dictionary = {}   # BuilderEnemy → 已照时长
-var _robot_acc: Dictionary = {}     # Robot → 已照时长（松束保留）
+var _robot_pip: Dictionary = {}     # Robot → 距下一记灌能的已照时长（松束保留）
 var _opened_pending: Array = []     # 本帧啃出状态变化的格（回填 recent_laser_opened）
 var _hover_cell: Cell = null
 var _hum: AudioStreamPlayer = null
@@ -74,7 +75,7 @@ func reset_for_level() -> void:
 	_release()
 	energy = ENERGY_MAX
 	_builder_acc.clear()
-	_robot_acc.clear()
+	_robot_pip.clear()
 	_opened_pending.clear()
 	_hover_cell = null
 	queue_redraw()
@@ -196,12 +197,12 @@ func _irradiate(delta: float) -> void:
 			var illuminated: bool = workable and lit.has(r.coord)
 			r.beam_charging = illuminated
 			if illuminated:
-				var acc: float = float(_robot_acc.get(r, 0.0)) + delta
-				if acc >= ROBOT_CHARGE_SEC:
-					acc -= ROBOT_CHARGE_SEC
-					r.apply_charge(ROBOT_BUFF_SEC)
+				var acc: float = float(_robot_pip.get(r, 0.0)) + delta
+				while acc >= ROBOT_PIP_SEC:
+					acc -= ROBOT_PIP_SEC
+					r.grant_beam_energy(ROBOT_PIP_ENERGY)  # +20/记；池满 80 溢出即弃
 					AudioManager.play_sfx("charge")
-				_robot_acc[r] = acc
+				_robot_pip[r] = acc
 	if em != null:
 		for b in em.builders:
 			if not is_instance_valid(b) or not b.is_alive():
@@ -320,14 +321,14 @@ func _draw_beam(base: Vector2i, cs: float) -> void:
 	for i in 6:
 		var p := to + Vector2.from_angle(randf_range(0.0, TAU)) * randf_range(6.0, 14.0)
 		draw_line(to, p, Color(1.0, 0.72, 0.3, randf_range(0.5, 0.9)), 1.5)
-	# 照射中的机器人头顶充能小弧
+	# 照射中的机器人头顶小弧=距下一记灌能（+20）的进度；能量余量看机器人充能环
 	if rm != null:
 		for r in rm.robots:
 			if is_instance_valid(r) and r.beam_charging:
-				var acc: float = float(_robot_acc.get(r, 0.0))
+				var acc: float = float(_robot_pip.get(r, 0.0))
 				var p := grid.to_local(r.global_position) + Vector2(0, -17)
 				draw_arc(p, 6.0, -PI / 2.0,
-						-PI / 2.0 + TAU * clampf(acc / ROBOT_CHARGE_SEC, 0.0, 1.0),
+						-PI / 2.0 + TAU * clampf(acc / ROBOT_PIP_SEC, 0.0, 1.0),
 						16, Color(0.5, 0.98, 1.0, 0.95), 2.0)
 
 

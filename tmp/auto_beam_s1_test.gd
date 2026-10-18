@@ -199,7 +199,7 @@ func _run() -> void:
 	check(opened_count >= 2, "光路开格数≥2（含洪水连锁；%d）" % opened_count)
 	bl._release()
 
-	# ---- ⑦ 机器人照射：暂停 + 充电 ----
+	# ---- ⑦ 机器人照射：暂停 + 能量池（80 上限，0.5s 一记 +20，双速工作耗 10/s）----
 	var rm = main.robot_manager
 	var spot: Vector2i = ray[0]
 	var r = rm.spawn_robot(spot, "opener", g, base)
@@ -209,25 +209,42 @@ func _run() -> void:
 		return
 	r.coord = spot
 	r.position = g.coord_to_world(spot)
-	bl._robot_acc.clear()
+	check(absf(r.beam_energy) < 0.001, "初始能量池为空")
+	bl._robot_pip.clear()
 	bl.energy = bl.ENERGY_MAX
 	g._on_cell_left_clicked(g.cells[target])
 	check(bl.firing, "照机器人起束")
-	for i in range(10):  # 2.5s：照满 2s 应触发一次 buff
+	for i in range(5):  # 1.25s：两记整 pip（+40）+ 0.25s 零头
 		if not bl.firing:
 			break
 		bl._tick_fire(0.25)
 		r.coord = spot
 		r.position = g.coord_to_world(spot)
 	check(r.beam_charging, "照射中暂停标志置位")
-	check(r.is_charged(), "照满 2s 拿到双速 buff")
-	var acc: float = float(bl._robot_acc.get(r, -1.0))
-	check(acc >= 0.0 and acc <= 0.51, "充能账本 2s 一轮后余量 %.2fs" % acc)
+	check(r.is_charged(), "充能后进入双速状态")
+	check(absf(r.beam_energy - 40.0) < 0.001, "两记 pip +40（实际 %.0f）" % r.beam_energy)
+	var acc: float = float(bl._robot_pip.get(r, -1.0))
+	check(acc >= 0.0 and acc <= 0.26, "pip 账本余量 %.2fs（<0.26s）" % acc)
 	var timer_before: float = r._tick_timer
 	rm.tick_all(0.5, g)
 	check(absf(r._tick_timer - timer_before) < 0.0001, "照住时作业计时冻结")
 	bl._release()
 	check(not r.beam_charging, "断束清除暂停标志")
+	# 耗能：非照住状态每秒 -10（同步段无真实帧经过，手动驱动 _process 确定性成立）
+	var e0: float = r.beam_energy
+	r._process(1.0)
+	check(absf(r.beam_energy - (e0 - 10.0)) < 0.001, "双速工作每秒耗 10 点")
+	# 满池封顶：照 2s（4 记 +80）顶到上限，继续照不溢出
+	bl.energy = bl.ENERGY_MAX
+	g._on_cell_left_clicked(g.cells[target])
+	for i in range(12):  # 3s：6 记 ×20 = 120 → 封顶 80
+		if not bl.firing:
+			break
+		bl._tick_fire(0.25)
+		r.coord = spot
+		r.position = g.coord_to_world(spot)
+	bl._release()
+	check(absf(r.beam_energy - 80.0) < 0.001, "灌能封顶 80 不溢出（实际 %.0f）" % r.beam_energy)
 	rm.remove_robot(r, "test_cleanup")
 
 	# ---- ⑧ 筑墙工持续掉血（stub 注入，不依赖 12s 自然出怪）----

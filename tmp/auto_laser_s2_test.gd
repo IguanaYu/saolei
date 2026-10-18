@@ -215,7 +215,7 @@ func _phase1_board() -> void:
 	await _shot("01-board.png")
 
 
-# ---- 阶段 2：充能 ----
+# ---- 阶段 2：充能（3-1 改版能量池口径：80 上限/双速耗 10 每秒/一次命中 +60）----
 func _phase2_charge() -> void:
 	print("[Phase2] 充能")
 	var r1 = RM.spawn_robot(Vector2i(2, 7), "opener", g)
@@ -223,24 +223,23 @@ func _phase2_charge() -> void:
 	check(not r1.is_charged(), "初始未充能")
 	main._on_laser_fire_requested(Vector2i(6, 7))   # 束过 (2..6,7)：两台都在线上
 	check(r1.is_charged() and r2.is_charged(), "束扫过两台均充能（事件走完）")
-	check(GS.elapsed + 6.0 - r1.charge_until_elapsed < 0.01, "充能时长 6s")
-	# 同轮去重：再打一发同线，charge_until 不变（刷新=max 语义，无法通过时长断言倍率——
-	# 倍率口径由实现保证：apply_charge 覆盖 max 而非累加）
-	var before_exp: float = r1.charge_until_elapsed
+	check(absf(r1.beam_energy - 60.0) < 0.001, "一次命中 +60 点（6s 双速当量）")
+	# 再打一发同线：能量池叠加封顶（60+60→80，取代旧 max 刷新语义）
 	main._on_laser_fire_requested(Vector2i(5, 7))
-	check(r1.charge_until_elapsed >= before_exp, "重复命中刷新不叠倍率（max 语义）")
-	# 6s 过期：elapsed 直接推进（引导冻结下 harness 推 GS.elapsed）
-	GS.elapsed = r1.charge_until_elapsed + 0.01
-	check(not r1.is_charged(), "6s 后充能过期")
-	GS.elapsed -= 0.01
+	check(absf(r1.beam_energy - 80.0) < 0.001, "重复命中叠加封顶 80")
+	# 耗能：非照住状态每秒 -10（同步段手动驱动 _process，无真实帧干扰）
+	r1._process(1.0)
+	check(absf(r1.beam_energy - 70.0) < 0.001, "双速工作每秒耗 10 点")
+	r1.beam_energy = 0.0
+	check(not r1.is_charged(), "能量耗尽退出充能态")
 	# 间隔减半口径：充能态下 opener 工作间隔 = 档位值 × 0.5（黏液不在此格）
-	r1.charge_until_elapsed = GS.elapsed + 6.0   # 手动回满
+	r1.beam_energy = 60.0
 	r1._current_target = null
 	var interval_charged: float = GS.get_work_interval("opener") * 0.5
 	r1.accumulate_and_maybe_tick(0.0, g, GS.locked_targets)   # 0 增量只刷新 tick_interval
 	check(absf(r1.tick_interval - interval_charged) < 0.001,
 			"充能间隔 = 档位 ×0.5（%.2f vs %.2f）" % [r1.tick_interval, interval_charged])
-	r1.charge_until_elapsed = -1.0
+	r1.beam_energy = 0.0
 	RM.remove_all()
 	await _shot("02-charged.png")
 
