@@ -7,7 +7,8 @@ extends Node2D
 ## 机制：
 ##   长按左键 = 从基地沿「按下瞬间基地→点击格」的精确直线（超覆盖，指哪打哪）
 ##   放出持续光束，束头逐格啃墙（每层 0.5s）；按住期间方向锁死，不随鼠标转向；
-##   已开无墙/旗/化石格瞬间通过（不花时间）；松手 / 能量耗尽 / 出盘 = 断束。
+##   已开无墙/旗/化石格瞬间通过（不花时间）；松手 / 能量耗尽 = 断束，
+##   束头到盘缘则钉在盘缘继续照（能量照扣——盘缘点击/全通走廊也要有出束反馈）。
 ##   能量 100：按住 -20/s，松手 +20/s（满管 ≈5s ≈ 10 层墙）；能量 <10 不起束（啃不动一层）。
 ##   照住 opener/marker：暂停作业 + 灌能（0.5s 一记 +20；池上限 80、双速工作耗
 ##   10/s——充能条与续航合一，照 2s 满 = 8s 双速，进度保留）。
@@ -93,7 +94,8 @@ func request_start(target: Vector2i) -> void:
 		return
 	# 方向 = 按下瞬间 基地→目标格 的精确直线（沿用点射超覆盖几何，指哪打哪——
 	# 八向量化会把斜向全吸附成正交，2026-10-18 用户复报"只能朝上下左右射"），
-	# 向盘外等比延伸到出界；按住期间锁死，不随鼠标转向
+	# 向盘外等比延伸到出界；按住期间锁死，不随鼠标转向。
+	# target 允许盘外坐标（grid._unhandled_input 盘外点击兜底），出盘截断同款
 	var delta := target - base
 	var span := maxi(grid.rows, grid.cols)
 	var k := int(ceil(float(span) / maxi(1, mini(absi(delta.x), absi(delta.y))))) + 1
@@ -134,8 +136,8 @@ func _tick_fire(delta: float) -> void:
 	var work := delta
 	while work > 0.0001 and firing:
 		if head_idx >= ray.size():
-			_release()  # 出盘：束停在盘缘（能量按持按时长照扣）
-			break
+			break  # 束头到盘缘：钉在盘缘继续照，不自动断束——全通走廊起束/啃穿边缘墙后
+			# 束仍有落点（2026-10-18 用户复报「指到盘缘点击无响应」；断束只认松手与耗尽）
 		var c: Vector2i = ray[head_idx]
 		var cell: Cell = grid.get_cell(c)
 		if cell == null:

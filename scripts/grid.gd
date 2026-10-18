@@ -482,6 +482,24 @@ func _process(_delta: float) -> void:
 	_update_hover(to_local(get_global_mouse_position()))
 
 
+## 3-1 蓄能光束：盘外点击兜底（2026-10-18 用户复报「指到盘缘左键射不出」）——
+## 点击全靠逐格 Area2D 拾取，鼠标滑出盘缘就没有任何格子接事件，起束请求整个丢失；
+## 而光束本就是超覆盖直线（预览也向盘外延伸），瞄准点落在盘外是合法操作。
+## 这里只接盘外坐标（盘内仍走格子路径，同一次按下不双发）。
+func _unhandled_input(event: InputEvent) -> void:
+	if not laser_beam_mode or not GameState.game_active:
+		return
+	var mb := event as InputEventMouseButton
+	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var local := to_local(get_canvas_transform().affine_inverse() * mb.position)
+	var coord := Vector2i(floori(local.x / cell_size), floori(local.y / cell_size))
+	if cells.has(coord):
+		return  # 盘内：格子路径已发过，不重复
+	laser_beam_pressed.emit(coord)
+	get_viewport().set_input_as_handled()
+
+
 func _update_hover(local_pos: Vector2) -> void:
 	var coord := Vector2i(floori(local_pos.x / cell_size), floori(local_pos.y / cell_size))
 	var next: Cell = cells.get(coord)
