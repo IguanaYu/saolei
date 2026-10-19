@@ -1,0 +1,27 @@
+Generation mode: built-in image_gen
+Date: 2026-10-19
+Purpose: gameplay-screen concept preview based on 冒险者工会-玩法设计文档-v0.1.md
+Output: 冒险者工会-预览图-v0.1.png
+
+Use case: ui-mockup.
+Create ONE high-quality landscape 16:9 PC game screenshot concept for a Chinese fantasy management/minesweeper game called “冒险者工会”. This is a concrete playable-looking gameplay screen, not a poster, not an infographic, not a collection of screens. It must immediately communicate classic minesweeper plus a living adventurers' guild forest expedition.
+
+GAME RULES TO VISUALIZE: A new forest map each day, three batches of ordinary adventurers use the guild's published map. Current screenshot is day 3, batch 2 exploring, while future work is only queued for the next batch. Terrain scouts open logically safe squares, enemy scouts flag camps and measure enemy strength, elite fighters suppress strength. Tile clue numbers count neighboring camp LOCATIONS. Enemy strength is a separate small shield badge on camp tiles. Map clues never change when strength falls. Ordinary adventurers are visitors, distinct from the three work teams. No construction management, no buildings shop, no earned spendable coins: all income paid only at day end.
+
+ART DIRECTION: polished approachable miniature tabletop fantasy, soft 3D diorama forest tiles with clean readable 2D interface overlay; charming tiny adventurers with cloaks, packs, shields; wood, paper, moss, small red camp flags; warm natural daylight. Restrained detail, readable square grid, crisp typography, generous hierarchy. The board should feel like the actual primary minesweeper playfield. No photorealism, no full-size portraits, no generic mobile kingdom builder, no dark muddy colors, no exaggerated ornamental UI. High-resolution clean edges.
+
+COMPOSITION: Main board dominates center, approximately 65% width. Narrow left work-team rail, right contextual camp panel, slim top header, bottom batch timeline. Orthographic slightly elevated tabletop view, so square grid remains visually clear. Board about 14 by 12 square tiles. Bottom-left and center are an irregular contiguous explored clearing of flat cream/earth squares with clear blue “1”, green “2”, red “3” minesweeper clues at tile corners; some clue-free empty squares; upper and right regions are raised moss-green UNOPENED square tiles under forest mist. Trees sit on unopened tiles, low and restrained so grid is obvious. No hidden enemies exposed under fog. A few marked camp tiles along explored frontier have red flags and small tents or goblin palisades. A selected discovered camp at center-right has an amber outline and separate shield badge “5”; nearby clue tiles use 1/2/3, not the enemy strength. One unknown-strength flagged camp shows shield “?”. Selected camp remains visibly a camp after suppression.
+
+LIVING MAP: Several small parties of adventurers travel in the explored clearings, gather herbs and return carrying loot; tiny groups give sense of a larger population. A party approaches the selected known camp in organized formation. At an unopened forest boundary two figures stop consulting a map, with a small speech bubble “这里还没有调查”. Another successful party near the guild entry shows “情报准确！” with a small green tick. Faint dotted route indications only, no roads built by player. Characters occupy less than half a tile and never hide essential clue numbers. At lower-left board edge, a modest guild expedition tent marks entry, not a town or settlement.
+
+UI TEXT: Render simplified Chinese accurately, limited text, clear readable sans serif typography. Main title top-left “冒险者工会”, top center “第 3 天 · 林地调查”, top status “第 2 批 / 共 3 批” and “剩余工时 32”.
+Left panel heading “工会队伍”; three vertically arranged illustrated compact cards with matching small unit icons, colored distinct muted blue/teal/rust:
+“地形侦察队” / “快速开图”
+“敌情侦察队” / “定位 · 测强”
+“精英战斗队” / “压制据点”
+Below cards small queue heading “下一批任务” and one line “调查西侧森林”. No purchasing buttons or coin prices.
+Right panel header “北侧营地”, small subtitle “已调查据点”. Clear comparison “敌人强度  8 → 5”, with muted old 8 and prominent current 5 shield. A green status strip “普通队可挑战”. Supporting short lines “本批到访 36 人” and “继续压制收益较低”. A clearly marked next-batch queued action button “加入下批压制”.
+Small lower-right results card “本批进展”, lines “已返回 108 / 170”, “任务完成 84”, “未满足 24”. Below it subdued note “收入于日终统一结算”. This is a live progress ledger, not income awarded now.
+Bottom bar has three stage tabs: “第一批 · 已结束”, highlighted “第二批 · 探索中”, muted “第三批 · 待开放”. Bottom-right primary control “加速 ×2”. A compact legend at bottom-left says “数字：相邻据点数” and “盾牌：敌人强度”.
+
+CONSTRAINTS: One coherent screenshot, no outer monitor frame or desktop, no giant promotional captions, no annotations pointing outside UI, no watermark, no modern machinery, no live income popup, no build menu. Prioritize readable minesweeper mechanics and visible adventurers using the explored area. All panels aligned, no overlapping, map remains dominant.
