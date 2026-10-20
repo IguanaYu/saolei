@@ -7,14 +7,16 @@ const MAX_DENSITY := 0.16  # 雷密度上限，超过会变成猜雷（体验崩
 
 const CHAPTER_DENSITY := [0.10, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15, 0.155, 0.16, 0.16, 0.16, 0.16]
 const CHAPTER_MODULE := ["opener_marker", "detector", "miner", "tower", "drone", "", "", "", "", "", "", ""]
-const CHAPTER_NAMES := ["新手村", "激光矿场", "蓄能光束", "充能塔", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
+const CHAPTER_NAMES := ["新手村", "激光矿场", "蓄能光束", "冒险者工会", "硬关峰", "综合境", "进阶域", "深度区", "深渊层", "永恒殿", "终末境", "赛季终"]
+# 注：ch04 原名「充能塔」，2026-10-20 冒险者工会试验期暂占（同 ch03 暂改先例）；
+# 工会章转正或另择章号时改回。ch04 s02-s05 仍是模板桩关卡，选关页可见可进，别当正式内容。
 
 ## 实装章节白名单（2026-10-11 用户拍板）：章节页/进度直进只认这些；
 ## 其余章节是老路线图的模板桩关卡（随机盘+通用目标），不进 UI 不做进度目标。
 ## 新章实装后在 _build 的 elif 链加 _apply 的同时把 id 加进这里。
 ## ch03 现只有 3-1（蓄能光束改版试验关，复制 2-2 盘面换新激光机制）；3-2~3-5 仍是模板桩，
 ## 选关页可见可进（试玩期全解锁），别当正式内容。原「产业链」章名待 3 章正式实装时改回。
-const IMPLEMENTED_CHAPTERS := ["ch01", "ch02", "ch03"]
+const IMPLEMENTED_CHAPTERS := ["ch01", "ch02", "ch03", "ch04"]
 # 章内 5 关"舒适度"乘子（spike-valley 模板）：越高越简单
 # 关1 爽 → 关2 顺 → 关3 Spike 卡关 → 关4 Valley 碾压 → 关5 Boss 难度尖峰
 const WITHIN_EASE := [1.20, 1.00, 0.85, 1.05, 0.65]
@@ -80,6 +82,9 @@ func _build() -> void:
 			# 3-1「蓄能光束」（2026-10-17）：持续激光改版垂直切片——复制 2-2 盘面换新机制
 			elif ch_idx == 2 and s_idx == 0:
 				_apply_beam_s1(lvl)
+			# 4-1「工会开张日」（2026-10-20）：冒险者工会垂直切片 WP1——工时+三批营业日骨架
+			elif ch_idx == 3 and s_idx == 0:
+				_apply_guild_g1(lvl)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
@@ -655,6 +660,34 @@ func _apply_beam_s1(lvl: LevelData) -> void:
 	lvl.fixed_base = FixedBoards.CH2_S2.base
 	lvl.preopen_coords.assign(FixedBoards.CH2_S2.preopen)
 	lvl.reinforced_walls.assign(FixedBoards.CH2_S2.walls)
+
+
+## 4-1「工会开张日」（2026-10-20）：冒险者工会垂直切片 WP1 骨架——
+## 盘面复制 2-2（24 雷/预开 69/预置基地），**不带加固墙**（未开格恒 1 层=点击直开）；
+## 新机制：工时制（开/标耗工时，无 CD 无倒计时无命无商店）+ 三批营业日
+## （每批开放 100 工时可结转，发布→占位结算；需求分配/据点强度在 WP2-WP4 逐层加）。
+## 数值全为原型建议（实施计划 D9），待实测调参
+func _apply_guild_g1(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(14, 14)
+	lvl.mine_count = 24
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE  # 占位目标（target=0 不触发中途胜利）：
+	                                              # 防 REACH_SCORE 管线提前判胜；WP6 换全日结算目标
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 0.0       # 无倒计时：营业日节奏由批次推进，不锁现实时间（设计 §13）
+	lvl.start_gold = 0             # 工会模式无商店，金币仅作开格反馈数字
+	lvl.start_lives = 0            # 无命：手动点中据点格暂只坍塌（D11，惩罚待拍板）
+	lvl.guild_mode = true
+	lvl.meta_progression = false
+	lvl.preopen_scores = false
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "工会开张"
+	lvl.intro_line = "读数字、派队伍，放冒险者进森林。"
+	lvl.mechanic_tags = ["工时", "三批冒险者", "据点"]
+	lvl.fixed_mines.assign(FixedBoards.CH2_S2.mines)
+	lvl.fixed_base = FixedBoards.CH2_S2.base
+	lvl.preopen_coords.assign(FixedBoards.CH2_S2.preopen)
 
 
 func _make_level(ch_idx: int, s_idx: int) -> LevelData:

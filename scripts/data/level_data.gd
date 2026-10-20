@@ -39,6 +39,9 @@ var chain_nodes: Array[Vector2i] = []       # 2-4 连爆节点（预开安全格
 var light_pillar: Vector2i = Vector2i(-9, -9)  # 2-5 引光柱（预开安全格；(-9,-9)=无）
 var special_ores: Array[Dictionary] = []    # 改版 2-3 特殊矿石 [{origin: Vector2i}]；空=无（足迹须全在预开安全格）
 
+# ---- 冒险者工会（docs/active/玩法设计/冒险者工会-玩法设计文档-v0.1.md）----
+var guild_mode: bool = false  # true：营业日模式（工时账本/三批冒险者/据点强度；无商店无倒计时无命）
+
 # ---- 教学规则参数（零值 = 该机制不启用）----
 var free_clicks: int = 0            # >0：第 N 次有效玩家动作触发 CD 耗尽
 var free_correct_flags: int = 0     # >0：第 N 面正确旗触发耗尽（与上条先到为准）

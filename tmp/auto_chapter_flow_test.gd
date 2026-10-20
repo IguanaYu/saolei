@@ -1,7 +1,7 @@
 extends SceneTree
 ## 章节页复活 + 放基地阶段 UI 点击修复 实测（2026-10-11 后端测试）
 ## 断言组：
-##   章节流：选关→章节页（3 个实装章卡：ch01/ch02/ch03 蓄能试验，模板桩章不出现）→点第二章→关卡列表
+##   章节流：选关→章节页（4 个实装章卡：ch01/ch02/ch03 蓄能试验/ch04 工会试验，模板桩章不出现）→点第二章→关卡列表
 ##           （_current_chapter_id 同步）→返回回章节页→返回回主菜单
 ##   主按钮：直进进度关停在实装章节内（不落模板桩章）
 ##   暂停修复：ch01_s04 放基地阶段点 HUD 暂停键 → 暂停面板打开且未误放基地；
@@ -129,7 +129,7 @@ func _phase1_chapter_page() -> void:
 	var card_names: Array = []
 	for t in cards:
 		card_names.append(t.substr(0, 12))
-	check(cards.size() == 3, "仅 3 张章卡（ch03 蓄能试验章加入，%d）：%s" % [cards.size(),
+	check(cards.size() == 4, "仅 4 张章卡（ch04 工会试验章加入，%d）：%s" % [cards.size(),
 			" | ".join(card_names)])
 	var no_stub := true
 	for t in cards:

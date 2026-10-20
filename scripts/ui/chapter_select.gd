@@ -27,6 +27,8 @@ func refresh() -> void:
 			var subtitle := "激光 · 晶簇 · 过载" if ch.id == "ch02" else _module_hint(ch.unlock_module)
 			if ch.id == "ch03":
 				subtitle = "蓄能 · 持续光束（试验）"  # 3-1 改版试验章；正式实装时换回模块提示
+			elif ch.id == "ch04":
+				subtitle = "营业日 · 三批冒险者（试验）"  # 4-1 工会试验章占位（2026-10-20）；原「充能塔」回归时改回
 			btn.text = "%s %s\n%s\n%s" % [ch.id.to_upper(), ch.display_name,
 					subtitle,
 					_chapter_progress(ch)]

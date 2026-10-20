@@ -60,6 +60,10 @@ var beam_laser: BeamLaser = null
 var facility_manager: FacilityManager = null
 # 胜利结算演出编排（docs/active/胜利结算算分动画-方案-v1.md；胜利时先演后弹面板）
 var victory_tally: VictoryTally = null
+# 冒险者工会营业日管理器（ch04 试验章；BoardRoot 下同 laser/facility 先例，非工会关空转）
+var guild_day_manager: GuildDayManager = null
+# 工会营业面板（UILayer 下代码构建；非工会关隐藏，占商店位）
+var guild_panel: GuildPanel = null
 # 最近一次开格坐标（胜利波纹的扩散中心；无效时演出内部回退开格质心）
 var _last_opened_coord := Vector2i(-9999, -9999)
 
@@ -90,6 +94,20 @@ func _ready() -> void:
 	victory_tally.name = "VictoryTally"  # 显式命名，避免遍历误匹配
 	add_child(victory_tally)
 	victory_tally.finished.connect(_finish_victory_tally)
+	# 冒险者工会（ch04 试验章）：营业日管理器 + 底部营业面板；grid 信号常驻连接，
+	# 非工会关由 GuildDayManager.active 早退，不用每次进关重连
+	guild_day_manager = GuildDayManager.new()
+	guild_day_manager.name = "GuildDayManager"  # 显式命名，避免遍历误匹配
+	$BoardRoot.add_child(guild_day_manager)
+	guild_day_manager.action_blocked.connect(func(reason: String): hud.show_toast(reason, 2.5))
+	guild_day_manager.day_finished.connect(_on_guild_day_finished)
+	grid.cell_opened.connect(guild_day_manager._on_cell_opened)
+	grid.cell_flagged.connect(guild_day_manager._on_cell_flagged)
+	guild_panel = GuildPanel.new()
+	guild_panel.name = "GuildPanel"  # 显式命名，避免遍历误匹配
+	$UILayer.add_child(guild_panel)
+	guild_panel.publish_requested.connect(func(): guild_day_manager.publish_batch())
+	guild_day_manager.guild_state_changed.connect(guild_panel.update_state)
 	# Esc 走 UILayer 下的 ALWAYS 路由器转发：暂停/规则等置 paused=true 的树里
 	# main._input（可暂停）已停摆，"按 ESC 继续"不能只靠它（2026-10-03 盲测 F01）
 	escape_router.escape_requested.connect(_handle_escape)
@@ -434,6 +452,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
 	boss_manager.clear()   # 上一局的 Boss 实体/阶段状态清空（非 Boss 关为空操作）
 	facility_manager.clear()  # 上一局的中立设施清空（2-4 节点/2-5 柱；空关为空操作）
+	grid.action_gate = Callable()  # 工会工时闸门清残留（工会关在下方按 guild_mode 重挂）
 	if lvl != null:
 		var chapter_number := int(lvl.chapter_id.trim_prefix("ch"))
 		var chapter_style: String = CHAPTER_WALL_STYLES[clampi(int((chapter_number - 1) / 3.0), 0, 3)]
@@ -481,6 +500,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			facility_manager.setup_pillar(grid, lvl.light_pillar)
 		# 改版 2-3 特殊矿石装载（空列表=no-op，非本章关零影响）
 		facility_manager.setup_ores(grid, lvl.special_ores)
+		# 冒险者工会营业日装载（非工会关 no-op；active 后工时闸门/批次账本才开始）
+		guild_day_manager.setup_for_level(lvl, grid)
 		# L5 Boss 关（FIND_ALL_MINES 目标 = 有 Boss 的关）：实体+阶段机就位（安静 Boss 关
 		# 的招式表在 M2-M4 逐阶段填实；盘外锚点定位不依赖基地摆放）
 		var obj0 = lvl.objectives[0] if not lvl.objectives.is_empty() else null
@@ -510,6 +531,16 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				lvl.short_name if lvl.short_name != "" else lvl.display_name])
 	else:
 		hud.set_level_title("")
+	# 工会关专属界面开关（WP1 最简口径）：营业面板占商店位、金币锚点换绑营业面板、
+	# grid 动作闸门挂工时；时间/爱心由 has_time_limit/has_life_limit（均 0）自动隐藏
+	var guild_level := lvl != null and lvl.guild_mode
+	guild_panel.visible = guild_level
+	shop.visible = not guild_level
+	if guild_level:
+		hud.bind_money_label(guild_panel.money_label)
+		grid.action_gate = guild_day_manager.can_player_act
+	else:
+		hud.bind_money_label(shop.money_label)
 	_update_objective_progress()
 	_maybe_start_tutorial()
 
@@ -1645,6 +1676,12 @@ func _start_boss_kill_sequence() -> void:
 
 func _on_boss_kill_done() -> void:
 	GameState.game_active = true
+	_end_game("win")
+
+
+## 工会营业日结束（第三批发布完毕）= 全日结算即胜利。WP1 占位：直接走胜利流，
+## 真实得分公式/评级/结算行在 WP6 换账本口径
+func _on_guild_day_finished() -> void:
 	_end_game("win")
 
 

@@ -11,6 +11,7 @@ signal settings_requested
 const UI := preload("res://scripts/ui/game_ui_style.gd")
 var _objective_text := ""
 var _goal_total: Label
+var _clock_icon: TextureRect  # 与 time_label 同步显隐（无时限关如工会关，图标一起藏）
 var manual_readout: HBoxContainer
 var _manual_label: Label
 var _pips: Array[ColorRect] = []
@@ -100,10 +101,10 @@ func _build_compact_ui() -> void:
 	status.name = "Survival"
 	status.add_theme_constant_override("separation", 8)
 	row.add_child(status)
-	var clock: TextureRect = time_label.get_parent().get_node("ClockIcon")
-	clock.reparent(status)
-	clock.custom_minimum_size = Vector2(16, 16)
-	clock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_clock_icon = time_label.get_parent().get_node("ClockIcon")
+	_clock_icon.reparent(status)
+	_clock_icon.custom_minimum_size = Vector2(16, 16)
+	_clock_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	time_label.reparent(status)
 	time_label.add_theme_font_size_override("font_size", 20)
 	for h in hearts:
@@ -315,8 +316,10 @@ func _on_lives_changed(v: int) -> void:
 func _on_time_changed(t: float) -> void:
 	if not GameState.has_time_limit():
 		time_label.visible = false
+		_clock_icon.visible = false  # 无时限关（工会营业日）图标一起藏
 		return
 	time_label.visible = true
+	_clock_icon.visible = true
 	var secs := int(ceil(t))
 	time_label.text = "%d:%02d" % [secs / 60, secs % 60]
 	# 后 30 秒变红预警

@@ -76,6 +76,11 @@ var laser_beam_mode := false
 # 存活连爆节点/引光柱格不可走不可放；设施消耗后由管理器解除=格恢复普通
 var facility_cells: Dictionary = {}
 
+# 玩家动作闸门（冒险者工会工时制，实施计划 WP1）：非空时玩家开格/插旗/和弦前先问闸门，
+# 返回 false 则本击不执行（工时不足/非准备阶段的拦截与提示由闸门方 GuildDayManager 出）。
+# 空 Callable = 永远放行（全部既有关不受影响）
+var action_gate: Callable = Callable()
+
 # 和弦防抖（双击检测 + 左右同按手势混用时，同格短窗内只触发一次）
 var _last_chord_coord := Vector2i(-999, -999)
 var _last_chord_at := -1.0
@@ -1161,6 +1166,8 @@ func _on_cell_left_clicked(cell: Cell) -> void:
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
+	if action_gate.is_valid() and not action_gate.call():
+		return  # 工会工时闸门（左键=开格/清障/灭火都算有效调查）
 	# 第二章激光关（2-1 WP3）：左键改道发射（空射/只削墙也吃 1 动作；CD 拦截同口径在上方）。
 	# 点基地格自身（束长 0）不发射不扣动作，由 LaserManager.try_fire 判定
 	if laser_mode:
@@ -1200,6 +1207,8 @@ func _on_cell_right_clicked(cell: Cell) -> void:
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
+	if action_gate.is_valid() and not action_gate.call():
+		return  # 工会工时闸门（右键=插旗/声明类情报动作）
 	# 化石上不能插旗：摇头反馈不吃 CD（同左键口径，早于 will_toggle 预判）
 	if cell.is_fossil:
 		cell.play_chord_deny()
@@ -1229,6 +1238,8 @@ func _on_cell_double_clicked(cell: Cell) -> void:
 	if GameState.is_player_blocked():
 		GameState.cd_blocked.emit()
 		return
+	if action_gate.is_valid() and not action_gate.call():
+		return  # 工会工时闸门（双击=和弦开格）
 	# 双击检测与左右同按手势可能接连各报一次（先双击又立刻补键）：同格 0.25s 内并作一次
 	var now := Time.get_ticks_msec() / 1000.0
 	if cell.coord == _last_chord_coord and now - _last_chord_at < 0.25:
