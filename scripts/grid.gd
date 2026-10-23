@@ -146,7 +146,10 @@ var _probe_preview: ProbePreview = null
 ## 2-4 WP3：mark_cells 为本次可引爆的节点格（束 ∪ 整条链格集里的启动位），
 ## 专属青色双描边与普通束格区分（设计 §4"画出本次整条链的范围"）
 class LaserPreview extends Node2D:
+	const PREVIEW_FONT := preload("res://assets/fonts/fusion-pixel-12px-proportional-zh_hans.ttf")
 	var cells: Array = []      # Vector2i 列表
+	var random_cells: Array = []  # 可能格集，只画紫色角点；不加入确定命中格。
+	var random_origins: Array = []  # 已公开、未消费的随机双射线来源。
 	var protected: Array = []
 	var marks: Array = []      # 节点格（专属描边；链格已在 cells 里按普通样式画）
 	var pillar: Dictionary = {}  # 2-5 本次将命中的柱 {coord, hp}（空=不涉及）
@@ -154,10 +157,14 @@ class LaserPreview extends Node2D:
 	var to_px := Vector2.ZERO
 	var has_line := false
 	var cell_px := 28
+	var board_width_px := 448.0
 
 	func set_shot(cells_list: Array, from_local: Vector2, to_local: Vector2,
-			mark_cells: Array = [], pillar_info: Dictionary = {}, protected_cells: Array = []) -> void:
+			mark_cells: Array = [], pillar_info: Dictionary = {}, protected_cells: Array = [],
+			possible_cells: Array = [], random_sources: Array = []) -> void:
 		cells = cells_list
+		random_cells = possible_cells
+		random_origins = random_sources
 		protected = protected_cells
 		marks = mark_cells
 		pillar = pillar_info
@@ -168,6 +175,8 @@ class LaserPreview extends Node2D:
 
 	func clear_shot() -> void:
 		cells = []
+		random_cells = []
+		random_origins = []
 		protected = []
 		marks = []
 		pillar = {}
@@ -215,6 +224,31 @@ class LaserPreview extends Node2D:
 			# 束线同步提亮（原 2.0@0.45）
 			draw_line(from_px, to_px,
 					Color(1.0, 0.78, 0.45, 0.8) if not low_pillar else Color(1.0, 0.4, 0.3, 0.85), 3.0)
+		_draw_random_possibilities()
+
+	func _draw_random_possibilities() -> void:
+		var tint := Color(0.86, 0.57, 1.0, 0.82)
+		for coord in random_cells:
+			var rect := Rect2(Vector2(coord) * cell_px + Vector2.ONE * 4.0,
+				Vector2.ONE * (cell_px - 8.0))
+			# 仅四角短点线，不填色、不画某两条确定射线，避免把随机说成必定命中。
+			for corner in [rect.position, rect.position + Vector2(rect.size.x, 0),
+					rect.end, rect.position + Vector2(0, rect.size.y)]:
+				var horizontal := 3.0 if corner.x == rect.position.x else -3.0
+				var vertical := 3.0 if corner.y == rect.position.y else -3.0
+				draw_line(corner, corner + Vector2(horizontal, 0), tint, 1.0)
+				draw_line(corner, corner + Vector2(0, vertical), tint, 1.0)
+		if random_origins.is_empty():
+			return
+		var source: Vector2i = random_origins[0]
+		var caption := "随机两方向 · 可能范围"
+		var text_width := PREVIEW_FONT.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		var anchor := Vector2(clampf(source.x * cell_px - 24.0, 4.0,
+			maxf(4.0, board_width_px - text_width - 8.0)), maxf(18.0, source.y * cell_px - 10.0))
+		draw_rect(Rect2(anchor + Vector2(-4, -13), Vector2(text_width + 8, 18)),
+			Color(0.06, 0.04, 0.10, 0.95))
+		draw_string(PREVIEW_FONT, anchor, caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
+			Color(0.94, 0.75, 1.0))
 
 
 var _laser_preview: LaserPreview = null
@@ -225,9 +259,11 @@ var _laser_preview: LaserPreview = null
 ## pillar_info 本次将命中的柱预警（2-5）
 func show_laser_preview(target: Vector2i, cells: Array, placement := false,
 		mark_cells: Array = [], pillar_info: Dictionary = {},
-		beam_end := Vector2i(-9, -9), protected_cells: Array = []) -> void:
+		beam_end := Vector2i(-9, -9), protected_cells: Array = [],
+		possible_cells: Array = [], random_origins: Array = []) -> void:
 	if _laser_preview == null:
 		return
+	_laser_preview.board_width_px = cols * cell_size
 	if placement:
 		_laser_preview.set_shot(cells, Vector2.ZERO, Vector2.ZERO)
 		_laser_preview.has_line = false
@@ -235,7 +271,8 @@ func show_laser_preview(target: Vector2i, cells: Array, placement := false,
 		var end := target if beam_end == Vector2i(-9, -9) else beam_end
 		_laser_preview.set_shot(cells,
 				_cell_center_px(GameState.bases[0] if not GameState.bases.is_empty() else target),
-				_cell_center_px(end), mark_cells, pillar_info, protected_cells)
+				_cell_center_px(end), mark_cells, pillar_info, protected_cells,
+				possible_cells, random_origins)
 	_laser_preview.visible = true
 
 

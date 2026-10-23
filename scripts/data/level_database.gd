@@ -85,9 +85,36 @@ func _build() -> void:
 			# 4-1「工会开张日」（2026-10-20）：冒险者工会垂直切片 WP1——工时+三批营业日骨架
 			elif ch_idx == 3 and s_idx == 0:
 				_apply_guild_g1(lvl)
+			if ch_idx == 1:
+				_apply_diamond_effects(lvl, s_idx)
 			ch.level_ids.append(lvl.id)
 			levels[lvl.id] = lvl
 		chapters.append(ch)
+
+
+## 钻石首版试玩配置：保留五关原盘/积分目标，少量显式坐标逐关介绍。
+## 参数为工程验证起点，真人试玩后再调，不表示经济平衡已定稿。
+func _apply_diamond_effects(lvl: LevelData, stage: int) -> void:
+	const SETS := [
+		[[Vector2i(2,3), "gold"], [Vector2i(6,8), "gold"]],
+		[[Vector2i(4,11), "area_3x3"], [Vector2i(4,12), "gold"], [Vector2i(7,11), "gold"]],
+		[[Vector2i(6,10), "split_two"], [Vector2i(7,10), "area_3x3"], [Vector2i(4,13), "gold"]],
+		[[Vector2i(3,13), "explorer"], [Vector2i(14,5), "area_3x3"], [Vector2i(14,6), "gold"]],
+		[[Vector2i(8,4), "area_3x3"], [Vector2i(8,5), "gold"], [Vector2i(10,5), "split_two"], [Vector2i(11,5), "explorer"]],
+	]
+	const LESSONS := ["标对金币钻石，再用激光领取金币。", "范围钻石可接力已标钻石。",
+		"双射线在激活时随机选择两个方向。", "探索精灵只开数字能确定的安全格。",
+		"先读数字标好钻石，再用一枪组合效果。"]
+	lvl.diamond_effect_seed = 20261022 + stage
+	for entry in SETS[stage]:
+		var params: Dictionary = {}
+		match entry[1]:
+			"gold": params = {"gold_amount": 10}
+			"split_two": params = {"ray_range": 3}
+			"explorer": params = {"actions": 3, "interval": 1.5, "lifetime": 20.0, "max_active": 8}
+		lvl.diamond_effects.append({"coord": entry[0], "effect_id": entry[1], "params": params})
+	lvl.intro_line += " " + LESSONS[stage]
+	lvl.mechanic_tags.append(["金币钻石", "范围钻石", "双射线钻石", "探索精灵", "钻石连锁"][stage])
 
 
 ## 外部试玩版第一关（教学关）：固定地图 + 无时限无命 + 全局 CD + 商店限购

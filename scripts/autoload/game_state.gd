@@ -124,6 +124,13 @@ var result_stats := {
 	"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,  # 2-5 引光柱（总纲 §11）
 	"ore_bursts": 0, "overload_blasts": 0,  # 改版 2-3/2-4 特殊矿石爆发/过载爆炸次数
 	"overload_range_bought": 0,  # 追加拍板 #11：扩爆升级购入（0/1，平衡归因用）
+	"diamond_explorers_summoned": 0, "diamond_explorer_actions": 0,
+	"diamond_explorer_wait_seconds": 0.0, "diamond_explorers_expired": 0,
+	"money_diamond_effect_gold": 0, "money_diamond_explorer": 0,
+	"diamond_explorer_score": 0,
+	"diamond_effects_triggered": 0, "diamond_chain_max": 0, "diamond_effect_cells": 0,
+	"diamond_area_3x3_triggered": 0, "diamond_split_two_triggered": 0,
+	"diamond_gold_triggered": 0, "diamond_explorer_triggered": 0,
 }
 
 # 速度档位缓存（reset_state 时从关卡配置读入；机器人每 tick 热路径用）
@@ -168,6 +175,8 @@ const MONEY_SOURCE_KEYS := {
 	"player_combat": "money_player_combat", "robot_open": "money_robot_open",
 	"robot_flag": "money_robot_flag", "mine": "money_mine",
 	"guard_combat": "money_guard_combat",
+	"diamond_effect_gold": "money_diamond_effect_gold",
+	"diamond_explorer": "money_diamond_explorer",
 }
 
 
@@ -190,6 +199,7 @@ const SCORE_SOURCE_KEYS := {
 	"combat": "combat_score", "time_bonus": "time_bonus",
 	"shatter": "shatter_score",  # 第二章：未标钻石被打碎 +1（总纲 §8.1）
 	"cover_wall": "cover_wall_score",  # 2-2：拆完覆盖墙 +1（每代墙一次）
+	"diamond_explorer": "diamond_explorer_score",
 }
 
 
@@ -357,6 +367,13 @@ func reset_state(level_id: String = "", override: LevelData = null) -> void:
 		"cover_wall_score": 0, "cover_walls_destroyed": 0, "builders_killed": 0,
 		"pillar_hits": 0, "pillar_broken": 0, "pillar_lowest_hp": 6,
 		"ore_bursts": 0, "overload_blasts": 0, "overload_range_bought": 0,
+		"diamond_explorers_summoned": 0, "diamond_explorer_actions": 0,
+		"diamond_explorer_wait_seconds": 0.0, "diamond_explorers_expired": 0,
+		"money_diamond_effect_gold": 0, "money_diamond_explorer": 0,
+		"diamond_explorer_score": 0,
+		"diamond_effects_triggered": 0, "diamond_chain_max": 0, "diamond_effect_cells": 0,
+		"diamond_area_3x3_triggered": 0, "diamond_split_two_triggered": 0,
+		"diamond_gold_triggered": 0, "diamond_explorer_triggered": 0,
 	}
 	# 速度档位缓存（关卡可覆盖；买档越界时 get_move_interval 钳制）
 	_move_levels_cache = (lvl.upgrade_speed_levels if lvl != null and not lvl.upgrade_speed_levels.is_empty()

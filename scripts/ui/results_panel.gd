@@ -131,6 +131,17 @@ func _record_playtest(result: String) -> void:
 		"elapsed": snappedf(GameState.elapsed, 0.1),
 		"score": GameState.score,
 		"money_left": GameState.money,
+		"diamond_effects": {
+			"triggered": s.get("diamond_effects_triggered", 0),
+			"max_chain": s.get("diamond_chain_max", 0),
+			"cells": s.get("diamond_effect_cells", 0),
+			"gold": s.get("money_diamond_effect_gold", 0),
+			"explorers": s.get("diamond_explorers_summoned", 0),
+			"actions": s.get("diamond_explorer_actions", 0),
+			"wait_seconds": s.get("diamond_explorer_wait_seconds", 0.0),
+			"explorer_gold": s.get("money_diamond_explorer", 0),
+			"explorer_score": s.get("diamond_explorer_score", 0),
+		},
 		"open_score": s["open_score"],
 		"flag_score": s["flag_score"],
 		"wrong_flags": s["wrong_flags"],
@@ -287,6 +298,11 @@ func _add_playtest_rows(include_time_bonus := true) -> void:
 	_add_row(ICON_COIN, "开格分", str(s["open_score"]))
 	_add_row(ICON_COIN, "标旗分", str(s["flag_score"]))
 	_add_row(ICON_COIN, "采矿分", str(int(s.get("mine_score", 0))))
+	if int(s.get("diamond_explorer_score", 0)) > 0:
+		_add_row(ICON_COIN, "探索精灵开格分", str(int(s.get("diamond_explorer_score", 0))))
+	if int(s.get("diamond_effects_triggered", 0)) > 0:
+		_add_row(ICON_STAR, "钻石效果", "%d 次 · 最长连锁 %d" % [
+			int(s.get("diamond_effects_triggered", 0)), int(s.get("diamond_chain_max", 0))])
 	if int(s.get("preopen_score", 0)) > 0:
 		_add_row(ICON_COIN, "预开格分", str(int(s.get("preopen_score", 0))))
 	if int(s.get("detector_score", 0)) > 0:
@@ -363,6 +379,8 @@ func _add_money_rows() -> void:
 		["标雷机标旗", ["robot_flag"]],
 		["矿工采矿", ["mine"]],
 		["保安击退", ["guard_combat"]],
+		["钻石金币", ["diamond_effect_gold"]],
+		["探索精灵开格", ["diamond_explorer"]],
 	]
 	var total := 0
 	var shown := 0

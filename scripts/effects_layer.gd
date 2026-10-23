@@ -316,6 +316,122 @@ func fx_diamond_shatter(cell: Cell) -> void:
 	_fx_jump_text(cell.position + Vector2(10, -12), "+1")
 
 
+## 四类钻石的结算快照演出。金币不并入普通「+分」跳字，动画不回调玩法逻辑。
+## event.rays = [{from: Vector2i, to: Vector2i, cells: Array}]；只使用已抽好的实际射线。
+func fx_diamond_effect(event: Dictionary, grid) -> void:
+	var effect_id := String(event.get("effect_id", ""))
+	if not preload("res://scripts/diamond/diamond_icon.gd").is_supported(effect_id):
+		return
+	var coord: Vector2i = event.get("coord", Vector2i(-1, -1))
+	var origin_cell: Cell = grid.get_cell(coord)
+	if origin_cell == null:
+		return
+	var feedback := DiamondEffectFeedback.new()
+	feedback.name = _name("Diamond" + effect_id.capitalize().replace(" ", ""))
+	feedback.effect_id = effect_id
+	feedback.origin = origin_cell.position
+	feedback.gold_amount = int(event.get("gold_amount", 0))
+	for value in event.get("cells", []):
+		var hit_coord: Vector2i = value
+		var cell: Cell = grid.get_cell(hit_coord)
+		if cell == null or hit_coord == coord:
+			continue
+		feedback.entries.append({
+			"rect": Rect2(cell.position - Vector2.ONE * grid.cell_size / 2.0,
+				Vector2.ONE * grid.cell_size),
+			"delay": minf(origin_cell.position.distance_to(cell.position) / grid.cell_size * 0.018, 0.16),
+		})
+	for value in event.get("rays", []):
+		if not value is Dictionary:
+			continue
+		var ray: Dictionary = value
+		var ray_from: Vector2i = ray.get("from", coord)
+		var ray_to: Vector2i = ray.get("to", coord)
+		# 端点来自本枪几何快照，不能在表现阶段重抽方向或搜索隐藏目标。
+		var half_cell: Vector2 = Vector2.ONE * grid.cell_size / 2.0
+		feedback.rays.append({"from": Vector2(ray_from) * grid.cell_size + half_cell,
+			"to": Vector2(ray_to) * grid.cell_size + half_cell})
+	add_child(feedback)
+
+
+class DiamondEffectFeedback extends Node2D:
+	const ICON := preload("res://scripts/diamond/diamond_icon.gd")
+	const MICRO_ANIMATION := preload("res://scripts/visuals/micro_sprite_loop.gd")
+	var effect_id: String = ""
+	var origin := Vector2.ZERO
+	var gold_amount: int = 0
+	var entries: Array = []
+	var rays: Array = []
+	var age := 0.0
+	var duration := 0.62
+	var _icon: Node2D
+	var _label: Label
+	var _label_offset := Vector2.ZERO
+
+	func _ready() -> void:
+		_icon = ICON.new()
+		_icon.name = "ReleaseSymbol"
+		_icon.effect_id = effect_id
+		_icon.position = origin
+		_icon.scale = Vector2.ONE * 1.3
+		_icon.z_index = 1
+		add_child(_icon)
+		if effect_id == "gold" or effect_id == "explorer":
+			_label = Label.new()
+			_label.name = "DiamondRewardText"
+			_label.text = "+%d 金币" % gold_amount if effect_id == "gold" else "探索精灵 +1"
+			_label.add_theme_font_size_override("font_size", 13)
+			_label.add_theme_color_override("font_color", ICON.effect_color(effect_id))
+			_label.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.05, 0.95))
+			_label.add_theme_constant_override("outline_size", 3)
+			_label_offset = Vector2(14, -10) if effect_id == "gold" else Vector2(10, -43)
+			_label.position = origin + _label_offset
+			_label.z_index = 2
+			_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(_label)
+
+	func _process(delta: float) -> void:
+		if not GameState.game_active:
+			queue_free()
+			return
+		if not MICRO_ANIMATION.is_gameplay_running(self):
+			return
+		age += delta
+		if age >= duration:
+			queue_free()
+			return
+		var progress := age / duration
+		_icon.scale = Vector2.ONE * (1.3 + sin(progress * PI) * 0.45)
+		_icon.modulate.a = 1.0 - clampf((progress - 0.45) / 0.55, 0.0, 1.0)
+		if _label != null:
+			_label.position.y = origin.y + _label_offset.y - progress * 15.0
+			_label.modulate.a = 1.0 - clampf((progress - 0.55) / 0.45, 0.0, 1.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var tint := ICON.effect_color(effect_id)
+		var a := 1.0 - clampf(age / duration, 0.0, 1.0)
+		# 源点短环使混合连锁能看出接力源；图标另以形状区分类别。
+		draw_arc(origin, 7.0 + age * 19.0, 0.0, TAU, 24, Color(tint, a * 0.8), 1.5)
+		for entry in entries:
+			var t := age - float(entry.delay)
+			if t < 0.0 or t > 0.32:
+				continue
+			var cell_alpha := minf(t / 0.03, 1.0) * (1.0 - t / 0.32)
+			var rect: Rect2 = entry.rect
+			draw_rect(rect.grow(-2), Color(tint, cell_alpha * 0.10))
+			draw_rect(rect.grow(-2), Color(tint, cell_alpha * 0.85), false, 1.2)
+		var ray_age := age - 0.025
+		if ray_age < 0.0 or ray_age > 0.32:
+			return
+		var ray_alpha := 1.0 - ray_age / 0.32
+		for ray in rays:
+			var from: Vector2 = ray.from
+			var to: Vector2 = from.lerp(ray.to, clampf(ray_age / 0.07, 0.0, 1.0))
+			draw_line(from, to, Color(tint, ray_alpha * 0.22), 6.0)
+			draw_line(from, to, Color(tint.lightened(0.4), ray_alpha), 2.0)
+
+
 ## 2-4 连爆节点消耗演出：3×3 短亮框（Grid 本地，边界内裁切）+ 节点本体错峰收缩
 ## （play_consume）；奖励跳字只在真实开格/拆墙/击杀时出现（设计 §5"节点自身 0 分"）
 func fx_chain_blast_at(n: ChainNode, grid, delay: float) -> void:

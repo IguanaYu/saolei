@@ -54,6 +54,8 @@ var ch02_s4_director: Ch02S4Director = null
 var ch02_s5_director: Ch02S5Director = null
 # 第二章激光发射/结算管理器（BoardRoot 下，动态创建同 director 先例）
 var laser_manager: LaserManager = null
+var diamond_effect_manager: DiamondEffectManager = null
+var diamond_explorer_manager: DiamondExplorerManager = null
 # 3-1 蓄能光束控制器（Grid 子节点，长按持续束；非光束关空转）
 var beam_laser: BeamLaser = null
 # 第二章中立设施管理器（2-4 连爆节点 + 2-5 引光柱；BoardRoot 下同 laser 先例）
@@ -233,6 +235,17 @@ func _ready() -> void:
 	laser_manager.name = "LaserManager"  # 显式命名，避免遍历误匹配
 	$BoardRoot.add_child(laser_manager)
 	laser_manager.setup(grid, enemy_manager)
+	diamond_effect_manager = DiamondEffectManager.new()
+	diamond_effect_manager.name = "DiamondEffectManager"
+	$BoardRoot.add_child(diamond_effect_manager)
+	diamond_explorer_manager = DiamondExplorerManager.new()
+	diamond_explorer_manager.name = "DiamondExplorerManager"
+	$BoardRoot.add_child(diamond_explorer_manager)
+	diamond_explorer_manager.setup(grid)
+	diamond_effect_manager.effect_released.connect(func(event: Dictionary):
+		var fx := grid.get_node_or_null("EffectsLayer") as EffectsLayer
+		if fx != null:
+			fx.fx_diamond_effect(event, grid))
 	# 3-1 蓄能光束（Grid 子节点：吃 Grid 本地系画束/预览/能量条）
 	beam_laser = BeamLaser.new()
 	beam_laser.name = "BeamLaser"  # 显式命名，避免遍历误匹配
@@ -449,6 +462,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 		GameState.game_event_logged.emit("挑战援助生效：本关 +1 命", "player", "good")
 	_flag_count = 0
 	robot_manager.remove_all()
+	diamond_explorer_manager.reset_for_level()
+	diamond_effect_manager.reset_for_level()
 	enemy_manager.clear()  # 上一局的虫/巢/波次全部清空（重开新盘；须在 setup_board 之前）
 	boss_manager.clear()   # 上一局的 Boss 实体/阶段状态清空（非 Boss 关为空操作）
 	facility_manager.clear()  # 上一局的中立设施清空（2-4 节点/2-5 柱；空关为空操作）
@@ -500,6 +515,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 			facility_manager.setup_pillar(grid, lvl.light_pillar)
 		# 改版 2-3 特殊矿石装载（空列表=no-op，非本章关零影响）
 		facility_manager.setup_ores(grid, lvl.special_ores)
+		diamond_effect_manager.setup_for_level(lvl, grid)
 		# 冒险者工会营业日装载（非工会关 no-op；active 后工时闸门/批次账本才开始）
 		guild_day_manager.setup_for_level(lvl, grid)
 		# L5 Boss 关（FIND_ALL_MINES 目标 = 有 Boss 的关）：实体+阶段机就位（安静 Boss 关
@@ -640,6 +656,8 @@ func _relayout_play_area() -> void:
 	hud.manual_readout.global_position = board_top + Vector2(0, board_size.y + 30)
 	shop.layout_panels.call_deferred()
 	robot_manager.reproject_all(grid)
+	if diamond_explorer_manager != null:
+		diamond_explorer_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
 	facility_manager.reproject_all(grid)
@@ -676,6 +694,8 @@ func _make_scroll_button(label_text: String) -> Button:
 func _on_grid_view_changed(_view_top_px: float) -> void:
 	# 滚动补间逐帧回调：实体重投影（管理器现成接口）+ 按钮态刷新
 	robot_manager.reproject_all(grid)
+	if diamond_explorer_manager != null:
+		diamond_explorer_manager.reproject_all(grid)
 	enemy_manager.reproject_all(grid)
 	boss_manager.on_grid_relaid(grid)
 	facility_manager.on_grid_relaid(grid)
@@ -798,6 +818,7 @@ func _abandon_settle() -> void:
 		SaveSystem.add_ore(keep_ore)
 	GameState.game_active = false
 	robot_manager.remove_all()
+	diamond_explorer_manager.reset_for_level()
 	enemy_manager.clear()
 
 
@@ -878,6 +899,7 @@ func _leave_after_continue(to_menu: bool = false) -> void:
 		"final_score": GameState.score,
 	})
 	robot_manager.remove_all()
+	diamond_explorer_manager.reset_for_level()
 	if to_menu:
 		_show_main_menu()
 	else:
@@ -1396,6 +1418,12 @@ func _exit_tree() -> void:
 ## 悬停状态机：首基地阶段/放置模式给合法性与真实判定同源的角框；
 ## 普通模式只在未开岩壁上给低亮四角（已开格读数字，不加干扰）；覆盖层打开时清预览
 func _on_grid_cell_hovered(cell: Cell) -> void:
+	if cell.has_public_diamond_effect() and GameState.game_active and placing_mode == "":
+		var info := diamond_effect_manager.public_info(cell.coord)
+		var description := cell.diamond_effect_description()
+		if info.get("effect_id", "") == "gold" and not info.get("consumed", false):
+			description += " +%d 金币。" % int(info.get("params", {}).get("gold_amount", 10))
+		hud.show_toast(description, 4.0)
 	if GameState.game_phase == "placing_base":
 		grid.set_hover_overlay(cell.coord,
 			"valid" if grid.can_place_first_base(cell.coord) else "invalid")
@@ -1482,8 +1510,9 @@ func _on_cell_opened(cell, by_actor: String) -> void:
 	if by_actor == "drone":
 		return  # 无人机开的格子不给奖励
 	GameState.add_money(1, "player_open" if by_actor == "player" or by_actor == "player_laser"
-			else "robot_open" if by_actor.begins_with("robot_") else "")
-	GameState.add_score(1, "open")
+			else "robot_open" if by_actor.begins_with("robot_")
+			else "diamond_explorer" if by_actor == "diamond_explorer" else "")
+	GameState.add_score(1, "diamond_explorer" if by_actor == "diamond_explorer" else "open")
 	if by_actor == "player" or by_actor == "player_laser":
 		GameState.result_stats["player_ops"] += 1
 	elif by_actor.begins_with("robot_"):
@@ -1688,6 +1717,10 @@ func _on_guild_day_finished() -> void:
 func _end_game(result: String) -> void:
 	if not GameState.game_active:
 		return
+	# 空间结算可能同步触发「清空安全格」，先完成本枪金币/召唤，再做胜负快照。
+	if laser_manager != null and laser_manager.resolving_shot:
+		_end_game.call_deferred(result)
+		return
 	# 2-5 破柱数例防线（设计 §7）：达标判定被 call_deferred 延到整轮结算后，但 _end_game
 	# 自身若不复核分数线，同枪中途过线又破柱 -50 跌破（350+20-50=320）仍会按陈旧快照判胜
 	if result == "win":
@@ -1697,6 +1730,7 @@ func _end_game(result: String) -> void:
 			return
 	GameState.game_active = false
 	tutorial_guide.hide()  # 局末收起引导（未完成则下次 1-1 重来）
+	diamond_explorer_manager.reset_for_level()
 	_close_level_overlays()  # 结算收起升级面板/放置预览（P1-03：旧面板不再盖关前卡）
 	if result == "win":
 		var obj := GameState.current_objective

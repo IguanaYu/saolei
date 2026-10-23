@@ -29,6 +29,10 @@ var shape_mask: Array = []                  # 形状掩码（L形等异形盘）
 
 # ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/）----
 var laser_mode: bool = false                # true：左键=发射激光（基地→点击格），右键/和弦照旧
+## 空配置保持原玩法；只在第二章点击激光启用，不修改雷位和数字。
+## [{coord: Vector2i, effect_id: "area_3x3"|"split_two"|"gold"|"explorer", params: Dictionary}]
+var diamond_effects: Array[Dictionary] = []
+var diamond_effect_seed: int = 0            # 独立随机流；固定盘可复现，悬停不推进
 var laser_beam_mode: bool = false           # 3-1 蓄能光束：长按=持续光束（能量条约束，不耗动作）；
                                             # 隐含 laser_mode 的音乐/洞窟/碎钻口径，但点击分流走 BeamLaser
 var reinforced_walls: Array[Vector2i] = []  # 初始 3 层加固墙格（与雷位独立；其余未开格默认 1 层）

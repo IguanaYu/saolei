@@ -32,6 +32,11 @@ var path_blockers: int = 0      # 通路阻断计数（火/触手 +1/-1）：is_
 # 唯一削层入口 Grid.open_cell（>1 层先削不开格），零连开/和弦/机器人/激光同走该入口
 var wall_hp: int = 1
 
+# 钻石效果属于独立状态：消耗后仍是原来的雷，不能改邻数或清掉旗。
+# 未标/错旗时，refresh_visual 与公开说明都不会泄露这两个字段。
+var diamond_effect_id: String = ""
+var diamond_effect_consumed: bool = false
+
 # ---- 2-2 覆盖墙（筑墙工在已开地面上造的动态墙；总纲 §7）----
 # 只落在已开安全格：不改 is_opened/数字/钻石位；阻挡通行；拆掉 +1 分 +1 金（每代一次）
 var cover_wall_hp: int = 0
@@ -83,6 +88,7 @@ const SPECIAL_FLAG := preload("res://visual_v2/runtime/completion/tiles/special_
 const SPECIAL_VEIN := preload("res://visual_v2/runtime/completion/tiles/special_vein.png")
 const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/completion/tiles/special_collapse.png")
 const LOCKED_CELL_SEAL := preload("res://scripts/visuals/locked_cell_seal.gd")
+const DIAMOND_EFFECT_ICON := preload("res://scripts/diamond/diamond_icon.gd")
 const OVERLAY_WEB := preload("res://visual_v2/runtime/completion/tiles/overlays/web.png")
 const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_wall.png")
 const OVERLAY_SLIME_FLOOR := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_floor.png")
@@ -109,6 +115,7 @@ var _obstacle_mark: TextureRect = null
 var _slime_overlay: TextureRect = null
 var _locked_cell_seal: Node2D = null
 var _fire_frame := 0
+var _diamond_effect_icon: Node2D = null
 
 # 双击检测
 var _last_click_time: float = 0.0
@@ -826,7 +833,43 @@ func refresh_visual() -> void:
 		_wall_badge.visible = false
 	_refresh_cover_wall_visual(lbl)
 	_refresh_wall_state_overlay()
+	_refresh_diamond_effect_visual()
 	cell_state_changed.emit(self)
+
+
+## 唯一公开显示条件。普通旗与隐藏钻石不提供类型、消耗状态或说明。
+func has_public_diamond_effect() -> bool:
+	return is_flagged and is_mine and not is_opened and not is_collapsed \
+		and not is_fossil and DIAMOND_EFFECT_ICON.is_supported(diamond_effect_id)
+
+
+func diamond_effect_description() -> String:
+	if not has_public_diamond_effect():
+		return ""
+	var names := {
+		"area_3x3": "范围钻石：激活含中心的 3×3，可接力其他已标钻石。",
+		"split_two": "双射线钻石：激活时从八方向随机射出两条不同射线；预览仅表示可能范围。",
+		"gold": "金币钻石：激活后直接获得配置金币，不计作积分。",
+		"explorer": "精灵钻石：激活后召唤探索精灵，依据公开数字开确定安全格。",
+	}
+	if diamond_effect_consumed:
+		return String(names[diamond_effect_id]) + " 效果已消耗；钻石和旗帜保护仍保留。"
+	return String(names[diamond_effect_id]) + " 正确标记后被激光命中释放，每局一次。"
+
+
+func _refresh_diamond_effect_visual() -> void:
+	var show := has_public_diamond_effect()
+	if show and not is_instance_valid(_diamond_effect_icon):
+		_diamond_effect_icon = DIAMOND_EFFECT_ICON.new()
+		_diamond_effect_icon.name = "DiamondEffectBadge"
+		_diamond_effect_icon.position = Vector2(7, 7)
+		_diamond_effect_icon.z_index = 6
+		add_child(_diamond_effect_icon)
+	if is_instance_valid(_diamond_effect_icon):
+		_diamond_effect_icon.visible = show
+		_diamond_effect_icon.effect_id = diamond_effect_id if show else ""
+		_diamond_effect_icon.consumed = diamond_effect_consumed if show else false
+		_diamond_effect_icon.queue_redraw()
 
 
 const WALL_STATE_OVERLAY := preload("res://scripts/visuals/wall_state_overlay.gd")

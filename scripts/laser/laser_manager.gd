@@ -22,6 +22,8 @@ var burst_rng := RandomNumberGenerator.new()
 
 var grid: Grid = null
 var enemy_manager: EnemyManager = null
+## 整枪同步结算锁：主场景的胜负提交必须等新钻石奖励/召唤完成。
+var resolving_shot := false
 ## 最近 10s 被玩家激光打出的格（2-2 筑墙工优先在这些地面施工用；环形淘汰）
 var recent_laser_opened: Dictionary = {}  # coord -> elapsed
 
@@ -38,6 +40,7 @@ func setup(g: Grid, em: EnemyManager = null) -> void:
 ## 每关重置（main._start_level_with 调用）
 func reset_for_level() -> void:
 	recent_laser_opened.clear()
+	resolving_shot = false
 
 
 func _shot_origin() -> Vector2i:
@@ -114,12 +117,22 @@ func overload_at(c: Vector2i, rm = null) -> OverloadRobot:
 ## 并入同一总命中集；矿石爆发向每轮重掷——预览不画爆发格（画了必误导），画足迹描边。
 ## 返回 {cells/main/sub/refractor/chain_nodes/chain_cells/pillar/ores/ore_cells/ore_marks/
 ##       overloads/overload_cells}
-func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_bursts := true) -> Dictionary:
+func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_bursts := true,
+		trigger_ledger: Dictionary = {}) -> Dictionary:
+	var clip_to_board := not trigger_ledger.is_empty()
+	# 无外部账本代表一枪原主束：单独分配，不能把默认参数当跨枪共享的运行状态。
+	if trigger_ledger.is_empty():
+		trigger_ledger = {}
+	for key in ["refractors", "chain_nodes", "ores", "overloads"]:
+		if not trigger_ledger.has(key):
+			trigger_ledger[key] = {}
 	var fm := facility_manager()
 	var rm := robot_manager()
 	var main_cells: Array = []
 	var refractor: RefractorRobot = null
 	for c in LaserGeometry.beam_cells(base, target):
+		if clip_to_board and not grid.cells.has(c):
+			continue
 		main_cells.append(c)
 		var r := refractor_at(c)
 		if r != null:
@@ -134,7 +147,10 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 	var pillar_coord := Vector2i(-9, -9)
 	if fm != null:
 		pillar_coord = fm.pillar_coord_alive()
-	if refractor != null:
+	var refractors: Array = []
+	if refractor != null and not trigger_ledger.refractors.has(refractor):
+		trigger_ledger.refractors[refractor] = true
+		refractors.append(refractor)
 		if pillar_coord != Vector2i(-9, -9):
 			# 2-5 定向：轴=折光→柱超覆盖线（不受 6 长限制，终止于柱、含柱格）
 			var axis := LaserGeometry.beam_cells(refractor.coord, pillar_coord)
@@ -165,6 +181,10 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 				if not cells.has(c):
 					cells.append(c)
 					sub_cells.append(c)
+	if clip_to_board:
+		# 新钻石射线可能以盘外为目标，折光走廊也按实际存在的格裁切。
+		cells = cells.filter(func(c): return grid.cells.has(c))
+		sub_cells = sub_cells.filter(func(c): return grid.cells.has(c))
 	# 触发源束格集（主+副）：节点链/矿石/过载都只认它，爆发格不级联（实施计划 D3）
 	var beam_set: Dictionary = {}
 	for c in cells:
@@ -176,8 +196,9 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 		var queue: Array = []
 		for c in beam_set:
 			var n := fm.node_at(c)
-			if n != null and not triggered.has(c):
+			if n != null and not triggered.has(c) and not trigger_ledger.chain_nodes.has(n):
 				triggered[c] = true
+				trigger_ledger.chain_nodes[n] = true
 				queue.append(n)
 		while not queue.is_empty():
 			var n: ChainNode = queue.pop_front()
@@ -187,8 +208,9 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 					cells.append(b)
 					chain_cells.append(b)
 				var n2 := fm.node_at(b)
-				if n2 != null and not triggered.has(b):
+				if n2 != null and not triggered.has(b) and not trigger_ledger.chain_nodes.has(n2):
 					triggered[b] = true
+					trigger_ledger.chain_nodes[n2] = true
 					queue.append(n2)
 	# 改版 2-3 矿石爆发：束格踩中足迹 → 整块触发（无限次，每轮重掷方向）。
 	# ore_details 逐块携带爆发格（随机不可重推，FX/信号用）；ore_cells 为合并集（充能用）
@@ -207,6 +229,9 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 					break
 			if not hit:
 				continue
+			if trigger_ledger.ores.has(ore):
+				continue
+			trigger_ledger.ores[ore] = true
 			ores.append(ore)
 			for c in ore.footprint():
 				if not ore_marks.has(c):
@@ -228,7 +253,8 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 	var overload_details: Array = []
 	if rm != null:
 		for r in rm.robots:
-			if r is OverloadRobot and beam_set.has(r.coord):
+			if r is OverloadRobot and beam_set.has(r.coord) and not trigger_ledger.overloads.has(r):
+				trigger_ledger.overloads[r] = true
 				overloads.append(r)
 				var blast: Array = r.blast_cells(grid)
 				overload_details.append({"robot": r, "cells": blast})
@@ -239,7 +265,12 @@ func compute_shot_geometry(base: Vector2i, target: Vector2i, resolve_random_burs
 	var endpoint: Cell = grid.get_cell(main_cells.back()) if not main_cells.is_empty() else null
 	var endpoint_solid := endpoint != null and (not endpoint.is_opened or endpoint.cover_wall_hp > 0)
 	endpoint_solid = endpoint_solid or not ores.is_empty() or not overloads.is_empty() or refractor != null
+	# 旧设施已经在同枪释放过时仍然挡光；只跳过重复能力，不让新射线穿过去。
+	if endpoint != null:
+		endpoint_solid = endpoint_solid or (fm != null and fm.ore_at(endpoint.coord) != null) \
+				or overload_at(endpoint.coord, rm) != null
 	return {"cells": cells, "main": main_cells, "sub": sub_cells, "refractor": refractor,
+			"refractors": refractors,
 			"chain_nodes": chain_nodes, "chain_cells": chain_cells, "pillar": pillar_coord,
 			"ores": ores, "ore_details": ore_details, "ore_cells": ore_cells,
 			"ore_marks": ore_marks, "overloads": overloads, "overload_cells": overload_cells,
@@ -251,6 +282,20 @@ static func main_endpoint(geo: Dictionary, fallback: Vector2i) -> Vector2i:
 	return main.back() if not main.is_empty() else fallback
 
 
+## 钻石双射线与原主束共享对象触发账本；几何仍独立，整枪伤害集合最终只执行一次。
+func trigger_ledger_from(geo: Dictionary) -> Dictionary:
+	var ledger: Dictionary = {}
+	for key in ["refractors", "chain_nodes", "ores", "overloads"]:
+		ledger[key] = {}
+		for object in geo.get(key, []):
+			ledger[key][object] = true
+	return ledger
+
+
+func diamond_effect_manager():
+	return get_node_or_null("../DiamondEffectManager")
+
+
 ## 一次射击的完整结算（改版 2-4 版）：compute_shot_geometry 快照（含连爆链/矿石/过载展开）
 ## → 逐格结算（总命中集内同格一轮一次）——未开格走 grid.open_cell（削层/破墙开格/碎钻，
 ## 旗格/化石/**矿石足迹**跳过照穿）；已开格：削覆盖墙 / 伤筑墙工（同轮各对象至多一次）；
@@ -258,7 +303,11 @@ static func main_endpoint(geo: Dictionary, fallback: Vector2i) -> Vector2i:
 ## 连爆爆炸格仍不充能——2-5 冻结的历史口径，实施计划 D4）
 ## → 节点消耗（置 consumed + 占格解除 + 错峰演出）→ 信号/埋点
 func fire(base: Vector2i, target: Vector2i) -> void:
+	resolving_shot = true
 	var geo := compute_shot_geometry(base, target)
+	var diamonds = diamond_effect_manager()
+	if diamonds != null:
+		geo = diamonds.prepare_shot(geo, self)
 	var hit: Array = geo.cells
 	var fm := facility_manager()
 	var rm := robot_manager()
@@ -297,6 +346,9 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 	for c in geo.overload_cells:
 		if not charge_set.has(c):
 			charge_set.append(c)
+	for c in geo.get("diamond_context", {}).get("charge_cells", []):
+		if not charge_set.has(c):
+			charge_set.append(c)
 	if rm != null:
 		for c in charge_set:
 			for r in rm.robots:
@@ -317,8 +369,14 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 			GameState.result_stats["pillar_broken"] += 1
 			fm.on_pillar_broken(grid)
 			pillar_broken.emit()
+	if diamonds != null:
+		diamonds.commit_shot(geo)
 	_register_recent_opened(geo.main)
 	_play_beam_fx(base, target, geo)
+	for ray in geo.get("diamond_context", {}).get("ray_geometries", []):
+		# 双射线的直线表现由 effect_released 共用实抽结果；这里只补旧折光的副束反馈。
+		if not ray.geo.get("refractors", []).is_empty():
+			_play_beam_fx(ray.from, ray.target, ray.geo)
 	if not geo.ores.is_empty():
 		GameState.result_stats["ore_bursts"] += geo.ores.size()
 		for d in geo.ore_details:
@@ -329,8 +387,8 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 		for d in geo.overload_details:
 			_play_overload_fx(d.robot, d.cells)
 			overload_blast.emit(d.robot, d.cells)
-	if geo.get("refractor", null) != null:
-		refractor_activated.emit(geo.refractor)
+	for r in geo.get("refractors", []):
+		refractor_activated.emit(r)
 	if not charged_robots.is_empty():
 		robots_charged.emit(charged_robots)
 	if not geo.chain_nodes.is_empty():
@@ -338,6 +396,7 @@ func fire(base: Vector2i, target: Vector2i) -> void:
 	GameState.result_stats["shots_fired"] += 1
 	GameState.result_stats["beam_cells_total"] += hit.size()
 	laser_fired.emit(target)
+	resolving_shot = false
 	laser_resolved.emit(target)
 
 
@@ -428,6 +487,19 @@ func _on_cell_hovered(cell: Cell) -> void:
 	for r in geo.overloads:
 		marks.append(r.coord)
 	var preview_cells: Array = geo.cells.duplicate()
+	var possible_cells: Array = []
+	var random_origins: Array = []
+	var diamonds = diamond_effect_manager()
+	if diamonds != null:
+		var diamond_preview: Dictionary = diamonds.preview_shot(geo)
+		possible_cells = diamond_preview.get("possible_cells", [])
+		random_origins = diamond_preview.get("random_origins", [])
+		for c in diamond_preview.cells:
+			if not preview_cells.has(c):
+				preview_cells.append(c)
+		for c in diamond_preview.marks:
+			if not marks.has(c):
+				marks.append(c)
 	for c in geo.ore_cells:
 		preview_cells.erase(c)
 	var pillar_info: Dictionary = {}
@@ -439,7 +511,7 @@ func _on_cell_hovered(cell: Cell) -> void:
 		var item: Cell = grid.get_cell(c)
 		return item != null and item.is_flagged)
 	grid.show_laser_preview(cell.coord, preview_cells, false, marks, pillar_info,
-			main_endpoint(geo, cell.coord), protected)
+			main_endpoint(geo, cell.coord), protected, possible_cells, random_origins)
 
 
 func _on_cell_unhovered(_cell: Cell) -> void:

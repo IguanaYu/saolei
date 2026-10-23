@@ -51,6 +51,10 @@ const CH02_LEGEND := [
 	{"icon": CH02_ICON_DIR + "icon_special_ore.png", "name": "特殊矿石", "desc": "2×2 足迹挡光；随机三向各射程 3", "act": "反复命中激活"},
 	{"icon": CH02_ICON_DIR + "icon_overload.png", "name": "过载机", "desc": "自动巡逻，停靠墙边；爆后存活", "act": "激光引爆 13 格"},
 	{"icon": CH02_ICON_DIR + "icon_overload_range.png", "name": "扩爆升级", "desc": "四条直臂各延长一格，斜向不变", "act": "升级后 17 格"},
+	{"num": "▦", "name": "范围钻石", "desc": "含中心的 3×3；可接力已标效果钻石", "act": "正确标记后激光命中，每局一次"},
+	{"num": "↗", "name": "双射线钻石", "desc": "八方向随机选两条，射程由关卡配置", "act": "激活时抽签，悬停不预言方向"},
+	{"num": "¤", "name": "金币钻石", "desc": "直接增加金币余额，不额外增加积分", "act": "正确标记后激光命中"},
+	{"num": "✧", "name": "精灵钻石", "desc": "召唤临时精灵，只开公开数字能确定的安全格", "act": "无确定目标时等待，寿命结束离场"},
 ]
 
 
