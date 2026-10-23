@@ -171,6 +171,9 @@ func _random_preview() -> void:
 	]
 	main._start_level_with(level, "V2")
 	await process_frame
+	# 悬停采样读的是真实系统光标（get_global_mouse_position），合成鼠标事件更新不了它；
+	# 测试改为停用逐帧采样、直接驱动 _update_hover，预览链路（cell_hovered→preview_shot）仍是真实代码。
+	grid.set_process(false)
 	await _hover_cell(Vector2i(3, 5))
 	_check(grid._laser_preview.random_origins.is_empty() and grid._laser_preview.random_cells.is_empty(),
 		"隐藏双射线不公开来源或可能范围")
@@ -179,13 +182,6 @@ func _random_preview() -> void:
 	for index in 12:
 		await _hover_cell(Vector2i(1, 5))
 		await _hover_cell(Vector2i(3, 5))
-	print("[DiamondVisual] HOVER_DEBUG mouse=", root.get_mouse_position(),
-		" local=", grid.to_local(grid.get_global_mouse_position()),
-		" sampled=", grid._hover_cell.coord if grid._hover_cell != null else null,
-		" target=", grid.get_cell(Vector2i(3, 5)).get_global_transform_with_canvas().origin,
-		" final_transform=", root.get_final_transform(),
-		" preview=", grid._laser_preview.random_origins,
-		" ready=", main.diamond_effect_manager.public_info(Vector2i(3, 5)))
 	_check(main.diamond_effect_manager.effect_rng.state == rng_state, "反复真实悬停不推进实际随机序列")
 	_check(grid._laser_preview.random_origins == [Vector2i(3, 5)], "仅公开正确旗的随机来源")
 	_check(grid._laser_preview.random_cells.has(Vector2i(5, 3)), "紫色角点包含配置八向最大可能格")
@@ -198,6 +194,7 @@ func _random_preview() -> void:
 	main.hud.clear_toast()
 	await _shot("02_random_possible_preview.png")
 	await _board_crop("02_random_possible_preview_board_x3.png")
+	grid.set_process(true)
 
 
 func _explorer_operation() -> void:
@@ -250,11 +247,8 @@ func _click_cell(coord: Vector2i, button: MouseButton, wait_after := true) -> vo
 
 func _hover_cell(coord: Vector2i) -> void:
 	var cell = grid.get_cell(coord)
-	var screen: Vector2 = root.get_final_transform() * cell.get_global_transform_with_canvas().origin
-	var motion := InputEventMouseMotion.new()
-	motion.position = screen
-	motion.global_position = screen
-	Input.parse_input_event(motion)
+	# 取格中心格内坐标驱动采样；_process 已停用，悬停状态只由本函数改变。
+	grid._update_hover(cell.position + Vector2.ONE * grid.cell_size * 0.5)
 	await process_frame
 	await process_frame
 

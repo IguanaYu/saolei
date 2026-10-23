@@ -33,6 +33,10 @@ var _row_buttons: Array = []
 
 
 func _ready() -> void:
+	# 详情文字可能很长（第二章教学句并入 intro_line），Label 不换行会撑破
+	# DetailPanel 最小宽度，把「开始本关」挤出 1024 宽窗口右缘（2026-10-23 复归实测）
+	for label: Label in [detail_title, detail_intro, detail_goal, detail_new, detail_best, lock_hint]:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	back_button.pressed.connect(func(): back_requested.emit())
 	powerup_button.pressed.connect(func(): powerup_requested.emit())
 	start_button.pressed.connect(_on_start_pressed)
@@ -68,8 +72,12 @@ func refresh() -> void:
 		var state := "✓" if SaveSystem.is_level_cleared(lvl.id) \
 				else ("" if LevelSystem.is_level_unlocked(lvl.id) else "🔒")
 		var sname := lvl.short_name if lvl.short_name != "" else "第 %d 关" % (i + 1)
-		btn.text = "%02d %s  %s\n%s" % [i + 1, sname, state,
-				lvl.intro_line if lvl.intro_line != "" else " "]
+		# 行内提示截短（Button 文本不换行；intro_line 并入教学句后整行会撑破左列，
+		# 把「开始本关」挤出窗口右缘——完整文案在详情区换行展示，2026-10-23）
+		var row_tip := lvl.intro_line if lvl.intro_line != "" else " "
+		if row_tip.length() > 18:
+			row_tip = row_tip.substr(0, 18) + "…"
+		btn.text = "%02d %s  %s\n%s" % [i + 1, sname, state, row_tip]
 		var idx := i
 		btn.pressed.connect(func(): _select(idx))   # 锁行也可点，只读详情
 		left_list.add_child(btn)
