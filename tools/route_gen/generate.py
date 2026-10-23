@@ -186,12 +186,18 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             action = ops
             break
         if v.kind == "corridor":
-            # 走廊太便宜：先加墙（+2/格），再加锁（+1/格），都满则换雷（无效果，仅拖延）
-            cost, cells = corridor_cost(board, ra, _corridor_of(ra, v))
+            # 走廊太便宜：墙优先落在当前最短穿越路径上（堵最便宜走法逼改道），
+            # 路径格没落脚点再退回整条带；再加锁（+1/格），都满则换雷
+            cost, cells, path_cells = corridor_cost(board, ra, _corridor_of(ra, v))
+            anchors_set = {a for _, a, _ in ra.anchors}
             if len(walls) < cfg.walls_max:
-                spot = [c for c in cells if c not in cand.preopen
-                        and c not in {a for _, a, _ in ra.anchors}
+                spot = [c for c in path_cells if c not in cand.preopen
+                        and c not in anchors_set
                         and c not in board.fossils and c != ra.start]
+                if not spot:
+                    spot = [c for c in cells if c not in cand.preopen
+                            and c not in anchors_set
+                            and c not in board.fossils and c != ra.start]
                 if spot:
                     action = [("wall", rnd.choice(spot))]
                     break
@@ -237,7 +243,7 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
 def _corridor_of(ra: RouteAnalysis, v: Violation):
     """从反例 cells 反查走廊编号：取端点阶段匹配的第一条"""
     for corridor in ra.corridors:
-        _, cells = corridor_cost(_dummy_board(ra), ra, corridor)
+        _, cells, _p = corridor_cost(_dummy_board(ra), ra, corridor)
         if set(cells) & set(v.cells):
             return corridor
     return ra.corridors[0] if ra.corridors else (0, 1, 0, 1, 1)

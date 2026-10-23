@@ -64,24 +64,62 @@ def closure_forbidden(sim: GameSim, k: Knowledge, forbidden: set, max_rounds=32)
 
 
 def corridor_cost(board, ra: RouteAnalysis, corridor) -> tuple:
-    """走廊穿越成本估算：验真 2 操作/格 + 开 1 操作/格，墙 +2/格、锁 +1/格。
-    返回 (cost, corridor_cells)。走廊=两端点间 Bresenham 直线（含端点膨胀1格）。"""
+    """走廊穿越成本：两端点间在膨胀带内走最短路的代价（§8 与参考过程动作数比）。
+    每格成本 = 验真 2 + 开 1，加固墙 +2、锁 +1（盲插验真视角，§3 预检口径）。
+    用 Dijkstra 而非全带总成本——真实穿越走最短路，全带总成本会高估 3 倍
+    导致反例永不触发。返回 (cost, corridor_cells)。"""
+    import heapq
     (i, j, _, _, _) = corridor
     p, q = ra.path[i], ra.path[j]
     cells = set(bresenham_line(p, q))
     for c in list(cells):
         for n in neighbors(c, board.W, board.H):
             cells.add(n)      # 膨胀：贴线格也能验真开进
-    cost = 0
-    for c in cells:
+
+    def cell_cost(c):
         if c in board.fossils:
-            continue          # 化石绕开（不可开，从旁边走，粗略忽略）
-        cost += 3
+            return None       # 化石不可通行
+        w = 3
         if c in board.walls:
-            cost += 2
+            w += 2
         if c in board.locked:
-            cost += 1
-    return cost, sorted(cells)
+            w += 1
+        return w
+
+    start_cost = cell_cost(p)
+    if start_cost is None:
+        start_cost = 0        # 起点若为化石则从邻格算起（粗略）
+    dist = {p: start_cost}
+    prev = {}
+    pq = [(start_cost, p)]
+    while pq:
+        d, c = heapq.heappop(pq)
+        if d > dist.get(c, 10 ** 9):
+            continue
+        if c == q:
+            break
+        for n in neighbors(c, board.W, board.H):
+            if n not in cells:
+                continue
+            cn = cell_cost(n)
+            if cn is None:
+                continue
+            nd = d + cn
+            if nd < dist.get(n, 10 ** 9):
+                dist[n] = nd
+                prev[n] = c
+                heapq.heappush(pq, (nd, n))
+    cost = dist.get(q, 10 ** 9)
+    # 回溯最短穿越路径（repair 堵路径用）
+    path = []
+    if q in dist:
+        c = q
+        while c != p:
+            path.append(c)
+            c = prev.get(c, p)
+        path.append(p)
+        path.reverse()
+    return cost, sorted(cells), path
 
 
 def find_violations(board, ra: RouteAnalysis, acc: Acceptance, preopen: set,
@@ -104,7 +142,7 @@ def find_violations(board, ra: RouteAnalysis, acc: Acceptance, preopen: set,
     # ---- 1. 几何走廊成本（含在位墙/锁；§3 预检：盲插验真换雷无效）----
     # 相对口径（§8）：穿越成本 与 沿主线的参考动作数比较，不走线者须更贵
     for corridor in ra.corridors:
-        cost, cells = corridor_cost(board, ra, corridor)
+        cost, cells, _path = corridor_cost(board, ra, corridor)
         span_ops = (corridor[3]) * acc.route_op_overhead   # 沿主线 i→j 的参考动作数
         bar = acc.corridor_rel * span_ops
         if cost < bar:

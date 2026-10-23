@@ -201,8 +201,8 @@ class Acceptance:
 
 
 def milestone_order_ok(ra: RouteAnalysis, acc: Acceptance, opened: set) -> tuple:
-    """返回 (是否按序推进到最后一个里程碑, 完成的最高里程碑序号)"""
-    last = -1
+    """返回 (是否按序推进到最后一个里程碑, 完成的最高里程碑序号)；无接触=0"""
+    last = 0
     for m_idx in sorted(ra.milestones):
         stage = ra.stage_of_path[m_idx]
         if acc.stage_contact(ra, opened, stage):
