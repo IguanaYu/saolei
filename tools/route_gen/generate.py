@@ -30,7 +30,8 @@ class GenConfig:
     band_radius: int = 2
     walls_max: int = 24          # 加固墙上限（CH2 固定盘用 18-30 块，此处取保守值）
     locks_max: int = 6
-    fossil_origins: tuple = ()   # 2×2 左上原点（可选）
+    fossil_origins: tuple = ()   # 2×2 左上原点（可选，设计者手放）
+    fossils_max: int = 2         # 生成器可落化石组数上限（§7.4 限制机关数量；≤8 格）
     max_candidates: int = 24
     max_repairs: int = 18
     acc: Acceptance = field(default_factory=Acceptance)
@@ -41,7 +42,8 @@ class Candidate:
     mines: set
     walls: set
     locked: set
-    preopen: set
+    fossils: set = field(default_factory=set)   # 生成器落的 2×2 左上原点（§7.1 阻力件）
+    preopen: set = field(default_factory=set)
     score: float = -1e9
     violations: list = field(default_factory=list)
     ref_ok: bool = False
@@ -49,7 +51,8 @@ class Candidate:
     stuck: str = ""
 
     def board(self, cfg: GenConfig) -> Board:
-        return Board.build(cfg.W, cfg.H, self.mines, cfg.fossil_origins,
+        return Board.build(cfg.W, cfg.H, self.mines,
+                           tuple(cfg.fossil_origins) + tuple(sorted(self.fossils)),
                            self.walls, self.locked, self.base)
 
     base: tuple = None
@@ -136,6 +139,7 @@ def evaluate(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, acc: Acceptance
         - 10 * corridor_vs
         - 5 * max(0, acc.normal_pass - npass)
         - 1 * (len(cand.walls) + len(cand.locked))   # 省机关（§8 筛选 4）
+        - 2 * len(cand.fossils)                      # 化石永久占位，权重更高
     )
     return cand
 
@@ -147,6 +151,7 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
     mines = set(cand.mines)
     walls = set(cand.walls)
     locked = set(cand.locked)
+    fossils = set(cand.fossils)
     allowed_new_mine = {c for c in board.numbers
                         if c not in no_mine and c not in cand.preopen and c not in mines}
     action = None
@@ -186,28 +191,40 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             action = ops
             break
         if v.kind == "corridor":
-            # 走廊太便宜：墙优先落在当前最短穿越路径上（堵最便宜走法逼改道），
-            # 路径格没落脚点再退回整条带；再加锁（+1/格），都满则换雷
-            cost, cells, path_cells = corridor_cost(board, ra, _corridor_of(ra, v))
+            # 走廊反例：按 墙(堵最短路)→锁→化石 优先级，找第一个可落点的走廊——
+            # 贴出生点的死走廊（整带在预开区）让位，防修补轮次全部耗在不可修项上
             anchors_set = {a for _, a, _ in ra.anchors}
-            if len(walls) < cfg.walls_max:
-                spot = [c for c in path_cells if c not in cand.preopen
-                        and c not in anchors_set
-                        and c not in board.fossils and c != ra.start]
-                if not spot:
-                    spot = [c for c in cells if c not in cand.preopen
+            lever = None
+            seen = set()
+            for v2 in [x for x in cand.violations if x.kind == "corridor"]:
+                cor = _corridor_of(ra, v2)
+                if cor in seen:
+                    continue
+                seen.add(cor)
+                cost, cells, path_cells = corridor_cost(board, ra, cor)
+                if len(walls) < cfg.walls_max:
+                    spot = [c for c in path_cells if c not in cand.preopen
                             and c not in anchors_set
                             and c not in board.fossils and c != ra.start]
-                if spot:
-                    action = [("wall", rnd.choice(spot))]
-                    break
-            if len(locked) < cfg.locks_max:
-                spot = [c for c in cells if c not in cand.preopen
-                        and c not in walls and c not in board.fossils]
-                if spot:
-                    action = [("lock", rnd.choice(spot))]
-                    break
-            action = [("swap_near", rnd.choice(cells))]
+                    if not spot:
+                        spot = [c for c in cells if c not in cand.preopen
+                                and c not in anchors_set
+                                and c not in board.fossils and c != ra.start]
+                    if spot:
+                        lever = ("wall", rnd.choice(spot))
+                        break
+                if len(locked) < cfg.locks_max:
+                    spot = [c for c in cells if c not in cand.preopen
+                            and c not in walls and c not in board.fossils]
+                    if spot:
+                        lever = ("lock", rnd.choice(spot))
+                        break
+                if len(cand.fossils) < cfg.fossils_max:
+                    spots = _fossil_spot(board, cand, cfg, ra, cells)
+                    if spots:
+                        lever = ("fossil", rnd.choice(spots))
+                        break
+            action = [lever] if lever else [("swap_near", rnd.choice(v.cells))]
             break
     if action is None:
         action = [("swap_near", None)]   # 无定位信息：全局扰动
@@ -217,6 +234,8 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             walls.add(op[1])
         elif op[0] == "lock":
             locked.add(op[1])
+        elif op[0] == "fossil":
+            fossils.add(op[1])
         elif op[0] == "relocate":
             m, n = op[1]
             mines.discard(m)
@@ -236,8 +255,35 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             m = rnd.choice(pool_old)
             mines.discard(m)
             mines.add(n)
-    return replace(cand, mines=mines, walls=walls, locked=locked,
+    return replace(cand, mines=mines, walls=walls, locked=locked, fossils=fossils,
                    score=-1e9, violations=[], ref_ok=False, normal_pass=0)
+
+
+def _fossil_spot(board: Board, cand: Candidate, cfg: GenConfig, ra: RouteAnalysis,
+                 strip_cells: list):
+    """化石 2×2 落点（§7.1 约束）：不重叠 预开/雷/墙/锁/已有化石/锚点/基地；
+    精确可满足性检查——放化石后每个阶段核心区的"剩余可揭开格"仍 ≥ 接触阈值
+    （core_frac×原核心区，锚点安全格不化石化）；与既有化石保持间距（§7.1 不连铺）。
+    返回候选原点列表。"""
+    anchors_set = {a for _, a, _ in ra.anchors}
+    existing = set(cfg.fossil_origins) | set(cand.fossils)
+    blocked = cand.preopen | cand.mines | cand.walls | cand.locked | \
+        board.fossils | anchors_set | {ra.start}
+    spots = []
+    for c in strip_cells:
+        for o in (c, (c[0] - 1, c[1]), (c[0], c[1] - 1), (c[0] - 1, c[1] - 1)):
+            if o in existing or any(cheb(o, e) < 3 for e in existing):
+                continue
+            block = {(o[0] + dx, o[1] + dy) for dx in (0, 1) for dy in (0, 1)}
+            if any(not (0 <= x < cfg.W and 0 <= y < cfg.H) for x, y in block):
+                continue
+            if block & blocked:
+                continue
+            if any(len(cells - block) < cfg.acc.core_frac * len(cells)
+                   for cells in ra.stage_cells.values() if cells):
+                continue
+            spots.append(o)
+    return spots
 
 
 def _corridor_of(ra: RouteAnalysis, v: Violation):

@@ -303,6 +303,29 @@ if wall_v is not None:
         check(cost_after > cost_before,
               f"落墙后该走廊成本上升（{cost_before}→{cost_after}）")
 
+# ============================================================
+# 8. 化石主动规划（§12 第 3 步）：墙锁用尽后化石杠杆落 2×2 且约束成立
+# ============================================================
+cand_f2 = Candidate(mines=mines_d, walls={(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5),
+                                          (0, 6), (0, 7), (0, 8), (0, 9), (0, 10), (0, 11),
+                                          (0, 12), (0, 13), (0, 14), (0, 15),
+                                          (15, 0), (15, 1), (15, 2), (15, 3), (15, 4),
+                                          (15, 5), (15, 6), (15, 7),  # 墙占满两列
+                     }, locked=set(), preopen=pre_d, base=ra_d.start)
+cand_f2.walls = {c for c in cand_f2.walls if 0 <= c[0] < 16}   # 防呆：过滤越界
+cand_f2.violations = [v for v in vs_d if v.kind == "corridor"]
+cfg_nofossil = GenConfig(walls_max=0, locks_max=0, fossils_max=2)   # 墙锁禁用，逼化石杠杆
+fixed_f = __import__("tools.route_gen.generate", fromlist=["repair"]).repair(
+    cand_f2, cfg_nofossil, ra_d, _rnd_mod.Random(3))
+check(fixed_f is not None and len(fixed_f.fossils) > 0,
+      f"墙锁禁用时走廊修补落化石（实际 {len(fixed_f.fossils) if fixed_f else '-'} 组）")
+if fixed_f and fixed_f.fossils:
+    fb = fixed_f.board(cfg_nofossil)
+    check(not (fb.fossils & fb.mines) and not (fb.fossils & pre_d),
+          "化石不与雷/预开重叠（apply_fixed_board 拒铺口径）")
+    check(all(cheb(o1, o2) >= 3 for o1 in fixed_f.fossils for o2 in fixed_f.fossils if o1 != o2) or len(fixed_f.fossils) == 1,
+          "化石组间保持间距（§7.1 不沿 S 两侧连铺）")
+
 print()
 print("RESULT:", "ALL PASS" if not fails else f"{len(fails)} FAILS: {fails}")
 sys.exit(1 if fails else 0)

@@ -12,7 +12,7 @@ def to_fixed_board_dict(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis) -> d
         "mines": sorted(cand.mines),
         "preopen": sorted(cand.preopen),
         "base": ra.start,
-        "fossils": list(cfg.fossil_origins),
+        "fossils": sorted(list(cfg.fossil_origins) + sorted(cand.fossils)),
         "walls": sorted(cand.walls),
         "locked": sorted(cand.locked),
     }
@@ -58,7 +58,7 @@ def ascii_board(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis) -> str:
     for c in cand.locked:
         if c not in cand.preopen:
             d[c] = "L"
-    for o in cfg.fossil_origins:
+    for o in list(cfg.fossil_origins) + sorted(cand.fossils):
         for dy in (0, 1):
             for dx in (0, 1):
                 c = (o[0] + dx, o[1] + dy)
