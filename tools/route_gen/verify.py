@@ -41,10 +41,13 @@ def closure_forbidden(sim: GameSim, k: Knowledge, forbidden: set, max_rounds=32)
             lambda c: neighbors(c, b.W, b.H))
         to_open |= {c for c in k.known_safe
                     if c not in sim.st.opened and c not in b.fossils}
+        sealed_now = sim.active_seal_cells()   # 封印格不产生动作（§7.3）
         to_open = {c for c in to_open
-                   if c not in sim.st.opened and c not in sim.st.flagged and c not in forbidden}
+                   if c not in sim.st.opened and c not in sim.st.flagged and c not in forbidden
+                   and c not in sealed_now}
         to_flag = {c for c in to_flag
-                   if c not in sim.st.flagged and c not in sim.st.opened and c not in forbidden}
+                   if c not in sim.st.flagged and c not in sim.st.opened and c not in forbidden
+                   and c not in sealed_now}
         for c in sorted(to_open):
             if c in b.locked:
                 continue
@@ -79,6 +82,8 @@ def corridor_cost(board, ra: RouteAnalysis, corridor) -> tuple:
     def cell_cost(c):
         if c in board.fossils:
             return None       # 化石不可通行
+        if c in board.seal_cells_all():
+            return None       # 封印格解封前不可作用（§7.3 权限检查；成本按解封前口径）
         w = 3
         if c in board.walls:
             w += 2

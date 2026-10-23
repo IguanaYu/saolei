@@ -76,6 +76,13 @@ var laser_beam_mode := false
 # 存活连爆节点/引光柱格不可走不可放；设施消耗后由管理器解除=格恢复普通
 var facility_cells: Dictionary = {}
 
+# 区域封印组（§7.3 机关解除区域封印）：id → {cells: Array[Vector2i], trigger: Vector2i, released: bool}
+# Cell 侧状态见 cell.is_sealed/seal_id；触发=机关格已开且在玩家领土（连通口径，孤岛不激活）
+var seal_groups: Dictionary = {}
+
+## 机关接通、整组解封（main 接 toast/埋点；cell_opened 之后异步检查）
+signal seal_released(group_id: String)
+
 # 玩家动作闸门（冒险者工会工时制，实施计划 WP1）：非空时玩家开格/插旗/和弦前先问闸门，
 # 返回 false 则本击不执行（工时不足/非准备阶段的拦截与提示由闸门方 GuildDayManager 出）。
 # 空 Callable = 永远放行（全部既有关不受影响）
@@ -667,9 +674,11 @@ func apply_fixed_board(data: Dictionary) -> void:
 		if cells.has(w):
 			cells[w].wall_hp = 3
 			cells[w].refresh_visual()  # 直设字段同预开写法；层数角标需手动刷
+	# 区域封印（§7.3）先于预开铺设：烘焙侧保证封印格不入预开，这里防御性跳过
+	setup_seals(data.get("seals", []))
 	# 预开（直接设字段，不触发 cell_opened 信号，不给奖励；视觉走波纹统一翻开）
 	for sc in data.preopen:
-		if cells.has(sc):
+		if cells.has(sc) and not cells[sc].is_sealed:
 			cells[sc].is_opened = true
 			cells[sc].wall_hp = 0
 	# 化石最后铺设（透明口径：不改雷位不改数字，只是永久占位）；
@@ -695,6 +704,8 @@ func apply_fixed_board(data: Dictionary) -> void:
 		GameState.register_base(base_coord)
 		GameState.set_game_phase("playing")
 	board_generated = true
+	# 装载期防御性触发检查（正常烘焙不会预开机关格；若发生了就按语义立即解封）
+	_check_seal_triggers()
 	# 预开扩散波纹：中心=基地，玩家自放关（无基地）取预开区质心
 	_schedule_reveal_wave(data.preopen,
 		base_coord if cells.has(base_coord) else _coords_center(data.preopen),
@@ -767,6 +778,48 @@ func get_cell(coord: Vector2i) -> Cell:
 	return cells.get(coord)
 
 
+# ---- 区域封印（§7.3 机关解除区域封印）----
+
+## 装载封印组（apply_fixed_board 与对拍测试共用入口）：data = [{id, cells, trigger}]
+func setup_seals(seals_data: Array) -> void:
+	seal_groups.clear()
+	for grp in seals_data:
+		var id := String(grp.get("id", ""))
+		if id == "" or seal_groups.has(id):
+			continue
+		var group_cells: Array = []
+		for c in grp.get("cells", []):
+			var coord := c as Vector2i
+			if cells.has(coord) and cells[coord].apply_seal(id):
+				group_cells.append(coord)
+		seal_groups[id] = {
+			"cells": group_cells,
+			"trigger": grp.get("trigger", Vector2i(-9, -9)) as Vector2i,
+			"released": group_cells.is_empty(),
+		}
+
+
+func _check_seal_triggers() -> void:
+	## 机关格已开 + 与基地领土连通 → 整组解封（孤岛不激活；领土口径同 player_territory）
+	if seal_groups.is_empty():
+		return
+	var terr := player_territory()
+	for id in seal_groups:
+		var grp: Dictionary = seal_groups[id]
+		if grp["released"]:
+			continue
+		var trigger: Vector2i = grp["trigger"]
+		if not cells.has(trigger) or not cells[trigger].is_opened:
+			continue
+		if not terr.has(trigger):
+			continue
+		grp["released"] = true
+		for c in grp["cells"]:
+			if cells.has(c):
+				cells[c].release_seal()
+		seal_released.emit(id)
+
+
 ## 刷新某格及其 4 邻的岩壁边缘描边（开格后调用，Cell 状态变化时自动触发）
 func refresh_edges_around(coord: Vector2i) -> void:
 	refresh_edges_at(coord)
@@ -834,6 +887,8 @@ func open_cell(coord: Vector2i, by_actor: String, extra_reveal_delay := 0.0) -> 
 	if not cells.has(coord):
 		return
 	var cell: Cell = cells[coord]
+	if cell.is_sealed and not cell.is_opened:
+		return  # 封印格解封前不可开不可削（§7.3 统一权限，先于削墙）
 	if cell.wall_hp > 1 and not cell.is_opened and not cell.is_flagged:
 		if cell.damage_wall(1):
 			wall_damaged.emit(cell, by_actor, cell.wall_hp)
@@ -866,6 +921,8 @@ func open_cell(coord: Vector2i, by_actor: String, extra_reveal_delay := 0.0) -> 
 
 	# 批次结束事件：起点汇总跳字（岩屑已并入波纹调度）
 	cell_open_batch.emit(cell, by_actor, chain)
+	# 机关触发检查（§7.3）：开格批次可能接通机关/解封
+	_check_seal_triggers()
 
 
 ## 碎钻（第二章：未标钻石被激光命中，总纲 §4.2/§8.1）——坍塌态复用（processed 口径，
@@ -1161,6 +1218,8 @@ func _flood_open(start: Vector2i, by_actor: String) -> Array:
 			var n_cell: Cell = cells[n]
 			if n_cell.is_opened or n_cell.is_flagged:
 				continue
+			if n_cell.is_sealed:
+				continue  # 封印格洪水不穿（§7.3 洪水在统一权限内）
 			if n_cell.wall_hp > 1:
 				continue  # 多层墙：零连开停在耐久前（总纲 §5.2，ch01 恒 false 行为不变）
 			if not n_cell.open(by_actor):
@@ -1174,6 +1233,8 @@ func _flood_open(start: Vector2i, by_actor: String) -> Array:
 
 ## 障碍清除统一入口（优先级 锁>网>黏液，同保安索敌序）：返回清除的 kind，""=无可清
 func clear_cell_obstacle(cell: Cell, by_actor: String) -> String:
+	if cell.is_sealed:
+		return ""  # 封印拦清障（§7.3 清障在统一权限内）
 	if cell.is_locked and not cell.is_opened:
 		return "lock" if cell.clear_lock(by_actor) else ""
 	if cell.is_webbed and cell.is_opened:

@@ -107,6 +107,7 @@ var result_stats := {
 	"enemy_kills_guard": 0,         # 保安击杀虫数
 	"obstacles_cleared_player": 0,  # 玩家清障数（锁/网/黏液）
 	"obstacles_cleared_guard": 0,   # 保安清障数
+	"seals_released": 0,            # 区域封印解封组数（§7.3 机关触发）
 	"stall_seconds": 0.0,           # 全场机器人停摆累计时长
 	"slowed_seconds": 0.0,          # 机器人在黏液 3×3 内的累计时长
 	# L5 Boss 关（互动奖励/埋点，设计 §11-10）

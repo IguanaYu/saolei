@@ -112,6 +112,30 @@ k6 = Knowledge(total_mines=1)
 observe(sim5e, k6)
 check((0, 1) in k6.known_safe and (1, 0) in k6.known_safe, "零命中 → 3×3 全部 known_safe")
 
+# 11) 区域封印（§7.3）：拦截/洪水不穿/探针未扫描/领土触发解封/解封后恢复
+b7 = Board.build(8, 8, mines={(5, 5)}, base=(0, 0),
+                 seals={"s1": {"cells": [(x, y) for x in (4, 5, 6) for y in (4, 5, 6)],
+                               "trigger": (2, 2)}})
+sim7 = GameSim(b7, start_money=300)
+sim7.st.opened |= {(0, 0), (1, 0), (0, 1), (1, 1), (2, 0), (0, 2)}   # 手工烘焙预开
+st, _ = sim7.open_cell((4, 4))
+check(st == "blocked", "封印格不可开")
+sim7.toggle_flag((4, 5))
+check((4, 5) not in sim7.st.flagged, "封印格不可标")
+check(sim7.probe((3, 3)) == [], "探针在干区可部署（零命中）")
+check(sim7.probe((5, 4)) is None, "封印格中心拒部署探针")
+k7 = Knowledge(total_mines=1)
+observe(sim7, k7)
+check((4, 4) not in k7.known_safe and (4, 4) not in k7.known_mines,
+      "封印格未扫描——不进 known_safe 也不进 known_mine")
+sim7.open_cell((2, 1))    # 0 格洪水：铺到封印前沿；顺带开出机关格 (2,2) → 解封
+check((3, 3) in sim7.st.opened and (4, 4) not in sim7.st.opened, "洪水停在封印格前")
+check("s1" in sim7.st.released_seals, "机关被洪水开出且连通 → 解封（§7.3 被开出口径）")
+st, _ = sim7.open_cell((4, 4))
+check(st == "opened", "解封后可开")
+sim7.open_cell((5, 5))
+check((5, 5) in sim7.st.collapsed, "解封后踩雷坍塌正常")
+
 print()
 print("RESULT:", "ALL PASS" if not fails else f"{len(fails)} FAILS: {fails}")
 sys.exit(1 if fails else 0)

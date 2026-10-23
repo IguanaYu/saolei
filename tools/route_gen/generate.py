@@ -32,6 +32,7 @@ class GenConfig:
     locks_max: int = 6
     fossil_origins: tuple = ()   # 2×2 左上原点（可选，设计者手放）
     fossils_max: int = 2         # 生成器可落化石组数上限（§7.4 限制机关数量；≤8 格）
+    seals_max: int = 2           # 区域封印组数上限（§7.4 默认 2，§7.3 新机制）
     max_candidates: int = 24
     max_repairs: int = 18
     acc: Acceptance = field(default_factory=Acceptance)
@@ -52,16 +53,20 @@ class Candidate:
 
     def board(self, cfg: GenConfig) -> Board:
         return Board.build(cfg.W, cfg.H, self.mines,
-                           tuple(cfg.fossil_origins) + tuple(sorted(self.fossils)),
-                           self.walls, self.locked, self.base)
+                           fossils_origins=tuple(cfg.fossil_origins) + tuple(sorted(self.fossils)),
+                           walls=self.walls, locked=self.locked, seals=self.seals,
+                           base=self.base)
 
     base: tuple = None
+    seals: dict = field(default_factory=dict)   # {id: {cells: set, trigger}}（§7.3 封印组）
 
 
 def bake_preopen(board: Board, zone: set) -> set:
-    """grid._preopen_cascade 口径：区域内 0 格起洪水的烘焙预开"""
-    opened = set(zone)
-    queue = [c for c in zone if c not in board.mines and board.numbers.get(c) == 0]
+    """grid._preopen_cascade 口径：区域内 0 格起洪水的烘焙预开。
+    封印格视作关闭墙（§7.3 封印在装载时生效，洪水不穿）——封印改变了烘焙结果"""
+    seal_all = board.seal_cells_all()
+    opened = set(c for c in zone if c not in seal_all)
+    queue = [c for c in opened if c not in board.mines and board.numbers.get(c) == 0]
     visited = set(queue)
     while queue:
         c = queue.pop(0)
@@ -69,7 +74,7 @@ def bake_preopen(board: Board, zone: set) -> set:
             if n in visited:
                 continue
             visited.add(n)
-            if n in opened or n in board.mines:
+            if n in opened or n in board.mines or n in seal_all:
                 continue
             opened.add(n)
             if board.numbers.get(n) == 0:
@@ -140,32 +145,55 @@ def evaluate(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, acc: Acceptance
         - 5 * max(0, acc.normal_pass - npass)
         - 1 * (len(cand.walls) + len(cand.locked))   # 省机关（§8 筛选 4）
         - 2 * len(cand.fossils)                      # 化石永久占位，权重更高
+        - 8 * len(cand.seals)                        # 封印是重型机关，最不优先（§7.3）
     )
     return cand
 
 
-def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Random) -> Candidate:
-    """按反例选最小修补（§8）。返回修补后的新候选（原候选不动）。"""
+def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Random,
+           escalate: bool = False) -> Candidate:
+    """按反例选最小修补（§8）。返回修补后的新候选（原候选不动）。
+    escalate：修补多轮仍剩走廊反例 = 现有成本障碍难以处理（§7.3），
+    封印优先于继续堆墙。"""
     no_mine = hard_constraint_cells(cfg, ra)
     board = cand.board(cfg)
     mines = set(cand.mines)
     walls = set(cand.walls)
     locked = set(cand.locked)
     fossils = set(cand.fossils)
+    seals = {k: {"cells": set(v["cells"]), "trigger": v["trigger"]}
+             for k, v in cand.seals.items()}
     allowed_new_mine = {c for c in board.numbers
                         if c not in no_mine and c not in cand.preopen and c not in mines}
     action = None
 
     for v in cand.violations:
+        if v.kind == "skip":
+            # 确定性跳段反例：封印被提前揭开的更后段格（§7.3），合法推进到该阶段
+            # 门口即解封——路线格允许封（触发点就是门口，解封先于需要）
+            lever = _seal_lever(cand, cfg, ra, board, seals, v.cells,
+                                allow_route_cells=True)
+            if lever:
+                action = [("seal", lever)]
+                break
+            action = [("swap_near", v.cells[0] if v.cells else None)]
+            break
         if v.kind in ("preopen_leak", "flood_leak"):
-            # 零区泄漏：先批量围堵预开（换雷+局部加固墙，§8"修零区边缘或放局部加固墙"）；
-            # 中途洪水泄漏换雷贴近泄漏区
+            # 零区泄漏：先批量围堵预开（§8"修零区边缘或放局部加固墙"）；
+            # 围堵压不住（贪心无闸门可降）时封印泄漏路径——封印格洪水不穿（§7.3）；
+            # 中途洪水泄漏先试换雷贴近泄漏区，升级后再封印
             if v.kind == "preopen_leak":
                 fm, fw = contain_flood(cand.mines, cfg, ra, no_mine, rnd,
                                        max_swaps=8, walls=cand.walls)
                 if fm != cand.mines or fw != cand.walls:
                     return replace(cand, mines=fm, walls=fw, score=-1e9,
                                    violations=[], ref_ok=False, normal_pass=0)
+            if escalate and len(seals) < cfg.seals_max:
+                lever = _seal_lever(cand, cfg, ra, board, seals, v.cells,
+                                    allow_route_cells=True)
+                if lever:
+                    action = [("seal", lever)]
+                    break
             targets = (v.cells[:3] if v.cells else [None])
             action = [("swap_near", t) for t in targets]
             break
@@ -202,6 +230,12 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
                     continue
                 seen.add(cor)
                 cost, cells, path_cells = corridor_cost(board, ra, cor)
+                # 停滞升级：成本障碍已被证明压不住（§7.3 机关是最后手段但不是没有手段）
+                if escalate and len(seals) < cfg.seals_max:
+                    s_lever = _seal_lever(cand, cfg, ra, board, seals, cells)
+                    if s_lever:
+                        lever = ("seal", s_lever)
+                        break
                 if len(walls) < cfg.walls_max:
                     spot = [c for c in path_cells if c not in cand.preopen
                             and c not in anchors_set
@@ -224,6 +258,15 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
                     if spots:
                         lever = ("fossil", rnd.choice(spots))
                         break
+                # 墙锁化石都落不进/不够用：区域封印（§7.3 只在现有成本障碍难以处理时）
+                # 走廊封印触发点=远端阶段的进入锚：合法推进到目的地才解封，路线格不封
+                if len(seals) < cfg.seals_max:
+                    s_lever = _seal_lever(cand, cfg, ra, board, seals, cells,
+                                          trigger_stage=ra.stage_of_path[cor[1]],
+                                          allow_route_cells=False)
+                    if s_lever:
+                        lever = ("seal", s_lever)
+                        break
             action = [lever] if lever else [("swap_near", rnd.choice(v.cells))]
             break
     if action is None:
@@ -236,6 +279,9 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             locked.add(op[1])
         elif op[0] == "fossil":
             fossils.add(op[1])
+        elif op[0] == "seal":
+            sid, cells, trigger = op[1]
+            seals[str(sid)] = {"cells": set(cells), "trigger": trigger}
         elif op[0] == "relocate":
             m, n = op[1]
             mines.discard(m)
@@ -246,6 +292,8 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             if center is not None:
                 near_new = [c for c in allowed_new_mine
                             if c in _radius(center, 2, cfg.W, cfg.H)]
+                if not near_new:
+                    near_new = sorted(allowed_new_mine)   # 局部落点耗尽 → 全局换雷，防静默空转
             else:
                 near_new = sorted(allowed_new_mine)
             pool_old = sorted(mines)
@@ -256,7 +304,54 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             mines.discard(m)
             mines.add(n)
     return replace(cand, mines=mines, walls=walls, locked=locked, fossils=fossils,
-                   score=-1e9, violations=[], ref_ok=False, normal_pass=0)
+                   seals=seals, score=-1e9, violations=[], ref_ok=False, normal_pass=0)
+
+
+def _seal_lever(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, board: Board,
+                seals: dict, danger_cells, trigger_stage: int = None,
+                allow_route_cells: bool = False) -> tuple:
+    """封印组落点（§7.3）：cells=危险格（去掉预开/化石/锚点/既有封印格；
+    allow_route_cells=False 时路线格也不封——走廊封印若盖住主线路径，解封前
+    主线自己走不通）。trigger=解封门口：trigger_stage 给定时用该阶段的进入锚
+    （走廊封远端阶段门口——合法推进到目的地才解封），否则用危险格最早阶段的
+    进入锚（skip 封印：合法推进到被封阶段本身就解封）。触发可达性由参考过程
+    全程复验自动保证。返回 (id, cells, trigger) 或 None。"""
+    anchors_set = {a for _, a, _ in ra.anchors}
+    # cells 禁区：化石/锚点（墙格、预开格可封——见上）；路线格按 allow_route_cells
+    # cells_blocked 不含锚点集做触发候选——触发锚本身就必须是锚（§7.3 机关在路线上）
+    cells_blocked = board.fossils | anchors_set
+    # 触发锚禁区：化石/预开（干区）/既有封印格与机关（依赖无环）
+    trigger_blocked = board.fossils | cand.preopen
+    if not allow_route_cells:
+        cells_blocked |= set(ra.path)
+    for grp in seals.values():
+        cells_blocked |= grp["cells"]
+        trigger_blocked |= grp["cells"]
+        trigger_blocked |= {grp["trigger"]}
+    cells = {c for c in danger_cells
+             if c not in cells_blocked and c != ra.start
+             and 0 <= c[0] < cfg.W and 0 <= c[1] < cfg.H}
+    if not cells:
+        return None
+    # trigger：门口锚。anchors[k] 是阶段 k+1 的进入锚（route.analyze 编号口径）
+    if trigger_stage is not None:
+        s = trigger_stage
+    else:
+        labels = [ra.label.get(c) for c in cells if ra.label.get(c) is not None]
+        if not labels:
+            return None
+        s = min(labels)
+    if s - 1 < 1 or s - 1 >= len(ra.anchors):
+        return None
+    trigger = None
+    for cand_t in (ra.anchors[s - 1][1], ra.anchors[s][1] if s < len(ra.anchors) else None):
+        if cand_t is not None and cand_t not in trigger_blocked and cand_t not in cells:
+            trigger = cand_t
+            break
+    if trigger is None:
+        return None
+    sid = f"s{len(seals) + 1}"
+    return (sid, sorted(cells), trigger)
 
 
 def _fossil_spot(board: Board, cand: Candidate, cfg: GenConfig, ra: RouteAnalysis,
@@ -413,7 +508,7 @@ def generate(stroke_pts, cfg: GenConfig, seed: int = 7, log=print):
                 break
             if best is None or cand.score > best.score:
                 best = cand
-            fixed = repair(cand, cfg, ra, rnd)
+            fixed = repair(cand, cfg, ra, rnd, escalate=(stale >= 4))
             if fixed is None:
                 break
             cand = fixed

@@ -25,6 +25,9 @@ var preopen_coords: Array[Vector2i] = []    # 预开区（含洪水结果，直�
 var pregen_random: bool = false             # true：进关预生成随机盘+洪水预开（裸随机路径，暂无在用关）
 var pests: bool = false                     # true：进关布置裂缝+预置虫害并启波次（L4 除害关，配固定盘）
 var fixed_fossils: Array[Vector2i] = []     # 2×2 化石左上原点（永久多格障碍；约束见化石实施计划 §3）
+## 区域封印（§7.3 机关解除区域封印）：[{id: String, cells: Array[Vector2i], trigger: Vector2i}]；
+## 机关格开出且连通基地领土 → 整组解封；封印格由烘焙侧保证不入预开
+var seal_groups: Array[Dictionary] = []
 var shape_mask: Array = []                  # 形状掩码（L形等异形盘）：每行字符串 '1'=有格 '0'=洞；空=矩形
 
 # ---- 第二章激光矿场（docs/active/玩法设计/第二章-激光矿场/）----

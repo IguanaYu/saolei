@@ -74,6 +74,8 @@ def main():
             actions.append({"kind": "open", "coord": list(entry["coord"])})
 
     board_dict = to_fixed_board_dict(cand, cfg, ra)
+    seals_json = [{"id": s["id"], "cells": [list(c) for c in s["cells"]],
+                   "trigger": list(s["trigger"])} for s in board_dict["seals"]]
     godot_ok, godot_diffs = parity_mod.verify_board_scenario(
         {"w": cfg.W, "h": cfg.H,
          "mines": [list(m) for m in board_dict["mines"]],
@@ -81,7 +83,8 @@ def main():
          "base": list(board_dict["base"]),
          "fossils": [list(o) for o in board_dict["fossils"]],
          "walls": [list(x) for x in board_dict["walls"]],
-         "locked": [list(x) for x in board_dict["locked"]]},
+         "locked": [list(x) for x in board_dict["locked"]],
+         "seals": seals_json},
         actions, cfg.start_money)
     print(f"[Godot重放] {'PASS' if godot_ok else 'FAIL'}（{len(actions)} 条动作）")
     for d in godot_diffs[:5]:
@@ -98,6 +101,7 @@ def main():
             "fossils": [list(o) for o in board_dict["fossils"]],
             "walls": [list(x) for x in board_dict["walls"]],
             "locked": [list(x) for x in board_dict["locked"]],
+            "seals": seals_json,
         }}, f, ensure_ascii=False, indent=1)
     with open(os.path.join(out, "board_fixed.gd.snippet"), "w", encoding="utf-8") as f:
         f.write(gdscript_block(name.upper(), cand, cfg, ra, note=(

@@ -35,6 +35,8 @@ static func find_certain_actions(grid) -> Array:
 			for n in unopened:
 				if n.is_locked:
 					continue  # 锁格谁都不能开——动作跳过，玩家/保安清锁后恢复
+				if n.is_sealed:
+					continue  # 封印格动作跳过（§7.3 统一权限；仍参与上面的雷数计数）
 				var key := "open:" + str(n.coord)
 				if not seen.has(key):
 					seen[key] = true
@@ -45,6 +47,8 @@ static func find_certain_actions(grid) -> Array:
 			for n in unopened:
 				if n.is_locked:
 					continue  # 锁格不能标（机器人不能在锁格上动作）
+				if n.is_sealed:
+					continue  # 封印格不能标（§7.3；解封后由新知识重新推导）
 				var key := "flag:" + str(n.coord)
 				if not seen.has(key):
 					seen[key] = true

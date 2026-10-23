@@ -66,6 +66,7 @@ var victory_tally: VictoryTally = null
 var guild_day_manager: GuildDayManager = null
 # 工会营业面板（UILayer 下代码构建；非工会关隐藏，占商店位）
 var guild_panel: GuildPanel = null
+var guild_presentation: GuildPresentation = null
 # 最近一次开格坐标（胜利波纹的扩散中心；无效时演出内部回退开格质心）
 var _last_opened_coord := Vector2i(-9999, -9999)
 
@@ -105,10 +106,20 @@ func _ready() -> void:
 	guild_day_manager.day_finished.connect(_on_guild_day_finished)
 	grid.cell_opened.connect(guild_day_manager._on_cell_opened)
 	grid.cell_flagged.connect(guild_day_manager._on_cell_flagged)
+	guild_presentation = GuildPresentation.new()
+	guild_presentation.name = "GuildPresentation"
+	$UILayer.add_child(guild_presentation)
+	$UILayer.move_child(guild_presentation, 0)
+	guild_presentation.setup(grid, guild_day_manager)
+	guild_presentation.pause_requested.connect(_toggle_pause)
 	guild_panel = GuildPanel.new()
 	guild_panel.name = "GuildPanel"  # 显式命名，避免遍历误匹配
 	$UILayer.add_child(guild_panel)
-	guild_panel.publish_requested.connect(func(): guild_day_manager.publish_batch())
+	# Control 的鼠标拾取依赖场景顺序，不能仅靠 z_index 降低绘制层级。
+	$UILayer.move_child(guild_panel, 1)
+	guild_panel.publish_requested.connect(func():
+		if _in_game() and not get_tree().paused:
+			guild_day_manager.publish_batch())
 	guild_day_manager.guild_state_changed.connect(guild_panel.update_state)
 	# Esc 走 UILayer 下的 ALWAYS 路由器转发：暂停/规则等置 paused=true 的树里
 	# main._input（可暂停）已停摆，"按 ESC 继续"不能只靠它（2026-10-03 盲测 F01）
@@ -117,6 +128,7 @@ func _ready() -> void:
 	grid.cell_opened.connect(_on_cell_opened)
 	grid.cell_flagged.connect(_on_cell_flagged)
 	grid.mine_stepped.connect(_on_mine_stepped)
+	grid.seal_released.connect(_on_seal_released)
 	grid.obstacle_cleared.connect(_on_obstacle_cleared)
 	grid.processed_mines_changed.connect(_on_processed_mines_changed)
 	grid.fire_extinguish_requested.connect(_on_fire_extinguish_requested)
@@ -491,6 +503,7 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 				"base": lvl.fixed_base,
 				"fossils": lvl.fixed_fossils,
 				"walls": lvl.reinforced_walls,  # 第二章 3 层加固墙（其余未开格默认 1 层）
+				"seals": lvl.seal_groups,       # §7.3 区域封印（路径驱动生成关用）
 			})
 			# L4/L5 Boss 关（fixed_base=(-1,-1) 玩家自放）：保持 placing_base 阶段，
 			# 放完基地才 game_active（同 L4 口径，倒计时从放基地起算）
@@ -551,6 +564,8 @@ func _start_level_with(lvl: LevelData, wall_style: String) -> void:
 	# grid 动作闸门挂工时；时间/爱心由 has_time_limit/has_life_limit（均 0）自动隐藏
 	var guild_level := lvl != null and lvl.guild_mode
 	guild_panel.visible = guild_level
+	guild_presentation.activate(guild_level)
+	hud.visible = not guild_level
 	shop.visible = not guild_level
 	if guild_level:
 		hud.bind_money_label(guild_panel.money_label)
@@ -650,6 +665,9 @@ func _relayout_play_area() -> void:
 	shop.position = Vector2(vp.x - shop_width - 24, 122)
 	shop.size = Vector2(shop_width, vp.y - 146)
 	_play_area_rect = Rect2(54, 154, maxf(100, shop.position.x - 104), maxf(100, vp.y - 232))
+	var current_level := GameState.get_current_level()
+	if current_level != null and current_level.guild_mode:
+		_play_area_rect = GuildPresentation.play_area(vp)
 	grid.set_play_area(_play_area_rect)
 	var board_size: Vector2 = Vector2(grid.cols * grid.cell_size, grid.view_window_px()) * $BoardRoot.scale
 	var board_top: Vector2 = grid.global_position + Vector2(0, grid._view_top_px) * $BoardRoot.scale
@@ -720,6 +738,8 @@ func _open_pause() -> void:
 	_exit_placing_mode()  # 暂停时取消放置，避免恢复后状态混乱
 	grid.set_hover_overlay(Vector2i.ZERO, "hide")
 	pause_panel.open(_pause_context(), hud.get_objective_text())
+	if guild_day_manager.active:
+		pause_panel.objective_label.text = "第 %d / 3 批 · 调查后发布地图" % (guild_day_manager.batch_index + 1)
 	get_tree().paused = true
 
 
@@ -729,6 +749,8 @@ func _pause_context() -> String:
 	var lvl := GameState.get_current_level()
 	if lvl == null:
 		return ""
+	if lvl.guild_mode:
+		return "冒险者工会 · 林地调查"
 	if lvl.is_playtest:
 		return "试玩矿区 · 第 %s 关" % lvl.display_name.substr(2)
 	var ch := LevelSystem.get_chapter(lvl.chapter_id)
@@ -1558,6 +1580,12 @@ func _on_obstacle_cleared(_cell, _kind: String, by_actor: String) -> void:
 		GameState.result_stats["obstacles_cleared_guard"] += 1
 
 
+## §7.3 区域封印解除反馈：机关接通 → 整组解封（teaser 门：玩家早看到封印区，解封要有声有画）
+func _on_seal_released(group_id: String) -> void:
+	GameState.result_stats["seals_released"] += 1
+	hud.show_toast("机关接通——区域封印解除（%s）" % group_id, 3.0)
+
+
 # ---- 第二章激光矿场（2-1 WP3/WP4）----
 
 ## 左键发射请求（grid 在 CD 拦截通过后转发）：基地格自身不发射不扣动作
@@ -1860,13 +1888,16 @@ func _objective_progress_values() -> Vector2i:
 
 ## L4 探测机器人：3×3 强制探雷（设计 §9.5）——雷位标「确认雷」
 ## 机器人视同旗（Solver 计雷）、不计标旗分、情报穿锁（锁只拦交互）；零分零钱纯情报
+## §7.3 封印格"未扫描"：不确认、不给安全信息（解封后重扫才有情报）
 func _trigger_probe(center: Vector2i) -> void:
 	var confirmed: int = 0
 	var new_teeth: Array = []  # 本次探测新处理的牙（已旗/已塌的不重复跳字）
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			var c = grid.get_cell(center + Vector2i(dx, dy))
-			if c != null and c.is_mine and not c.is_confirmed_mine:
+			if c == null or c.is_sealed:
+				continue
+			if c.is_mine and not c.is_confirmed_mine:
 				c.confirm_mine()
 				confirmed += 1
 				if not c.is_collapsed and not grid.rewarded_flags.has(center + Vector2i(dx, dy)):

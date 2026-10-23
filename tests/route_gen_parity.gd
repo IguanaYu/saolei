@@ -62,6 +62,14 @@ func _run() -> void:
 		for wl in board["walls"]:
 			wls.append(_v2i(wl))
 		data["walls"] = wls
+	if board.has("seals"):
+		var sls: Array = []
+		for s in board["seals"]:
+			var scl: Array = []
+			for c in s["cells"]:
+				scl.append(_v2i(c))
+			sls.append({"id": String(s["id"]), "cells": scl, "trigger": _v2i(s["trigger"])})
+		data["seals"] = sls
 
 	# ---- 装载真实 Grid（固定盘路径，与 apply_fixed_board 全一致）----
 	var grid_script = load("res://scripts/grid.gd")
@@ -110,12 +118,14 @@ func _run() -> void:
 				if cell != null:
 					cell.clear_lock("player")
 			"probe":
-				# main.gd:1353 扣费 + 1883 3×3 确认雷
+				# main.gd:1353 扣费 + 1883 3×3 确认雷；§7.3 封印格"未扫描"（镜像 main 口径）
+				if grid.get_cell(coord) != null and grid.get_cell(coord).is_sealed:
+					continue
 				_money -= int(gs.PROBE_PRICE)
 				for dy in range(-1, 2):
 					for dx in range(-1, 2):
 						var c = grid.get_cell(coord + Vector2i(dx, dy))
-						if c != null and c.is_mine and not c.is_confirmed_mine:
+						if c != null and not c.is_sealed and c.is_mine and not c.is_confirmed_mine:
 							c.confirm_mine()
 			_:
 				fails.append("未知动作类型 %s" % kind)

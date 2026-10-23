@@ -52,7 +52,8 @@ def _best_probe_center(sim: GameSim, k: Knowledge, prefer=None, prefer_bonus=3):
     """信息增益最大的探针中心：3×3 内未知关闭格数最多（prefer 内格加 bonus）"""
     best, best_gain = None, -1
     closed = {c for c in sim.b.numbers
-              if c not in sim.st.opened and c not in sim.b.fossils}
+              if c not in sim.st.opened and c not in sim.b.fossils
+              and not sim.is_sealed(c)}
     unknown = closed - k.known_mines - k.known_safe
     for c in closed:
         gain = sum(1 for n in neighbors(c, sim.b.W, sim.b.H) if n in unknown)
@@ -64,11 +65,12 @@ def _best_probe_center(sim: GameSim, k: Knowledge, prefer=None, prefer_bonus=3):
 
 
 def _frontier_cells(sim: GameSim):
-    """工作前沿：8 邻贴已开区的关闭格（玩家/机器人的自然操作面，§3 机器人作业口径）"""
+    """工作前沿：8 邻贴已开区的关闭格（玩家/机器人的自然操作面，§3 机器人作业口径）；
+    封印格不可操作，不在前沿动作面内（§7.3）"""
     b = sim.b
     out = set()
     for c in b.numbers:
-        if c in sim.st.opened or c in b.fossils:
+        if c in sim.st.opened or c in b.fossils or sim.is_sealed(c):
             continue
         if any(n in sim.st.opened for n in neighbors(c, b.W, b.H)):
             out.add(c)
@@ -80,7 +82,7 @@ def _verify_target(sim: GameSim, k: Knowledge, core: set):
     for c in sorted(core):
         if (c not in sim.st.opened and c not in k.known_mines
                 and c not in k.known_safe and c not in sim.b.fossils
-                and c not in sim.b.locked):
+                and c not in sim.b.locked and not sim.is_sealed(c)):
             return c
     return _best_probe_center(sim, k, prefer=core)
 
@@ -174,9 +176,12 @@ def run_normal(board: Board, preopen: set, ra: RouteAnalysis, acc: Acceptance,
                 lambda c: neighbors(c, b.W, b.H))
             to_open |= {c for c in k.known_safe
                         if c not in sim.st.opened and c not in b.fossils}
-            to_open = {c for c in to_open if c not in sim.st.opened and c not in sim.st.flagged}
+            sealed_now = sim.active_seal_cells()   # 封印格不产生动作（§7.3）
+            to_open = {c for c in to_open if c not in sim.st.opened and c not in sim.st.flagged
+                       and c not in sealed_now}
             to_flag = {c for c in to_flag if c not in sim.st.flagged
-                       and c not in sim.st.opened and c not in k.known_mines}
+                       and c not in sim.st.opened and c not in k.known_mines
+                       and c not in sealed_now}
             if not to_open and not to_flag:
                 break
             for c in sorted(to_open, key=lambda _: rnd.random()):

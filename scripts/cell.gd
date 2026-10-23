@@ -45,6 +45,11 @@ var cover_wall_hp: int = 0
 var is_fossil: bool = false                 # 永久占位：不可开/不可标/机器人虫子皆不可入
 var fossil_origin: Vector2i = Vector2i(-9, -9)  # 所属 2×2 化石左上原点（贴图取象限用）
 
+# ---- 区域封印（§7.3 机关解除区域封印；独立于锁的 seal_id 状态，权限检查走统一入口）----
+# 机关格（trigger）被开出且与基地领土连通 → 所在组整组 release_seal。
+var is_sealed: bool = false
+var seal_id: String = ""
+
 # 信号
 signal cell_left_clicked(cell: Cell)
 signal cell_right_clicked(cell: Cell)
@@ -88,6 +93,7 @@ const SPECIAL_FLAG := preload("res://visual_v2/runtime/completion/tiles/special_
 const SPECIAL_VEIN := preload("res://visual_v2/runtime/completion/tiles/special_vein.png")
 const SPECIAL_COLLAPSE := preload("res://visual_v2/runtime/completion/tiles/special_collapse.png")
 const LOCKED_CELL_SEAL := preload("res://scripts/visuals/locked_cell_seal.gd")
+const AREA_SEAL_MARK := preload("res://scripts/visuals/area_seal_mark.gd")
 const DIAMOND_EFFECT_ICON := preload("res://scripts/diamond/diamond_icon.gd")
 const OVERLAY_WEB := preload("res://visual_v2/runtime/completion/tiles/overlays/web.png")
 const OVERLAY_SLIME_WALL := preload("res://visual_v2/runtime/completion/tiles/overlays/slime_wall.png")
@@ -114,6 +120,7 @@ var _deco_tex: TextureRect = null
 var _obstacle_mark: TextureRect = null
 var _slime_overlay: TextureRect = null
 var _locked_cell_seal: Node2D = null
+var _area_seal_mark: Node2D = null
 var _fire_frame := 0
 var _diamond_effect_icon: Node2D = null
 
@@ -157,6 +164,10 @@ func _setup_obstacle_mark() -> void:
 	_locked_cell_seal.name = "LockedCellSeal"
 	_locked_cell_seal.visible = false
 	add_child(_locked_cell_seal)
+	_area_seal_mark = AREA_SEAL_MARK.new()
+	_area_seal_mark.name = "AreaSealMark"   # 显式命名，避免 get_children 遍历误匹配
+	_area_seal_mark.visible = false
+	add_child(_area_seal_mark)
 
 
 func _configure_overlay(node: TextureRect) -> void:
@@ -355,6 +366,8 @@ func open(by_actor: String) -> bool:
 		return false  # 化石=永久障碍：谁都开不了（无清除交互，纯难度件）
 	if is_locked:
 		return false  # 锁=交互阻断：谁都不能开（玩家/机器人/无人机一律拦）
+	if is_sealed:
+		return false  # 封印=区域权限阻断（§7.3）：解封前谁都不能开
 	if is_opened or is_collapsed or is_flagged:
 		return false
 	if is_base:
@@ -392,6 +405,8 @@ func toggle_flag() -> bool:
 		return false  # 化石上不能插旗（它也不是雷，标了必错）
 	if is_locked:
 		return false  # 锁同时拦插旗与撤旗（Q6：已插旗格被锁，旗不可撤直到清锁）
+	if is_sealed:
+		return false  # 封印拦插旗与撤旗（§7.3 统一权限）
 	if is_opened or is_collapsed:
 		return false
 	is_flagged = not is_flagged
@@ -432,6 +447,25 @@ func apply_lock() -> bool:
 	return true
 
 
+## 区域封印（§7.3）：只封关闭格；与锁相互独立（可叠加，各自语义）。
+## 封印格不可开/不可标/不可清障/洪水不穿/探针未扫描——拦截在各动作统一入口。
+func apply_seal(id: String) -> bool:
+	if is_sealed or is_opened or is_fossil:
+		return false
+	is_sealed = true
+	seal_id = id
+	refresh_visual()
+	return true
+
+
+func release_seal() -> void:
+	if not is_sealed:
+		return
+	is_sealed = false
+	seal_id = ""
+	refresh_visual()
+
+
 func apply_slime() -> bool:
 	if is_slimed:
 		return false
@@ -452,6 +486,8 @@ func clear_web(by_actor: String) -> bool:
 func clear_lock(by_actor: String) -> bool:
 	if not is_locked:
 		return false
+	if is_sealed:
+		return false  # 封印拦清障（§7.3 清障在统一权限内）
 	is_locked = false
 	refresh_visual()
 	cell_obstacle_cleared.emit(self, "lock", by_actor)
@@ -527,8 +563,8 @@ func collapse() -> void:
 ## 削到 0 = 破墙开格，只能走 open()（经由 Grid.open_cell 的统一入口）。
 ## 只对未开且未插旗的格生效；返回 true 表示本次真的削了一层
 func damage_wall(layers: int = 1) -> bool:
-	if is_opened or is_flagged or is_collapsed or is_fossil or is_base:
-		return false
+	if is_opened or is_flagged or is_collapsed or is_fossil or is_base or is_sealed:
+		return false  # 封印格连削层也拦（§7.3 开格动作在统一权限内）
 	if wall_hp <= 1:
 		return false  # 1 层墙的"削"=破墙开格，不在本函数
 	wall_hp = maxi(1, wall_hp - layers)
@@ -818,6 +854,8 @@ func refresh_visual() -> void:
 			_obstacle_mark.texture = null
 	if _locked_cell_seal != null:
 		_locked_cell_seal.visible = is_locked and not is_fossil
+	if _area_seal_mark != null:
+		_area_seal_mark.visible = is_sealed and not is_fossil
 	if is_slimed:
 		_slime_overlay.texture = OVERLAY_SLIME_FLOOR if is_opened else OVERLAY_SLIME_WALL
 	else:

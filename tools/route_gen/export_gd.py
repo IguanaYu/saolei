@@ -8,6 +8,8 @@ from tools.route_gen.route import RouteAnalysis
 
 def to_fixed_board_dict(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis) -> dict:
     """与 scripts/data/fixed_boards.gd 的 data 结构同构（apply_fixed_board 可直接吃）"""
+    seals = [{"id": sid, "cells": sorted(grp["cells"]), "trigger": grp["trigger"]}
+             for sid, grp in sorted(cand.seals.items())]
     return {
         "mines": sorted(cand.mines),
         "preopen": sorted(cand.preopen),
@@ -15,6 +17,7 @@ def to_fixed_board_dict(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis) -> d
         "fossils": sorted(list(cfg.fossil_origins) + sorted(cand.fossils)),
         "walls": sorted(cand.walls),
         "locked": sorted(cand.locked),
+        "seals": seals,
     }
 
 
@@ -37,6 +40,12 @@ def gdscript_block(name: str, cand: Candidate, cfg: GenConfig, ra: RouteAnalysis
         lines.append(f'\t"walls": [{vlist(d["walls"])}],')
     if d["locked"]:
         lines.append(f'\t"locked": [{vlist(d["locked"])}],')
+    if d["seals"]:
+        segs = ", ".join(
+            '{{"id": "{}", "cells": [{}], "trigger": Vector2i({}, {})}}'.format(
+                s["id"], vlist(s["cells"]), s["trigger"][0], s["trigger"][1])
+            for s in d["seals"])
+        lines.append(f'\t"seals": [{segs}],')
     lines.append("}")
     if note:
         lines.insert(0, "## " + note.replace("\n", "\n## "))
@@ -69,6 +78,16 @@ def ascii_board(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis) -> str:
             if d[c] in "MWL":
                 continue          # 真值优先显示
             d[c] = "*"
+    seal_all = set()
+    for grp in cand.seals.values():
+        seal_all |= grp["cells"]
+    for c in seal_all:
+        if c not in cand.preopen:
+            d[c] = "S"            # 封印格（覆盖真值显示，区域一目了然）
+    for grp in cand.seals.values():
+        t = grp["trigger"]
+        if t in d and t not in cand.preopen:
+            d[t] = "!"            # 机关触发格
     d[ra.start] = "@"
     rows = []
     for y in range(cfg.H):

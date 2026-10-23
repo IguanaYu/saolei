@@ -60,7 +60,6 @@ def make_scenario(seed: int, w=16, h=16, n_mines=30, n_actions=90):
             break
     else:
         raise RuntimeError("200 次都找不到合适雷阵")
-
     # 化石 2×2：不与雷/预开/基地重叠（apply_fixed_board 拒铺口径）
     fossils = []
     used = set(pre) | mines | {base}
@@ -87,19 +86,47 @@ def make_scenario(seed: int, w=16, h=16, n_mines=30, n_actions=90):
     lock_candidates = [c for c in board.numbers
                        if c not in used and c not in board.fossils]
     locked = set(rnd.sample(lock_candidates, min(2, len(lock_candidates))))
+    # 区域封印（§7.3 对拍覆盖）：雷周围 3×3 作封印区（含雷），触发锚=贴预开前沿的安全关闭格
+    seals = {}
+    seal_cells = set()
+    mine0 = sorted(mines)[0]
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            c = (mine0[0] + dx, mine0[1] + dy)
+            if 0 <= c[0] < w and 0 <= c[1] < h and c not in preopen \
+                    and c not in fossils and c != base:
+                seal_cells.add(c)
+    if len(seal_cells) >= 5:
+        frontier = [c for c in board.numbers
+                    if c not in preopen and c not in mines and c not in seal_cells
+                    and c not in walls and c not in locked
+                    and any(n in preopen for n in neighbors(c, w, h))]
+        if frontier:
+            trigger = sorted(frontier)[0]
+            seals["s1"] = {"cells": sorted(seal_cells), "trigger": trigger}
     board = Board.build(w, h, mines, fossils_origins=fossils, walls=walls,
-                        locked=locked, base=base)
+                        locked=locked, seals=seals, base=base)
     preopen = bake_preopen(board, zone)
 
-    # ---- 动作脚本：闭包驱动 + 随机探索 + 全机制抽样 ----
+    # ---- 动作脚本：封印对拍前缀 + 闭包驱动 + 随机探索 + 全机制抽样 ----
     actions = []
 
     def add(kind, coord):
         actions.append({"kind": kind, "coord": list(coord)})
 
     sim = GameSim(board, start_money=300)
+    sim.st.opened |= set(preopen)
     k = Knowledge(total_mines=len(mines))
     observe(sim, k)
+    if seals:
+        # 前缀（确定性）：封印格开/标被拦 → 开触发锚 → 组解封 → 解封区动作恢复
+        s_cell = sorted(seals["s1"]["cells"])[0]
+        add("open", s_cell)
+        sim.open_cell(s_cell, "player")
+        add("flag", s_cell)
+        sim.toggle_flag(s_cell, "player")
+        add("open", tuple(seals["s1"]["trigger"]))
+        sim.open_cell(tuple(seals["s1"]["trigger"]), "player")
     guard = 0
     while len(actions) < n_actions and guard < n_actions * 6:
         guard += 1
@@ -170,6 +197,8 @@ def make_scenario(seed: int, w=16, h=16, n_mines=30, n_actions=90):
             "fossils": [list(o) for o in fossils],
             "walls": [list(x) for x in sorted(walls)],
             "locked": [list(x) for x in sorted(locked)],
+            "seals": [{"id": sid, "cells": [list(c) for c in sorted(g["cells"])],
+                       "trigger": list(g["trigger"])} for sid, g in sorted(seals.items())],
         },
         "start_money": 300,
         "actions": actions,
@@ -178,12 +207,16 @@ def make_scenario(seed: int, w=16, h=16, n_mines=30, n_actions=90):
 
 def expected_from_scenario(scen):
     """Python 侧预期结果（与 parity.gd 汇总口径一致）"""
+    seals = {s["id"]: {"cells": {tuple(c) for c in s["cells"]},
+                       "trigger": tuple(s["trigger"])}
+             for s in scen["board"].get("seals", [])}
     b = Board.build(
         scen["board"]["w"], scen["board"]["h"],
         mines={tuple(m) for m in scen["board"]["mines"]},
         fossils_origins=[tuple(o) for o in scen["board"]["fossils"]],
         walls={tuple(x) for x in scen["board"]["walls"]},
         locked={tuple(x) for x in scen["board"]["locked"]},
+        seals=seals,
         base=tuple(scen["board"]["base"]),
     )
     sim = GameSim(b, start_money=scen["start_money"])
@@ -206,16 +239,8 @@ def expected_from_scenario(scen):
         elif kind == "clear_lock":
             sim.clear_lock(coord, "player")
         elif kind == "probe":
-            sim.st.money -= PROBE_PRICE
-            sim.st.probes_used += 1
-            found = []
-            for dy in (-1, 0, 1):
-                for dx in (-1, 0, 1):
-                    c = (coord[0] + dx, coord[1] + dy)
-                    if c in b.mines and c not in sim.st.confirmed:
-                        sim.st.confirmed.add(c)
-                        found.append(c)
-            sim.st.probe_results.append((coord, found))
+            # 用 GameSim.probe 本体（封印中心拒部署/封印格未扫描的口径同源）
+            sim.probe(coord, "player")
     # 旗奖励复核：Python 侧 toggle_flag 的 verified 顺序应与 fired 序列一致
     return {
         "opened": sorted([list(c) for c in sim.st.opened]),
@@ -286,6 +311,31 @@ def run_seed(seed: int, keep_going=False) -> bool:
           f"flag={len(exp['flagged'])} collapse={len(exp['collapsed'])} "
           f"confirmed={len(exp['confirmed'])} money={exp['money']}）")
     return True
+
+
+def verify_board_scenario(board_dict: dict, actions: list, start_money: int,
+                          keep_files: bool = True) -> tuple:
+    """外部入口：给定固定盘 dict（与 cli 导出同构）+ 动作序列，跑 Godot 重放并比对。
+    返回 (ok, diffs)。设计文档 §12：正式候选最终由 Godot 规则重放验收。"""
+    scen = {"board": board_dict, "start_money": start_money, "actions": actions}
+    exp = expected_from_scenario(scen)
+    os.makedirs(OUT, exist_ok=True)
+    with open(os.path.join(OUT, "parity_scenario.json"), "w", encoding="utf-8") as fp:
+        json.dump(scen, fp, ensure_ascii=False)
+    rpath = os.path.join(OUT, "parity_result.json")
+    if os.path.exists(rpath):
+        os.remove(rpath)
+    proc = subprocess.run(
+        [GODOT, "--path", REPO, "--headless", "-s", "res://tests/route_gen_parity.gd"],
+        capture_output=True, text=True, timeout=180, encoding="utf-8", errors="replace")
+    if not os.path.exists(rpath):
+        return False, [f"Godot 未产出结果（exit={proc.returncode}）"]
+    with open(rpath, encoding="utf-8") as fp:
+        got = json.load(fp)
+    diffs = compare(exp, got)
+    if not keep_files:
+        os.remove(os.path.join(OUT, "parity_scenario.json"))
+    return (not diffs), diffs
 
 
 def main():

@@ -46,10 +46,11 @@ class Board:
     fossils: set = field(default_factory=set)   # 2×2 展开后的格子集合
     walls: set = field(default_factory=set)     # 加固墙格（wall_hp=3），其余未开格=1
     locked: set = field(default_factory=set)    # 初始锁格
+    seals: dict = field(default_factory=dict)   # {id: {"cells": set, "trigger": (x,y)}}
     base: tuple = None              # 预置基地；(None) = 玩家自放（v1 需给定）
 
     @staticmethod
-    def build(W, H, mines, fossils_origins=(), walls=(), locked=(), base=None):
+    def build(W, H, mines, fossils_origins=(), walls=(), locked=(), seals=None, base=None):
         mines = set(mines)
         fossils = set()
         for o in fossils_origins:           # apply_fixed_board: 化石 2×2 从左上原点展开
@@ -66,7 +67,17 @@ class Board:
                 if c in mines:
                     continue
                 numbers[c] = sum(1 for n in neighbors(c, W, H) if n in mines)
-        return Board(W, H, mines, numbers, fossils, set(walls), set(locked), base)
+        seal_map = {}
+        for sid, grp in (seals or {}).items():
+            seal_map[str(sid)] = {"cells": set(grp["cells"]), "trigger": tuple(grp["trigger"])}
+        return Board(W, H, mines, numbers, fossils, set(walls), set(locked), seal_map, base)
+
+    def seal_cells_all(self) -> set:
+        """全部封印格并集（静态口径：走廊成本/导出用；运行期以 released_seals 为准）"""
+        out = set()
+        for grp in self.seals.values():
+            out |= grp["cells"]
+        return out
 
 
 @dataclass
@@ -80,6 +91,7 @@ class SimState:
     verified: dict = field(default_factory=dict)  # {coord: reward_fired}——插旗即时反馈（验真通道）；
     # 仅 first_time 旗有信息量：非首次正确旗不再给奖（防刷），无新信息
     probe_results: list = field(default_factory=list)  # [(center, found_coords)]——探针公开结果
+    released_seals: set = field(default_factory=set)   # 已解封的 seal id（机关领土触发，§7.3）
     money: int = 0
     score: int = 0
     probes_used: int = 0
@@ -94,6 +106,7 @@ class SimState:
                        rewarded_flags=set(self.rewarded_flags),
                        verified=dict(self.verified),
                        probe_results=list(self.probe_results),
+                       released_seals=set(self.released_seals),
                        log=list(self.log))
 
 
@@ -104,6 +117,36 @@ class GameSim:
         self.b = board
         self.st = SimState(money=start_money)
         self.wall_hp = {c: (3 if c in board.walls else 1) for c in self._all_cells()}
+
+    # ---- 封印（§7.3：机关解除区域封印；统一权限检查覆盖开/标/清障/洪水/探针）----
+    def is_sealed(self, coord) -> bool:
+        for sid, grp in self.b.seals.items():
+            if sid in self.st.released_seals:
+                continue
+            if coord in grp["cells"]:
+                return True
+        return False
+
+    def active_seal_cells(self) -> set:
+        out = set()
+        for sid, grp in self.b.seals.items():
+            if sid not in self.st.released_seals:
+                out |= grp["cells"]
+        return out
+
+    def _maybe_release_seals(self):
+        """机关格被开出且与基地已开领土连通 → 整组解封（§7.3 触发口径；
+        沿用 player_territory 的领土定义，远程孤岛不激活）"""
+        if not self.b.seals or len(self.st.released_seals) == len(self.b.seals):
+            return
+        terr = self.territory()
+        for sid, grp in self.b.seals.items():
+            if sid in self.st.released_seals:
+                continue
+            if grp["trigger"] in self.st.opened and grp["trigger"] in terr:
+                self.st.released_seals.add(sid)
+                self.st.log.append({"type": "seal_released", "id": sid,
+                                    "trigger": grp["trigger"]})
 
     def _all_cells(self):
         for y in range(self.b.H):
@@ -125,6 +168,8 @@ class GameSim:
                     continue          # 多层墙停洪水（grid.gd:1164）
                 if n in self.b.locked:
                     continue          # 锁格 open 失败（cell.gd:357）
+                if self.is_sealed(n):
+                    continue          # 封印格洪水不穿（§7.3 洪水在统一权限内）
                 if n in self.b.fossils:
                     continue          # 化石 open 失败（cell.gd:355）
                 if n in self.b.mines:
@@ -147,6 +192,8 @@ class GameSim:
             return "noop", []
         if coord in self.st.flagged:
             return "noop", []         # 旗格 open 直接 return（grid.gd:837 未旗判定）
+        if self.is_sealed(coord):
+            return "blocked", []      # 封印格不可开不可削（§7.3 统一权限，先于削墙）
         if self.wall_hp.get(coord, 1) > 1 and coord not in self.b.fossils and coord != self.b.base:
             # damage_wall：未开未旗未塌未化石未基地可削；hp=maxi(1,hp-1)（cell.gd:529）
             self.wall_hp[coord] = max(1, self.wall_hp[coord] - 1)
@@ -177,6 +224,7 @@ class GameSim:
         events.append({"type": "open", "coord": coord, "flood": False})
         if self.b.numbers.get(coord, 0) == 0:
             self._flood_open(coord, opened, events)
+        self._maybe_release_seals()   # 开格批次后检查机关触发（§7.3）
         self.st.log.append({"type": "action", "kind": "open", "coord": coord,
                             "actor": actor, "opened": sorted(opened)})
         return "opened", sorted(opened)
@@ -186,6 +234,8 @@ class GameSim:
         """返回 'flagged'|'unflagged'|'noop'；正确首次旗奖励可观察（验真通道）"""
         if coord in self.b.fossils or coord in self.b.locked:
             return "noop"             # 化石不可标（cell.gd:392）；锁拦标与撤（cell.gd:394）
+        if self.is_sealed(coord):
+            return "noop"             # 封印拦标与撤（§7.3 统一权限）
         if coord in self.st.opened or coord in self.st.collapsed:
             return "noop"
         first_time = coord not in self.st.rewarded_flags
@@ -239,20 +289,26 @@ class GameSim:
     def probe(self, center, actor="player"):
         if self.st.money < PROBE_PRICE:
             return None
+        if self.is_sealed(center):
+            return None              # 封印格上不可部署（§7.3 探针在统一权限内）
         self.st.money -= PROBE_PRICE
         self.st.probes_used += 1
         self.st.player_ops += 1
         found = []
+        scanned = []                 # 实际被扫描的格（封印格"未扫描"，§7.3）
         cx, cy = center
         for dy in (-1, 0, 1):
             for dx in (-1, 0, 1):
                 c = (cx + dx, cy + dy)
                 if not (0 <= c[0] < self.b.W and 0 <= c[1] < self.b.H):
                     continue
+                if self.is_sealed(c):
+                    continue         # 封印格：不确认、不提供任何信息
+                scanned.append(c)
                 if c in self.b.mines and c not in self.st.confirmed:
                     self.st.confirmed.add(c)
                     found.append(c)
-        self.st.probe_results.append((center, list(found)))
+        self.st.probe_results.append((center, list(found), scanned))
         self.st.log.append({"type": "action", "kind": "probe", "coord": center,
                             "actor": actor, "found": found})
         return found
@@ -261,6 +317,8 @@ class GameSim:
     def clear_lock(self, coord, actor="player"):
         if coord not in self.b.locked:
             return False
+        if self.is_sealed(coord):
+            return False              # 封印拦清障（§7.3 统一权限）
         self.b.locked.discard(coord)
         self.st.player_ops += 1
         self.st.log.append({"type": "action", "kind": "clear_lock", "coord": coord, "actor": actor})
@@ -324,19 +382,15 @@ def observe(sim: GameSim, k: Knowledge):
             k.known_mines.add(c)
         else:
             k.known_safe.add(c)
-    # 探针公开结果：3×3 内 found=雷，覆盖内其余格全部安全（含零命中=9 格全安全）
-    for center, found in sim.st.probe_results:
-        cx, cy = center
+    # 探针公开结果：扫描范围内 found=雷，其余全部安全（含零命中=全安全）；
+    # 封印格不在 scanned 里——"未扫描"永不进知识（§7.3）
+    for center, found, scanned in sim.st.probe_results:
         found_set = set(found)
-        for dy in (-1, 0, 1):
-            for dx in (-1, 0, 1):
-                c = (cx + dx, cy + dy)
-                if not (0 <= c[0] < b.W and 0 <= c[1] < b.H):
-                    continue
-                if c in found_set:
-                    k.known_mines.add(c)
-                elif c not in sim.st.opened:
-                    k.known_safe.add(c)
+        for c in scanned:
+            if c in found_set:
+                k.known_mines.add(c)
+            elif c not in sim.st.opened:
+                k.known_safe.add(c)
 
 
 def solver_rule_targets(k: Knowledge, closed_cells, nb_fn):
@@ -382,6 +436,9 @@ def deterministic_closure(sim: GameSim, k: Knowledge, max_rounds=64, record=None
         to_flag, to_open = solver_rule_targets(k, _closed_universe(b, sim), lambda c: neighbors(c, b.W, b.H))
         # 已知安全的格直接开（探针零命中覆盖内/验旗未中）
         to_open |= (k.known_safe & _closed_universe(b, sim)) - set()
+        sealed_now = sim.active_seal_cells()   # 封印格参与计数但不产生动作（§7.3）
+        to_open -= sealed_now
+        to_flag -= sealed_now
         progressed = False
         for c in sorted(to_open):
             if c in sim.st.opened or c in sim.st.flagged:
