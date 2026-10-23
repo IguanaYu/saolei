@@ -110,3 +110,14 @@ const CH2_S5 := {
 	"pillar": Vector2i(11, 3),
 	"nodes": [Vector2i(11, 2), Vector2i(12, 2), Vector2i(12, 3)],
 }
+
+## 1-8 由路径驱动地图生成器烘焙（tools/route_gen，seed=2，2026-10-24）：
+## 设计者只画一条 S 形三横两折开图路线（tools/route_gen/strokes/s16.json），
+## 雷位/预开/信息屏障（阶段间雷幕）全自动生成；验收=参考过程无猜雷（41 动作）+
+## 8 种子正常策略无跳段 + Godot 真实 Grid 重放终态逐项一致（收尾计划步骤 A）。
+## 生成报告与 ASCII 预览见 docs/active/玩法设计/路径驱动地图生成器-示例盘-S16-seed2/
+const R1 := {
+	"mines": [Vector2i(0, 5), Vector2i(0, 8), Vector2i(0, 14), Vector2i(1, 5), Vector2i(2, 5), Vector2i(3, 5), Vector2i(3, 13), Vector2i(4, 5), Vector2i(5, 0), Vector2i(5, 5), Vector2i(5, 7), Vector2i(5, 11), Vector2i(6, 5), Vector2i(6, 11), Vector2i(7, 5), Vector2i(7, 7), Vector2i(7, 9), Vector2i(7, 11), Vector2i(7, 13), Vector2i(7, 15), Vector2i(8, 5), Vector2i(8, 7), Vector2i(8, 11), Vector2i(8, 15), Vector2i(9, 3), Vector2i(9, 5), Vector2i(9, 11), Vector2i(9, 12), Vector2i(10, 5), Vector2i(11, 4), Vector2i(11, 11), Vector2i(12, 11), Vector2i(13, 3), Vector2i(13, 4), Vector2i(13, 7), Vector2i(13, 11), Vector2i(13, 12), Vector2i(13, 13), Vector2i(14, 11), Vector2i(15, 2)],
+	"preopen": [Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4), Vector2i(1, 0), Vector2i(1, 1), Vector2i(1, 2), Vector2i(1, 3), Vector2i(1, 4), Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2), Vector2i(2, 3), Vector2i(2, 4), Vector2i(3, 0), Vector2i(3, 1), Vector2i(3, 2), Vector2i(3, 3), Vector2i(3, 4), Vector2i(4, 0), Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(4, 4), Vector2i(5, 1), Vector2i(5, 2), Vector2i(5, 3), Vector2i(5, 4), Vector2i(6, 0), Vector2i(6, 1), Vector2i(6, 2), Vector2i(6, 3), Vector2i(6, 4), Vector2i(7, 0), Vector2i(7, 1), Vector2i(7, 2), Vector2i(7, 3), Vector2i(7, 4), Vector2i(8, 0), Vector2i(8, 1), Vector2i(8, 2), Vector2i(8, 3), Vector2i(8, 4), Vector2i(9, 0), Vector2i(9, 1), Vector2i(9, 2), Vector2i(10, 0), Vector2i(10, 1), Vector2i(10, 2), Vector2i(10, 3), Vector2i(11, 0), Vector2i(11, 1), Vector2i(11, 2), Vector2i(11, 3), Vector2i(12, 0), Vector2i(12, 1), Vector2i(12, 2), Vector2i(12, 3), Vector2i(13, 0), Vector2i(13, 1), Vector2i(13, 2), Vector2i(14, 0), Vector2i(14, 1), Vector2i(14, 2), Vector2i(15, 0), Vector2i(15, 1)],
+	"base": Vector2i(2, 2),
+}

@@ -51,8 +51,9 @@ func _build() -> void:
 		ch.display_name = CHAPTER_NAMES[ch_idx]
 		ch.unlock_module = CHAPTER_MODULE[ch_idx]
 		ch.theme_color = CHAPTER_COLORS[ch_idx]
-		# ch01 含 7 关：s06=高塔关（竖向双视口）、s07=L形关（异形盘原型，2026-10-04）
-		for s_idx in range(7 if ch_idx == 0 else 5):
+		# ch01 含 8 关：s06=高塔关（竖向双视口）、s07=L形关（异形盘原型，2026-10-04）、
+		# s08=路径驱动生成试验关（2026-10-24，盘面由 tools/route_gen 全自动烘焙）
+		for s_idx in range(8 if ch_idx == 0 else 5):
 			var lvl := _make_level(ch_idx, s_idx)
 			if ch_idx == 0 and s_idx == 0:
 				_apply_playtest_level1(lvl)
@@ -68,6 +69,8 @@ func _build() -> void:
 				_apply_playtest_level6(lvl)
 			elif ch_idx == 0 and s_idx == 6:
 				_apply_playtest_level7(lvl)
+			elif ch_idx == 0 and s_idx == 7:
+				_apply_route_gen_s1(lvl)
 			# 第二章「激光矿场」五关（2026-10-09 起；设计=docs/active/玩法设计/第二章-激光矿场/）
 			elif ch_idx == 1 and s_idx == 0:
 				_apply_laser_s1(lvl)
@@ -406,6 +409,38 @@ func _apply_playtest_level7(lvl: LevelData) -> void:
 		"1111111111111111",
 		"1111111111111111",
 	]
+	lvl.first_clear_reward = RewardData.new()
+	lvl.first_clear_reward.ore = 200
+	lvl.repeat_reward = RewardData.new()
+	lvl.repeat_reward.ore = 50
+
+
+## 1-8「自动开路」：路径驱动地图生成器试验关（2026-10-24，收尾计划步骤 A）
+## 盘面完全由 tools/route_gen 烘焙（设计者只画 S 形路线，FixedBoards.R1）；
+## 验收=参考过程无猜雷 + 正常策略无跳段 + Godot 重放一致（见 R1 注释与生成报告）。
+func _apply_route_gen_s1(lvl: LevelData) -> void:
+	lvl.grid_size = Vector2i(16, 16)
+	lvl.mine_count = 40
+	var obj := ObjectiveData.new()
+	obj.type = ObjectiveData.Type.CLEAR_ALL_SAFE
+	# 安全格 216（预开 67 计入进度），胜利线 150 ≈ 69%（同 L4 打折口径留试玩余量）
+	obj.target_value = 150
+	lvl.objectives = [obj]
+	lvl.time_limit_sec = 180.0
+	lvl.start_gold = 300
+	lvl.start_lives = 3
+	lvl.free_clicks = 5
+	lvl.cooldown_sec = 3.0
+	# 固定盘：预置基地 (2,2)（路线起点，生成器口径 fixed_base 显式给出）
+	lvl.fixed_mines.assign(FixedBoards.R1.mines)
+	lvl.fixed_base = FixedBoards.R1.base
+	lvl.preopen_coords.assign(FixedBoards.R1.preopen)
+	lvl.meta_progression = false   # 试验关冷启动确定，便于与生成报告对照
+	lvl.no_stars = true
+	lvl.is_playtest = true
+	lvl.short_name = "开路"
+	lvl.intro_line = "这张地图由一条手绘路线自动生成——沿着挖开的路往前走吧。"
+	lvl.mechanic_tags = ["路径生成"]
 	lvl.first_clear_reward = RewardData.new()
 	lvl.first_clear_reward.ore = 200
 	lvl.repeat_reward = RewardData.new()
