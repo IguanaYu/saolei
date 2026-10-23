@@ -46,3 +46,6 @@ docs/reference/research/音效设计学习/
 
 # Python 缓存
 __pycache__/
+
+# 路径驱动地图生成器运行产物
+tools/route_gen/out/
