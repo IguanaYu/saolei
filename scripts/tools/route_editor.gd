@@ -1,6 +1,7 @@
 extends Control
 ## 路径驱动地图生成器 · 编辑器画线工具 v1（收尾计划步骤 D）
-## 定位：开发工具场景（编辑器里 F6 运行），不进游戏 UI；Python 是生成逻辑唯一源。
+## 定位：开发工具场景，不进游戏 UI；Python 是生成逻辑唯一源。
+## 启动：双击仓库根 launch_route_editor.bat，或 Godot 编辑器里 F6 跑本场景。
 ## 用法：左侧点格画笔画（右键撤销）→ 实时段间距过近预警（§4.3 高冲突提示）→
 ##       保存笔画 JSON → 生成（调 tools.route_gen.cli）→ 载入结果画答案层叠加。
 ## 实现口径：Godot 官方自定义绘制（Control._draw + _gui_input），网格/叠加全程序画。
