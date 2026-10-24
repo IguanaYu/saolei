@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>钻石效果系统 · 开发记录看板（更新至 2026-10-24）</title>
+<style>
+	:root {
+		--bg: #16181f; --panel: #1e222c; --line: #2e3442; --text: #d6dae3; --dim: #8b93a3;
+		--gold: #e8b93c; --area: #e8763c; --split: #c084e8; --explorer: #4ee8c2;
+		--ok: #63d489; --warn: #e8b93c; --todo: #e86a6a; --blue: #5aa7e8;
+	}
+	* { box-sizing: border-box; margin: 0; padding: 0; }
+	body { background: var(--bg); color: var(--text);
+		font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; line-height: 1.7; }
+	header { padding: 36px 8vw 22px; border-bottom: 1px solid var(--line); }
+	header h1 { font-size: 26px; }
+	header h1 small { font-size: 14px; color: var(--dim); font-weight: 400; margin-left: 12px; }
+	header .sub { color: var(--dim); font-size: 14px; margin-top: 8px; max-width: 960px; }
+	.banner { margin: 16px 0 0; padding: 12px 18px; border-radius: 10px; font-size: 14px;
+		background: rgba(232,185,60,.12); border: 1px solid rgba(232,185,60,.45); }
+	.banner b { color: var(--warn); }
+	nav { padding: 12px 8vw; display: flex; gap: 10px; flex-wrap: wrap; position: sticky; top: 0;
+		background: rgba(22,24,31,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); z-index: 5; }
+	nav a { color: var(--text); text-decoration: none; font-size: 14px; padding: 5px 14px;
+		border: 1px solid var(--line); border-radius: 999px; }
+	nav a:hover { border-color: var(--dim); }
+	section { padding: 34px 8vw 4px; }
+	h2 { font-size: 21px; border-left: 4px solid var(--blue); padding-left: 12px; margin-bottom: 14px; }
+	.note { color: var(--dim); font-size: 14px; max-width: 980px; margin-bottom: 16px; }
+	.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+	.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+	.stat b { display: block; font-size: 24px; }
+	.stat span { font-size: 13px; color: var(--dim); }
+	/* 效果卡 */
+	.effects { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 20px; }
+	.ef { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+	.ef img { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: contain; background: #101218; }
+	.ef .body { padding: 12px 16px 16px; }
+	.ef .tag { display: inline-block; font-size: 12px; font-weight: 700; color: #16181f;
+		padding: 2px 10px; border-radius: 999px; margin-bottom: 8px; }
+	.ef h3 { font-size: 17px; margin-bottom: 6px; }
+	.ef p { font-size: 13.5px; color: var(--dim); }
+	.ef p b { color: var(--text); font-weight: 600; }
+	.g-tag { background: var(--gold); } .a-tag { background: var(--area); }
+	.s-tag { background: var(--split); } .e-tag { background: var(--explorer); }
+	/* 表格 */
+	table { width: 100%; border-collapse: collapse; background: var(--panel);
+		border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 14px; }
+	th, td { padding: 9px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+	th { background: #232837; font-size: 13px; color: var(--dim); font-weight: 600; }
+	tr:last-child td { border-bottom: none; }
+	td code, p code, li code { background: #262b38; padding: 1px 7px; border-radius: 5px; font-size: 12.5px; }
+	.pill { display: inline-block; font-size: 12px; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
+	.p-ok { background: rgba(99,212,137,.15); color: var(--ok); border: 1px solid rgba(99,212,137,.4); }
+	.p-warn { background: rgba(232,185,60,.13); color: var(--warn); border: 1px solid rgba(232,185,60,.4); }
+	.p-todo { background: rgba(232,106,106,.13); color: var(--todo); border: 1px solid rgba(232,106,106,.4); }
+	.p-blue { background: rgba(90,167,232,.13); color: var(--blue); border: 1px solid rgba(90,167,232,.4); }
+	/* 时间线 */
+	.tl { border-left: 2px solid var(--line); margin-left: 8px; padding-left: 22px; }
+	.tl .ev { margin-bottom: 16px; }
+	.tl .ev b { display: block; }
+	.tl .ev span { font-size: 13.5px; color: var(--dim); }
+	.tl .when { color: var(--blue); font-size: 13px; }
+	/* 待办 */
+	ul.todos { list-style: none; max-width: 980px; }
+	ul.todos li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+		padding: 12px 18px; margin-bottom: 10px; font-size: 14.5px; }
+	ul.todos li b { color: var(--text); }
+	ul.todos li span { color: var(--dim); font-size: 13.5px; display: block; }
+	footer { padding: 30px 8vw 46px; color: var(--dim); font-size: 13px; border-top: 1px solid var(--line); margin-top: 34px; }
+	a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<header>
+	<h1>第二章 · 钻石效果系统 — 开发记录看板<small>更新至 2026-10-24</small></h1>
+	<p class="sub">第二章「激光矿场」的四类钻石效果（金币 / 范围激活 / 随机双射线 / 探索精灵）：
+	工程实现已全部落地并全量测试通过，<b>但规则数值尚未经你拍板、玩法未经真人试玩</b>。本页防止忘记「做到哪、卡在哪、欠什么」。</p>
+	<div class="banner">⚠️ 重要口径：<b>D1–D10 全部是工程默认值</b>，不是拍板结论；金币 10 / 射程 3 / 精灵参数均为可运行起点，正式数值待 WP6 真人试玩后定。</div>
+</header>
+
+<nav>
+	<a href="#status">进度速览</a>
+	<a href="#effects">四类效果现状</a>
+	<a href="#rules">D1–D10 拍板状态</a>
+	<a href="#wp">工作包进度</a>
+	<a href="#log">工程收尾时间线</a>
+	<a href="#next">下一步（别忘清单）</a>
+	<a href="#archive">档案链接</a>
+</nav>
+
+<section id="status">
+	<h2>进度速览</h2>
+	<div class="stats">
+		<div class="stat"><b style="color:var(--ok)">4 / 4</b><span>效果类型已实现（管理器+表现+教学）</span></div>
+		<div class="stat"><b style="color:var(--ok)">10 套件全绿</b><span>钻石 78+38+26+77 · 旧入口 8 套 388 项</span></div>
+		<div class="stat"><b style="color:var(--warn)">10 项</b><span>D1–D10 规则均为工程默认，待拍板</span></div>
+		<div class="stat"><b style="color:var(--todo)">0 次</b><span>真人试玩（WP6 未开始）</span></div>
+	</div>
+</section>
+
+<section id="effects">
+	<h2>四类效果现状（含实机画面）</h2>
+	<p class="note">点图可打开 <a href="钻石效果实机截图-2026-10-24/钻石效果展示.html">网页相册</a> 看完整 9 组截图。配置方式见《实现与验收》：<code>lvl.diamond_effects</code> 数组 + <code>diamond_effect_seed</code>，只在第二章点击激光关生效。</p>
+	<div class="effects">
+		<div class="ef">
+			<img loading="lazy" src="钻石效果实机截图-2026-10-24/04-范围-开3x3并接力金币_盘面x3.png" alt="范围+金币连锁">
+			<div class="body">
+				<span class="tag g-tag">gold</span><span class="tag a-tag">area_3x3</span>
+				<h3>金币 & 范围激活</h3>
+				<p>标记后激光命中发 <b>10 金币</b>（来源 <code>diamond_effect_gold</code>，每颗每局一次，不冒充标记奖励）；范围钻石开<b>含中心 3×3</b>（裁盘缘/洞区），<b>可接力激活相邻已标钻石</b>（截图为一枪 3×3 + 金币连锁）。入队即锁消耗，动画未完不能再触发。</p>
+			</div>
+		</div>
+		<div class="ef">
+			<img loading="lazy" src="钻石效果实机截图-2026-10-24/06-双射线-随机两向发射瞬间_盘面x3.png" alt="随机双射线">
+			<div class="body">
+				<span class="tag s-tag">split_two</span>
+				<h3>随机双射线</h3>
+				<p>激活时才从八方向<b>不放回抽 2</b> 各射一条（正式配置射程 3，展示盘 4）；共用 LaserGeometry 几何与整枪旧设施账本，固定种子可复现、悬停<b>不抽签不推进随机序列</b>；预览只画紫色「可能范围」并明示随机。</p>
+			</div>
+		</div>
+		<div class="ef">
+			<img loading="lazy" src="钻石效果实机截图-2026-10-24/09-精灵-自动开确定安全格_盘面x3.png" alt="探索精灵">
+			<div class="body">
+				<span class="tag e-tag">explorer</span>
+				<h3>探索精灵</h3>
+				<p>临时飞行单位：<b>只依据公开数字开确定安全格</b>（输入无 <code>is_mine</code> 也可运行，不读隐藏雷位）；与机器人共享目标锁、不进商店/限购/升级体系；作业开格按基础奖励，来源 <code>diamond_explorer</code> 独立记账。</p>
+			</div>
+		</div>
+		<div class="ef">
+			<div class="body">
+				<span class="tag p-blue" style="color:var(--blue);background:rgba(90,167,232,.13)">核心实现</span>
+				<h3>架构与测试（给未来的自己）</h3>
+				<p>管理器 <code>scripts/diamond/diamond_effect_manager.gd</code>（配置校验/旗快照/队列/独立 RNG/整枪提交）+ <code>explorer_manager.gd</code> + <code>diamond_icon.gd</code>；接入点 <code>laser_manager.fire()</code> 先 <code>prepare_shot</code> 再逐格结算（旗格免破坏≠不可激活）；<b>trigger_ledger</b> 保证主束与钻石射线同枪去重；结算完才判胜（<code>resolving_shot</code> 锁）。测试四件套在 <code>tests/</code> 与 <code>tmp/auto_diamond_*</code>。</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="rules">
+	<h2>D1–D10 拍板状态（最容易被忘的事）</h2>
+	<p class="note">出处：《开发计划 2026-10-22》第 2 节提出的待定项；《实现与验收 2026-10-23》首版全部按工程默认实现。<b>没有任何一项经过用户正式拍板</b>——试玩后若要改，先改这里再改代码。</p>
+	<table>
+		<tr><th>编号</th><th>事项</th><th>当前工程默认（已实现）</th><th>状态</th></tr>
+		<tr><td>D1</td><td>如何激活钻石</td><td>正确标记后被主束/副束/钻石空间效果命中才激活；标记本身不放技能</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D2</td><td>一次性还是反复触发</td><td>每颗每局一次；入队即锁定；重开恢复；撤旗重插不刷新</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D3</td><td>钻石互相激活（连锁）</td><td>允许接力射击开始时已正确标记的钻石；未标钻石不会自动变触发器</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D4</td><td>「周围 9 格」范围</td><td>含中心的 3×3，裁盘外与洞区；中心保留钻石和旗</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D5</td><td>效果命中未标钻石</td><td>按碎钻语义打碎，不自动保护/激活——<b>WP6 试玩头号观察点</b></td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D6</td><td>双射线方向与射程</td><td>八方向不放回抽 2；射程默认 3（展示盘 4）；方向集合可配置</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D7</td><td>金币数量</td><td>10（<code>gold_amount</code> 可配）</td><td><span class="pill p-warn">数值待试玩</span></td></tr>
+		<tr><td>D8</td><td>精灵能力与参数</td><td>3 次作业 / 1.5s 间隔 / 20s 寿命 / 并存 8 只 FIFO；无确定目标则等待</td><td><span class="pill p-warn">数值待试玩</span></td></tr>
+		<tr><td>D9</td><td>钻石类型何时可见</td><td>正确旗后显示形状角标+说明；已消耗=缺角+斜杠；未调查格不暴露</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+		<tr><td>D10</td><td>旧设施能否触发新钻石</td><td>旧矿石/过载/旧节点爆炸<b>不</b>触发钻石；新射线遵从旧束规则同枪去重</td><td><span class="pill p-warn">默认值·待拍板</span></td></tr>
+	</table>
+</section>
+
+<section id="wp">
+	<h2>工作包进度（WP0–WP7）</h2>
+	<table>
+		<tr><th>工作包</th><th>内容</th><th>状态</th></tr>
+		<tr><td>WP0 规则收敛</td><td>D1–D10 拍板</td><td><span class="pill p-warn">工程默认值代跑，未正式拍板</span></td></tr>
+		<tr><td>WP1 最小纵向流程</td><td>配置/状态/旗格激活/金币/重开清理</td><td><span class="pill p-ok">完成（工程验收）</span></td></tr>
+		<tr><td>WP2 范围与连锁</td><td>3×3/队列/混合链/去重</td><td><span class="pill p-ok">完成（工程验收）</span></td></tr>
+		<tr><td>WP3 随机双射线</td><td>抽样/几何复用/可能范围预览</td><td><span class="pill p-ok">完成（77/77 含预览视觉）</span></td></tr>
+		<tr><td>WP4 探索精灵</td><td>公开推理/目标锁/生命周期</td><td><span class="pill p-ok">完成（26/26）</span></td></tr>
+		<tr><td>WP5 反馈与兼容</td><td>四类型识别/说明/统计/旧关回归</td><td><span class="pill p-ok">完成（8 旧套件全绿）</span></td></tr>
+		<tr><td>WP6 机制试玩</td><td>单项盘/混合盘/误打案例/<b>真人体验</b></td><td><span class="pill p-todo">未开始——需要你</span></td></tr>
+		<tr><td>WP7 关卡与数值</td><td>正式配置比例/金额/教学/地图</td><td><span class="pill p-blue">试验版已铺（五关稀疏配置）</span></td></tr>
+	</table>
+	<p class="note" style="margin-top:10px">第二章五关已稀疏接入：2-1 金币×2、2-2 范围+金币、2-3 双射线+范围+金币、2-4 精灵+范围+金币、2-5 四类型组合；关前简介/机制标签/规则页/悬停说明已补教学。</p>
+</section>
+
+<section id="log">
+	<h2>工程收尾时间线（2026-10-23 ~ 10-24）</h2>
+	<div class="tl">
+		<div class="ev"><span class="when">10-23 21:13 · 0d66f62</span>
+			<b>四类效果全量实现提交</b>
+			<span>26 文件 +2629 行；集成 78 / 机制 38 / 精灵 26 通过；随机预览 2 项视觉检查未过、旧菜单回归未对照、退出资源警告待查。</span></div>
+		<div class="ev"><span class="when">10-24 · 36e1dcb</span>
+			<b>收尾三连：预览测试修正 + 选关页回归修复 + 资源警告定性</b>
+			<span>①预览 2 项失败根因是合成鼠标事件不更新视口光标采样（测试缺陷），改直驱 <code>_update_hover</code> 后 77/77；②基线对照（5d485fc 全绿 vs 0d66f62 六套件进不了关）抓出真回归：教学句并入 <code>intro_line</code> 撑破选关布局，「开始本关」83% 落在 1024 窗外——修 <code>level_select.gd</code>（详情区自动换行 + 行内提示 18 字截断）后 8 旧套件全绿；③退出资源警告两棵树都间歇出现（verbose 6 次与多等 20 帧对照均阴性），定性为既有问题不修。</span></div>
+		<div class="ev"><span class="when">10-24 · 发现</span>
+			<b>Godot 4.6.1 的 <code>use_custom_user_dir</code> 实测无效</b>
+			<span>最小项目对照确认设置被无视（此前验收的"隔离存档"实际没隔离）；改用 <code>APPDATA</code> 环境变量按进程重定向，全程真实隔离重跑全部套件。另记录 <code>main.gd _start_level_with</code> 对 null 关卡无保护（基线隐患，b1682fc 引入）。</span></div>
+		<div class="ev"><span class="when">10-24 · a29c019</span>
+			<b>实机截图集 + 网页相册</b>
+			<span>9 组 18 张真实运行画面（四效果「认得出→打下去→看结果」）+ 离线相册 <code>钻石效果展示.html</code> + 拍摄脚本 <code>tmp/diamond_effect_screenshots.gd</code>（固定种子 42）。</span></div>
+	</div>
+</section>
+
+<section id="next">
+	<h2>下一步（别忘清单）</h2>
+	<ul class="todos">
+		<li><b>① WP6 真人试玩（最高优先，需要你）</b>
+			<span>四类单项盘 + 混合盘 + 有意误打。重点观察：误碎未标钻石的频率与情绪（D5×双射线失控感）、"能说清这颗钻石是什么效果/为何连锁吗"、连锁画面是否遮数字、精灵有效作业 vs 干等、金币 10 对购买节奏的影响。</span></li>
+		<li><b>② D1–D10 正式拍板</b>
+			<span>试玩后逐条确认或推翻上表默认值；尤其 D5（未标钻石=碎）和 D2（一次性）。改动先同步状态流与交互表再动代码。</span></li>
+		<li><b>③ 数值定稿</b>
+			<span>金币金额 / 双射线射程 / 精灵次数·间隔·寿命，按试玩记录调 <code>_apply_diamond_effects</code> 与关卡配置。</span></li>
+		<li><b>④ WP7 正式关卡重排</b>
+			<span>当前五关只做了稀疏试验配置；机制验证后再做正式的小组连锁、组合设计与地图分配。</span></li>
+		<li><b>⑤ 遗留工程项（低优先）</b>
+			<span>测试退出资源残留警告（1 resources still in use，基线就有）；<code>main.gd:445</code> 对 null 关卡无保护（基线隐患）；旧测试脚本证据路径硬编码 <code>E:/godot/扫雷/</code>（旧机器路径，不影响运行）。</span></li>
+	</ul>
+</section>
+
+<section id="archive">
+	<h2>档案链接（都在仓库内）</h2>
+	<table>
+		<tr><th>资料</th><th>位置</th></tr>
+		<tr><td>开发计划（需求来源 / D1–D10 定义 / WP 划分）</td><td><code>docs/active/玩法设计/第二章-激光矿场/钻石效果系统-开发计划-2026-10-22.md</code></td></tr>
+		<tr><td>实现与验收（首版规则 / 配置格式 / 测试证据）</td><td><code>docs/active/玩法设计/第二章-激光矿场/钻石效果系统-实现与验收-2026-10-23.md</code>（含 10-23 晚间收尾章节）</td></tr>
+		<tr><td>网页相册（9 组实机截图）</td><td><a href="钻石效果实机截图-2026-10-24/钻石效果展示.html">钻石效果实机截图-2026-10-24/钻石效果展示.html</a></td></tr>
+		<tr><td>核心代码</td><td><code>scripts/diamond/</code>（管理器+精灵+图标）；接入 <code>laser_manager.gd</code> / <code>main.gd</code> / <code>level_database.gd</code></td></tr>
+		<tr><td>测试脚本</td><td><code>tests/diamond_effect_system_test.gd</code>（78）、<code>tmp/auto_diamond_effect_system_test.gd</code>（38）、<code>tests/diamond_explorer_test.gd</code>（26）、<code>tmp/diamond_visual_validation.gd</code>（77）；运行须带 <code>APPDATA=&lt;沙盒&gt;</code> 隔离存档</td></tr>
+	</table>
+</section>
+
+<footer>
+	<p>本页由 2026-10-24 的开发会话生成，内容与《实现与验收 2026-10-23》及 git 历史（0d66f62 / 36e1dcb / a29c019）对应；如后续拍板或数值变动，请直接更新本页对应表格并注明日期。</p>
+</footer>
+
+</body>
+</html>
