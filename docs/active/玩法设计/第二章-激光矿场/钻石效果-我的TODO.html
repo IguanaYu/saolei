@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的试玩 TODO · 钻石效果系统（2026-10-24）</title>
+<style>
+	:root {
+		--bg: #16181f; --panel: #1e222c; --line: #2e3442; --text: #d6dae3; --dim: #8b93a3;
+		--gold: #e8b93c; --area: #e8763c; --split: #c084e8; --explorer: #4ee8c2;
+		--ok: #63d489; --blue: #5aa7e8; --todo: #e86a6a;
+	}
+	* { box-sizing: border-box; margin: 0; padding: 0; }
+	body { background: var(--bg); color: var(--text);
+		font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; line-height: 1.7; }
+	header { padding: 36px 8vw 20px; border-bottom: 1px solid var(--line); }
+	header h1 { font-size: 25px; }
+	header h1 small { font-size: 14px; color: var(--dim); font-weight: 400; margin-left: 12px; }
+	header .sub { color: var(--dim); font-size: 14px; margin-top: 8px; max-width: 920px; }
+	.progress-wrap { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
+	.progress-bar { flex: 1; max-width: 520px; height: 12px; background: #262b38;
+		border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+	.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4ee8c2, #5aa7e8);
+		border-radius: 999px; transition: width .3s; }
+	#progress-text { font-size: 14px; color: var(--dim); }
+	#reset-btn { background: var(--panel); color: var(--dim); border: 1px solid var(--line);
+		border-radius: 7px; padding: 5px 14px; cursor: pointer; font-size: 13px; }
+	#reset-btn:hover { border-color: var(--todo); color: var(--todo); }
+	section { padding: 30px 8vw 4px; }
+	h2 { font-size: 20px; border-left: 4px solid var(--blue); padding-left: 12px; margin-bottom: 4px; }
+	.sec-note { color: var(--dim); font-size: 13.5px; max-width: 940px; margin-bottom: 14px; }
+	ul.items { list-style: none; max-width: 1020px; }
+	ul.items li { display: flex; gap: 14px; align-items: flex-start; background: var(--panel);
+		border: 1px solid var(--line); border-radius: 10px; padding: 13px 18px; margin-bottom: 10px;
+		transition: border-color .15s, opacity .15s; }
+	ul.items li.done { opacity: .55; }
+	ul.items li.done .item-title { text-decoration: line-through; }
+	ul.items input[type=checkbox] { width: 19px; height: 19px; margin-top: 5px; accent-color: #4ee8c2;
+		cursor: pointer; flex-shrink: 0; }
+	.item-title { font-size: 15px; font-weight: 600; }
+	.item-desc { font-size: 13.5px; color: var(--dim); margin-top: 3px; }
+	.item-desc code { background: #262b38; padding: 0 6px; border-radius: 5px; font-size: 12.5px; }
+	.lvl { display: inline-block; font-size: 11.5px; font-weight: 700; color: #16181f; padding: 1px 9px;
+		border-radius: 999px; margin-right: 8px; vertical-align: 1px; }
+	.l-g { background: var(--gold); } .l-a { background: var(--area); }
+	.l-s { background: var(--split); } .l-e { background: var(--explorer); } .l-m { background: #b9c2d4; }
+	textarea { width: 100%; max-width: 1020px; background: #141822; color: var(--text);
+		border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font-size: 14px;
+		font-family: inherit; min-height: 84px; margin-top: 6px; resize: vertical; }
+	textarea:focus { outline: none; border-color: var(--blue); }
+	.note-label { font-size: 13.5px; color: var(--dim); margin-top: 16px; }
+	.saved-hint { font-size: 12px; color: var(--ok); margin-left: 8px; opacity: 0; transition: opacity .4s; }
+	.saved-hint.show { opacity: 1; }
+	.howto { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+		padding: 16px 20px; max-width: 1020px; font-size: 14px; }
+	.howto code { background: #262b38; padding: 1px 8px; border-radius: 5px; font-size: 12.5px; display: inline-block; }
+	a { color: var(--blue); }
+	footer { padding: 28px 8vw 44px; color: var(--dim); font-size: 13px; border-top: 1px solid var(--line); margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<header>
+	<h1>我的试玩 TODO<small>钻石效果系统 · 2026-10-24 建立</small></h1>
+	<p class="sub">开发者已把四类钻石效果做完并全部测试通过，剩下的<b>真人试玩（WP6）和规则拍板（D1–D10）只有你能做</b>。
+	做完一项勾一项，感受直接写在备注框里——勾选和文字都会自动保存在这台电脑的浏览器里，下次打开还在。</p>
+	<div class="progress-wrap">
+		<div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+		<span id="progress-text">0 / 0</span>
+		<button id="reset-btn">重置全部</button>
+	</div>
+</header>
+
+<section id="a">
+	<h2>① 开始之前</h2>
+	<p class="sec-note">先把环境跑起来、知道要去感受什么，再进游戏。</p>
+	<ul class="items">
+		<li data-id="a1"><input type="checkbox"><div>
+			<div class="item-title">把游戏跑起来，进第二章确认效果存在</div>
+			<div class="item-desc">终端运行（任选一个能启动的）：<br>
+			<code>"E:\chormeddownload7\Godot_v4.6.1\Godot_v4.6.1-stable_win64_console.exe" --path "F:\godot_game\扫雷_增量\saolei"</code><br>
+			<code>"E:\godot\Godot_v4.6.1\Godot_v4.6.1-stable_win64_console.exe" --path "F:\godot_game\扫雷_增量\saolei"</code><br>
+			主菜单 → 选择关卡 → 激光矿场 → 2-1。选关页每关卡片第二行有新增的教学句，就是钻石效果提示。</div></div></li>
+		<li data-id="a2"><input type="checkbox"><div>
+			<div class="item-title">预习：看一遍四类效果长什么样</div>
+			<div class="item-desc">打开 <a href="钻石效果实机截图-2026-10-24/钻石效果展示.html">实机截图相册</a>（9 组图，两分钟看完）；想了解规则细节和「哪些还没定」看 <a href="钻石效果系统-开发记录.html">开发记录看板</a>。</div></div></li>
+		<li data-id="a3"><input type="checkbox"><div>
+			<div class="item-title">知道一条核心规则：标记 ≠ 激活</div>
+			<div class="item-desc">插旗正确只表示「护住这颗钻石」，<b>必须再被激光（或别的钻石效果）打中才释放技能</b>。没插旗的钻石被激光打中会直接碎掉（碎钻奖励，不扣命）。</div></div></li>
+	</ul>
+</section>
+
+<section id="b">
+	<h2>② 分关试玩（WP6 主体）</h2>
+	<p class="sec-note">每关只试加的那几颗钻石，正常通关或直接重开都行。遇到问题随时可以在下面备注框记坐标和现象。</p>
+	<ul class="items">
+		<li data-id="b1"><input type="checkbox"><div>
+			<div class="item-title"><span class="lvl l-g">2-1</span>金币：标对 → 激光领取</div>
+			<div class="item-desc">两颗金币钻石 (2,3) 和 (6,8)。试三件事：①悬停看说明浮字「+10 金币」；②激光领取后<b>再射一次同一颗</b>——应该没有任何奖励（每颗每局一次）；③撤旗重插再射——也不该再发。</div></div></li>
+		<li data-id="b2"><input type="checkbox"><div>
+			<div class="item-title"><span class="lvl l-a">2-2</span>范围：一枪接力</div>
+			<div class="item-desc">把 (4,11) 范围钻石和 (4,12) 金币钻石<b>都标好</b>，再射范围钻石——3×3 打开的同时金币钻石被接力激活。也试试<b>只标范围、不标金币</b>时打出去：金币钻石应该被 3×3 波及碎掉（这就是 D5 的误打体验）。</div></div></li>
+		<li data-id="b3"><input type="checkbox"><div>
+			<div class="item-title"><span class="lvl l-s">2-3</span>双射线：随机两向 + 混合</div>
+			<div class="item-desc">标好 (6,10) 双射线后<b>悬停别发射</b>：看到紫色「可能范围」角点（不是确定命中）。然后发射，看随机抽出的两个方向。退出重开再试一次——方向应该重新随机（种子不同关不同）。</div></div></li>
+		<li data-id="b4"><input type="checkbox"><div>
+			<div class="item-title"><span class="lvl l-e">2-4</span>精灵：看它干活</div>
+			<div class="item-desc">激活 (3,13) 精灵钻石，观察：①它开的格子<b>是不是永远安全</b>（不该踩雷）；②没目标时它悬停等待的样子怪不怪；③按 Esc 暂停时它是否跟着停；④它和你的机器人抢不抢目标。</div></div></li>
+		<li data-id="b5"><input type="checkbox"><div>
+			<div class="item-title"><span class="lvl l-m">2-5</span>四类同关 + 旧机制共存</div>
+			<div class="item-desc">2-5 塞了四类各一（8,4 范围、8,5 金币、10,5 双射线、11,5 精灵），还有原有关卡的引光柱。重点：一枪能不能读出「刚才发生了什么」；引光柱的老规则有没有被钻石效果搅乱。</div></div></li>
+		<li data-id="b6"><input type="checkbox"><div>
+			<div class="item-title">故意乱打一轮（重要！）</div>
+			<div class="item-desc">挑 2-2 或 2-5，<b>故意不标记直接用激光扫</b>钻石区，体会「误碎」：碎钻只给 1 分，效果全失。这是 D5 拍板的直接依据——这个惩罚力度玩起来是「有意思的紧张」还是「烦」？</div></div></li>
+	</ul>
+	<div class="note-label">试玩记录（问题、坐标、截图说明都行）<span class="saved-hint">已自动保存 ✓</span></div>
+	<textarea data-id="note-b" placeholder="例：2-3 双射线打中了 (4,13) 金币钻石但没激活？重启后精灵卡在墙上……"></textarea>
+</section>
+
+<section id="c">
+	<h2>③ 体验感受（拍板依据）</h2>
+	<p class="sec-note">凭直觉答，写「不知道/没注意」也行——这些答案直接决定规则和数值怎么调。</p>
+	<ul class="items">
+		<li data-id="c1"><input type="checkbox"><div>
+			<div class="item-title">看清图标了吗</div>
+			<div class="item-desc">不查任何资料，凭玩后的记忆：四类钻石的角标（金圆/九宫格/紫Y/精灵）能分清吗？已消耗的缺角+斜杠注意到了吗？</div></div></li>
+		<li data-id="c2"><input type="checkbox"><div>
+			<div class="item-title">连锁能读懂吗</div>
+			<div class="item-desc">一枪触发 3+ 个效果时，画面上能看懂「谁引发了谁」吗？动画有没有挡住关键数字？</div></div></li>
+		<li data-id="c3"><input type="checkbox"><div>
+			<div class="item-title">随机双射线的失控感</div>
+			<div class="item-desc">方向随机这件事让你觉得「刺激」还是「失控/不值」？可能范围预览（紫色角点）够不够帮你做决策？</div></div></li>
+		<li data-id="c4"><input type="checkbox"><div>
+			<div class="item-title">精灵值不值</div>
+			<div class="item-desc">一次召唤（3 次开格）感觉是赚了还是鸡肋？干等时碍事吗？希望更快/更慢/更多次？</div></div></li>
+		<li data-id="c5"><input type="checkbox"><div>
+			<div class="item-title">金币 10 的手感</div>
+			<div class="item-desc">第二章机器人 50 金币左右一只——10 金币/颗对购买节奏有感觉吗？太多/太少/刚好？</div></div></li>
+		<li data-id="c6"><input type="checkbox"><div>
+			<div class="item-title">教学够不够</div>
+			<div class="item-desc">关前简介那句教学句 + 悬停浮字说明，够你弄懂玩法吗？哪里还是懵的？</div></div></li>
+	</ul>
+	<div class="note-label">感受速记<span class="saved-hint">已自动保存 ✓</span></div>
+	<textarea data-id="note-c" placeholder="例：图标金圆和九宫格在小格子有点像；连锁时浮字太多看不过来……"></textarea>
+</section>
+
+<section id="d">
+	<h2>④ 规则拍板（D1–D10）</h2>
+	<p class="sec-note">下面每条是开发者采用的<b>默认规则</b>。玩完之后逐条勾「认可」；<b>想改哪条就在备注里写编号和想法</b>，其余保持默认。</p>
+	<ul class="items">
+		<li data-id="d1"><input type="checkbox"><div>
+			<div class="item-title">D1 激活方式：标记后还需激光命中</div>
+			<div class="item-desc">标记本身不放技能。（备选：标记即自动触发 / 激光命中未标钻石也触发）</div></div></li>
+		<li data-id="d2"><input type="checkbox"><div>
+			<div class="item-title">D2 每颗每局只发一次，重开恢复</div>
+			<div class="item-desc">撤旗重插、动画没放完再射，都不能刷新。</div></div></li>
+		<li data-id="d3"><input type="checkbox"><div>
+			<div class="item-title">D3 允许钻石互相激活（连锁）</div>
+			<div class="item-desc">只接力「开枪那一刻已正确标记」的钻石。</div></div></li>
+		<li data-id="d4"><input type="checkbox"><div>
+			<div class="item-title">D4 范围=含中心的 3×3</div>
+			<div class="item-desc">边缘自动裁切；中心钻石保留不碎。</div></div></li>
+		<li data-id="d5"><input type="checkbox"><div>
+			<div class="item-title">D5 未标钻石被打=碎钻（不自动保护）</div>
+			<div class="item-desc"><b>重点拍板项</b>——结合「故意乱打」那轮的体验。备选：未标钻石被效果波及时改为只碎不伤周围 / 提示警告。</div></div></li>
+		<li data-id="d6"><input type="checkbox"><div>
+			<div class="item-title">D6 双射线=八方向随机抽 2，射程 3</div>
+			<div class="item-desc">射程要不要加长/缩短？方向要不要限制成四正四斜选一？</div></div></li>
+		<li data-id="d7"><input type="checkbox"><div>
+			<div class="item-title">D7 金币数量 10</div>
+			<div class="item-desc">按感受填个数：__ 金币。</div></div></li>
+		<li data-id="d8"><input type="checkbox"><div>
+			<div class="item-title">D8 精灵参数：3 次作业 / 1.5s 间隔 / 20s 寿命</div>
+			<div class="item-desc">按感受改：次数 __、更勤快/更懒、活多久。</div></div></li>
+		<li data-id="d9"><input type="checkbox"><div>
+			<div class="item-title">D9 类型可见性：标对才显示效果图标</div>
+			<div class="item-desc">未标的钻石不暴露类型（想提前知道类型需要新机制，比如探测）。保持吗？</div></div></li>
+		<li data-id="d10"><input type="checkbox"><div>
+			<div class="item-title">D10 旧设施爆炸不触发钻石</div>
+			<div class="item-desc">矿石/过载/旧节点爆炸波及钻石时不激活（保持旧关难度不变）。新钻石的效果可以触发旧设施（复用旧规则）。</div></div></li>
+	</ul>
+	<div class="note-label">想改的规则（写编号 + 想法）<span class="saved-hint">已自动保存 ✓</span></div>
+	<textarea data-id="note-d" placeholder="例：D5 想改成给一次警告；D7 金币 15；D6 射程 4……"></textarea>
+</section>
+
+<section id="e">
+	<h2>⑤ 收尾动作</h2>
+	<ul class="items">
+		<li data-id="e1"><input type="checkbox"><div>
+			<div class="item-title">把结果告诉开发者</div>
+			<div class="item-desc">把这个页面里的勾选情况和三段备注截个图发给开发者（或直接说明），有 bug 附上复现步骤/截图更好。</div></div></li>
+		<li data-id="e2"><input type="checkbox"><div>
+			<div class="item-title">数值定稿</div>
+			<div class="item-desc">金币金额 / 双射线射程 / 精灵三参数——确认或给新数。</div></div></li>
+		<li data-id="e3"><input type="checkbox"><div>
+			<div class="item-title">决定 D5 的去留</div>
+			<div class="item-desc">「未标钻石=碎」是本系统最大的风险设计，试玩后正式拍板。</div></div></li>
+		<li data-id="e4"><input type="checkbox"><div>
+			<div class="item-title">排期正式关卡重排（WP7）</div>
+			<div class="item-desc">当前五关只是稀疏试验配置；规则数值定了之后，才做正式的连锁组、组合设计和第二章五关重新分配。</div></div></li>
+	</ul>
+</section>
+
+<section id="howto">
+	<h2>使用说明</h2>
+	<div class="howto">
+		<p>· 勾选与备注<b>自动保存</b>在本机浏览器（localStorage），下次打开还在；无痕模式不保存。</p>
+		<p>· 换电脑 / 换浏览器的话进度不跟随——需要迁移就右键「检查」自己导出，或直接截图。</p>
+		<p>· 「重置全部」会清掉所有勾选和备注（有确认提示）。</p>
+		<p>· 相关页面：<a href="钻石效果系统-开发记录.html">开发记录看板</a>（技术状态） · <a href="钻石效果实机截图-2026-10-24/钻石效果展示.html">效果截图相册</a> · 规则全文见《<a href="#" onclick="return false">实现与验收 2026-10-23.md</a>》（仓库 docs 同目录）。</p>
+	</div>
+</section>
+
+<footer>
+	<p>本页建于 2026-10-24，对应代码提交 0d66f62 / 36e1dcb / a29c019。规则或数值调整后请让开发者同步更新此页。</p>
+</footer>
+
+<script>
+(function () {
+	var KEY = "diamond-todo-20261024";
+	var saved = {};
+	try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { saved = {}; }
+	var boxes = Array.prototype.slice.call(document.querySelectorAll("ul.items input[type=checkbox]"));
+	var notes = Array.prototype.slice.call(document.querySelectorAll("textarea[data-id]"));
+	var fill = document.getElementById("pfill"), ptext = document.getElementById("progress-text");
+	function persist() {
+		try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+	}
+	function refresh() {
+		var done = boxes.filter(function (b) { return b.checked; }).length;
+		fill.style.width = (boxes.length ? Math.round(done / boxes.length * 100) : 0) + "%";
+		ptext.textContent = done + " / " + boxes.length;
+	}
+	boxes.forEach(function (b) {
+		var li = b.closest("li");
+		b.checked = !!saved[li.getAttribute("data-id")];
+		li.classList.toggle("done", b.checked);
+		b.addEventListener("change", function () {
+			saved[li.getAttribute("data-id")] = b.checked;
+			li.classList.toggle("done", b.checked);
+			persist(); refresh();
+		});
+	});
+	notes.forEach(function (t) {
+		var id = t.getAttribute("data-id");
+		if (saved[id]) t.value = saved[id];
+		var hint = t.parentElement.querySelector(".saved-hint");
+		t.addEventListener("input", function () {
+			saved[id] = t.value; persist();
+			if (hint) { hint.classList.add("show"); clearTimeout(t._h);
+				t._h = setTimeout(function () { hint.classList.remove("show"); }, 1200); }
+		});
+	});
+	document.getElementById("reset-btn").addEventListener("click", function () {
+		if (!confirm("确定清空所有勾选和备注吗？不可恢复。")) return;
+		saved = {}; persist();
+		boxes.forEach(function (b) { b.checked = false; b.closest("li").classList.remove("done"); });
+		notes.forEach(function (t) { t.value = ""; });
+		refresh();
+	});
+	refresh();
+})();
+</script>
+
+</body>
+</html>
