@@ -33,6 +33,8 @@ class GenConfig:
     fossil_origins: tuple = ()   # 2×2 左上原点（可选，设计者手放）
     fossils_max: int = 2         # 生成器可落化石组数上限（§7.4 限制机关数量；≤8 格）
     seals_max: int = 2           # 区域封印组数上限（§7.4 默认 2，§7.3 新机制）
+    fixed_mines: tuple = ()      # 手放雷（§2 摆雷模式：必放硬约束，修补永不挪动；
+                                 # 落在锚点/基地安全区/化石上=数据错误，generate 拒绝）
     max_candidates: int = 24
     max_repairs: int = 18
     acc: Acceptance = field(default_factory=Acceptance)
@@ -161,6 +163,7 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
     walls = set(cand.walls)
     locked = set(cand.locked)
     fossils = set(cand.fossils)
+    fixed = set(cfg.fixed_mines)   # 手放雷：修补永不挪动（§2 摆雷模式）
     seals = {k: {"cells": set(v["cells"]), "trigger": v["trigger"]}
              for k, v in cand.seals.items()}
     allowed_new_mine = {c for c in board.numbers
@@ -199,11 +202,12 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             break
         if v.kind == "main_stuck":
             # 主线卡住：优先搬出卡点阶段核心区里的雷（核心区雷多过半=接触条件不可满足），
-            # 再搬卡点附近的雷到带外（带内减密→信息流恢复，§8"修可用线索"）
+            # 再搬卡点附近的雷到带外（带内减密→信息流恢复，§8"修可用线索"）；
+            # 手放雷不参与搬动
             ops = []
             core = ra.stage_cells.get(v.stage, set())
             core_mines = [m for m in sorted(mines) if m in core and m not in no_mine
-                          and m not in cand.preopen]
+                          and m not in cand.preopen and m not in fixed]
             far_pool = [c for c in allowed_new_mine if c not in ra.band]
             if core_mines and far_pool and \
                     len(core_mines) > (1 - acc_stage_safe_frac()) * len(core):
@@ -211,7 +215,7 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             center = v.cells[0] if v.cells else None
             if center is not None:
                 near_mines = [m for m in sorted(mines) if m in _radius(center, 3, cfg.W, cfg.H)
-                              and m not in no_mine and m not in cand.preopen]
+                              and m not in no_mine and m not in cand.preopen and m not in fixed]
                 if near_mines and far_pool:
                     ops.append(("relocate", (rnd.choice(near_mines), rnd.choice(far_pool))))
             if not ops:
@@ -284,8 +288,16 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
             seals[str(sid)] = {"cells": set(cells), "trigger": trigger}
         elif op[0] == "relocate":
             m, n = op[1]
+            if n in mines:
+                # 同轮早先操作已占用该落点（落点池是进函数时算的快照）：换一个，
+                # 否则 set 去重会净丢一颗雷（雷数守恒破坏，手放雷测试暴露）
+                pool = sorted(allowed_new_mine - mines)
+                if not pool:
+                    continue
+                n = rnd.choice(pool)
             mines.discard(m)
             mines.add(n)
+            allowed_new_mine.discard(n)
         else:
             # 守恒换雷：m→n，雷数不变、数字重算（§6"对局部雷位做守恒交换"）
             center = op[1] if op[0] == "swap_near" else None
@@ -296,13 +308,15 @@ def repair(cand: Candidate, cfg: GenConfig, ra: RouteAnalysis, rnd: random.Rando
                     near_new = sorted(allowed_new_mine)   # 局部落点耗尽 → 全局换雷，防静默空转
             else:
                 near_new = sorted(allowed_new_mine)
-            pool_old = sorted(mines)
-            if not near_new or not pool_old:
+            pool_old = [m for m in sorted(mines) if m not in fixed]
+            picks = [c for c in near_new if c not in mines]   # 同轮早先操作已占用的落点剔除
+            if not picks or not pool_old:
                 continue
-            n = rnd.choice(near_new)
+            n = rnd.choice(picks)
             m = rnd.choice(pool_old)
             mines.discard(m)
             mines.add(n)
+            allowed_new_mine.discard(n)
     return replace(cand, mines=mines, walls=walls, locked=locked, fossils=fossils,
                    seals=seals, score=-1e9, violations=[], ref_ok=False, normal_pass=0)
 
@@ -442,7 +456,9 @@ def contain_flood(mines: set, cfg: GenConfig, ra: RouteAnalysis, no_mine: set,
         if len(walls) < cfg.walls_max:
             walls.add(best[1])
         else:
-            pool_out = [m for m in mines if m not in no_mine and m not in zone]
+            # 手放雷不参与搬动（§2 摆雷模式）
+            pool_out = [m for m in mines if m not in no_mine and m not in zone
+                        and m not in set(cfg.fixed_mines)]
             if not pool_out:
                 return mines, walls
             m = rnd.choice(pool_out)
@@ -452,7 +468,9 @@ def contain_flood(mines: set, cfg: GenConfig, ra: RouteAnalysis, no_mine: set,
 
 
 def generate(stroke_pts, cfg: GenConfig, seed: int = 7, log=print):
-    """主入口：笔画 → 合格固定盘（或最佳候选+冲突报告）。"""
+    """主入口：笔画 → 合格固定盘（或最佳候选+冲突报告）。
+    cfg.fixed_mines = 手放雷硬约束（§2 摆雷模式）：必放、修补永不挪动，
+    其余雷位仍由路线分析+验收循环自由选择。"""
     rnd = random.Random(seed)
     ra = analyze(stroke_pts, cfg.W, cfg.H, band_radius=cfg.band_radius)
     acc = cfg.acc
@@ -461,6 +479,15 @@ def generate(stroke_pts, cfg: GenConfig, seed: int = 7, log=print):
                if c not in no_mine}
     if len(allowed) < cfg.mine_count:
         raise ValueError(f"硬约束排除后放不下 {cfg.mine_count} 颗雷（只剩 {len(allowed)} 格）")
+    # 手放雷校验（§2 摆雷模式）：禁区（锚点/基地安全区/化石）拒绝，雷数超额拒绝
+    fixed = set(cfg.fixed_mines)
+    bad = sorted(fixed - allowed)
+    if bad:
+        raise ValueError(f"手放雷落在禁区（锚点/基地安全区/化石）：{bad}")
+    if len(fixed) > cfg.mine_count:
+        raise ValueError(f"手放雷 {len(fixed)} 颗超过雷数上限 {cfg.mine_count}")
+    if fixed:
+        log(f"[摆雷] 手放雷 {len(fixed)} 颗作为硬约束（重生成永不挪动）")
 
     log(f"[分析] 阶段={ra.n_stages} 锚点={len(ra.anchors)} 里程碑={len(ra.milestones)} "
         f"走廊提名={len(ra.corridors)} 带内格={len(ra.band)}")
@@ -471,12 +498,16 @@ def generate(stroke_pts, cfg: GenConfig, seed: int = 7, log=print):
     tried = 0
     while tried < cfg.max_candidates:
         tried += 1
-        # 初始布雷：带内减密（band_ratio 份额），富矿沉到线外（§1 取舍 2/§6 主线方向信息流）
-        band_allowed = sorted(c for c in allowed if c in ra.band)
-        out_allowed = sorted(c for c in allowed if c not in ra.band)
-        n_band = min(len(band_allowed), round(cfg.mine_count * 0.5))
-        mines = set(rnd.sample(band_allowed, n_band)) | \
-            set(rnd.sample(out_allowed, min(cfg.mine_count - n_band, len(out_allowed))))
+        # 初始布雷：手放雷全数保留（§2 摆雷模式），其余带内减密（band_ratio 份额），
+        # 富矿沉到线外（§1 取舍 2/§6 主线方向信息流）
+        rest_pool = allowed - fixed
+        band_allowed = sorted(c for c in rest_pool if c in ra.band)
+        out_allowed = sorted(c for c in rest_pool if c not in ra.band)
+        rest_count = cfg.mine_count - len(fixed)
+        n_band = min(len(band_allowed), round(rest_count * 0.5))
+        mines = fixed | \
+            set(rnd.sample(band_allowed, n_band)) | \
+            set(rnd.sample(out_allowed, min(rest_count - n_band, len(out_allowed))))
         while len(mines) < cfg.mine_count:
             rest = [c for c in out_allowed if c not in mines]
             if not rest:
@@ -508,10 +539,10 @@ def generate(stroke_pts, cfg: GenConfig, seed: int = 7, log=print):
                 break
             if best is None or cand.score > best.score:
                 best = cand
-            fixed = repair(cand, cfg, ra, rnd, escalate=(stale >= 4))
-            if fixed is None:
+            fixed_cand = repair(cand, cfg, ra, rnd, escalate=(stale >= 4))
+            if fixed_cand is None:
                 break
-            cand = fixed
+            cand = fixed_cand
             stale += 1
         ev = last_eval if last_eval is not None else cand
         stuck_at = next((v.stage for v in ev.violations if v.kind == "main_stuck"), "?")

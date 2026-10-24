@@ -46,6 +46,9 @@ def main():
                 cfg.acc = Acceptance(**v)
             elif hasattr(cfg, k):
                 setattr(cfg, k, v)
+    # 手放雷（§2 摆雷模式）：笔画 JSON 里 "fixed_mines": [[x,y],...] 作为必放硬约束
+    if stroke.get("fixed_mines"):
+        cfg.fixed_mines = tuple(tuple(p) for p in stroke["fixed_mines"])
 
     t0 = time.time()
     ra, cand, conflicts = generate(pts, cfg, seed=args.seed)
@@ -124,7 +127,8 @@ def build_report(name, cfg, ra, cand, conflicts, dt, seed,
     L = []
     L.append(f"# 路径驱动地图生成器 · 生成报告（{name}）\n")
     L.append(f"- 日期：2026-10-23；seed={seed}；耗时 {dt:.1f}s")
-    L.append(f"- 棋盘：{cfg.W}×{cfg.H}，雷数 {cfg.mine_count}，起始资金 {cfg.start_money}")
+    L.append(f"- 棋盘：{cfg.W}×{cfg.H}，雷数 {cfg.mine_count}，起始资金 {cfg.start_money}"
+             + (f"，**手放雷 {len(cfg.fixed_mines)} 颗（硬约束，重生成保留）**" if cfg.fixed_mines else ""))
     L.append(f"- 阶段：{ra.n_stages}（锚点 {len(ra.anchors)} 个，里程碑 {len(ra.milestones)} 个）")
     L.append(f"- 几何走廊提名：{len(ra.corridors)} 条（§5.1）")
     L.append(f"- 探索带：{len(ra.band)} 格（半径 {cfg.band_radius}）；带外保持开放（§1 取舍 2）")

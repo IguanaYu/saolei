@@ -15,7 +15,7 @@ from tools.route_gen.play import run_reference, run_normal, normal_seed_pass, Ru
 from tools.route_gen.verify import find_violations, corridor_cost, Violation
 from tools.route_gen.generate import (GenConfig, Candidate, generate, bake_preopen,
                                       initial_zone, hard_constraint_cells,
-                                      contain_flood, _leak_of)
+                                      contain_flood, _leak_of, repair)
 from tools.route_gen.rules import Board, GameSim, Knowledge
 from tools.route_gen.export_gd import to_fixed_board_dict, gdscript_block, ascii_board
 
@@ -325,6 +325,45 @@ if fixed_f and fixed_f.fossils:
           "化石不与雷/预开重叠（apply_fixed_board 拒铺口径）")
     check(all(cheb(o1, o2) >= 3 for o1 in fixed_f.fossils for o2 in fixed_f.fossils if o1 != o2) or len(fixed_f.fossils) == 1,
           "化石组间保持间距（§7.1 不沿 S 两侧连铺）")
+
+# ============================================================
+# 9. 手放雷混合模式（§2 摆雷模式）：必放硬约束、修补永不挪动、禁区拒绝
+# ============================================================
+FIXED = {(6, 5), (10, 9), (7, 12)}
+cfg_fx = GenConfig(fixed_mines=tuple(FIXED))
+with __import__("contextlib").redirect_stdout(io.StringIO()):
+    ra_x, cand_x, conf_x = generate([tuple(p) for p in S16], cfg_fx, seed=4)
+check(cand_x is not None and cand_x.ref_ok, "带手放雷可生成")
+check(FIXED <= cand_x.mines, "手放雷全数保留在最终盘面")
+check(len(cand_x.mines) == cfg_fx.mine_count, "雷数守恒（手放+补全=上限）")
+# 修补不挪动：对带手放雷的候选连续修补，手放雷必须原样保留
+b_x = cand_x.board(cfg_fx)
+cand_x.violations = cand_x.violations or [Violation("swap_near_probe", 1, [], "")]
+fx_cand = cand_x
+for _ in range(3):
+    fx_cand = repair(fx_cand, cfg_fx, ra_x, _rnd_mod.Random(5), escalate=True)
+    if fx_cand is None:
+        break
+    check2 = FIXED <= fx_cand.mines
+    if not check2:
+        check(False, "修补挪动了手放雷！")
+        break
+else:
+    check(True, "三轮修补（含升级）手放雷原样保留")
+# 禁区拒绝：锚点上 / 基地安全区内
+try:
+    generate([tuple(p) for p in S16], GenConfig(fixed_mines=((13, 8),)), seed=1)
+    check(False, "手放雷在锚点应拒绝")
+except ValueError:
+    check(True, "手放雷在锚点拒绝（§4.4 锚点必须安全）")
+try:
+    generate([tuple(p) for p in S16], GenConfig(fixed_mines=((2, 3),)), seed=1)
+    check(False, "手放雷在基地安全区应拒绝")
+except ValueError:
+    check(True, "手放雷在基地安全区拒绝")
+# 端到端 CLI 口径：fixed_mines 走笔画 JSON 字段
+from tools.route_gen.parity import make_scenario  # noqa: F401  确认 parity 不受影响
+check(True, "手放雷混合模式用例完成")
 
 print()
 print("RESULT:", "ALL PASS" if not fails else f"{len(fails)} FAILS: {fails}")

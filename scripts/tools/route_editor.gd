@@ -11,6 +11,8 @@ const CELL := 34
 const GAP_WARN := 4      # 折返间距 ≤ 此值 = 高冲突提示（§4.3；gap-4 实测不可解、gap-6 可解）
 
 var stroke: Array = []          # 有方向的笔画点（格坐标 Vector2i）
+var fixed_mines := {}           # 手放雷集合（§2 摆雷模式：key=Vector2i，必放硬约束）
+var mode := "route"             # "route"=画路线 / "mine"=点雷
 var board: Dictionary = {}      # 载入的 board_fixed.json board 字段
 var show_truth := true          # 答案层开关
 var status := "左键加点画路线 · 右键撤销"
@@ -26,6 +28,18 @@ func _ready() -> void:
 	ui.size = Vector2(240, H * CELL)
 	ui.add_theme_constant_override("separation", 8)
 	add_child(ui)
+	# 模式切换（画路线 / 点雷）：手放雷=必放硬约束，生成器补全其余并永不挪动
+	var modes := HBoxContainer.new()
+	var bg := ButtonGroup.new()
+	for m in [["画路线", "route"], ["点雷", "mine"]]:
+		var mb := Button.new()
+		mb.text = m[0]
+		mb.toggle_mode = true
+		mb.button_group = bg
+		mb.button_pressed = m[1] == mode
+		mb.pressed.connect(func(): mode = m[1])
+		modes.add_child(mb)
+	ui.add_child(modes)
 	_add_button(ui, "保存笔画 JSON", _save_stroke)
 	_add_button(ui, "生成（调 Python CLI）", _run_generate)
 	_add_button(ui, "载入生成结果叠加", _load_board)
@@ -35,6 +49,9 @@ func _ready() -> void:
 	_add_button(ui, "清空笔画", func():
 		stroke.clear()
 		board = {}
+		queue_redraw())
+	_add_button(ui, "清空手放雷", func():
+		fixed_mines.clear()
 		queue_redraw())
 	var lbl := Label.new()
 	lbl.name = "Status"
@@ -64,11 +81,22 @@ func _gui_input(event: InputEvent) -> void:
 		var cell := Vector2i(int(mb.position.x / CELL), int(mb.position.y / CELL))
 		if cell.x < 0 or cell.x >= W or cell.y < 0 or cell.y >= H:
 			return
-		if mb.button_index == MOUSE_BUTTON_LEFT:
-			stroke.append(cell)
-		elif mb.button_index == MOUSE_BUTTON_RIGHT and not stroke.is_empty():
-			stroke.pop_back()
-		_status("笔画 %d 点 · %s" % [stroke.size(), _gap_warning()])
+		if mode == "mine":
+			# 点雷模式：左键切换手放雷（§2 摆雷模式输入）
+			if mb.button_index == MOUSE_BUTTON_LEFT:
+				if fixed_mines.has(cell):
+					fixed_mines.erase(cell)
+				else:
+					fixed_mines[cell] = true
+			elif mb.button_index == MOUSE_BUTTON_RIGHT:
+				fixed_mines.erase(cell)
+			_status("手放雷 %d 颗（必放硬约束，生成器补全其余）" % fixed_mines.size())
+		else:
+			if mb.button_index == MOUSE_BUTTON_LEFT:
+				stroke.append(cell)
+			elif mb.button_index == MOUSE_BUTTON_RIGHT and not stroke.is_empty():
+				stroke.pop_back()
+			_status("笔画 %d 点 · %s" % [stroke.size(), _gap_warning()])
 		queue_redraw()
 
 
@@ -93,9 +121,14 @@ func _save_stroke() -> void:
 		return
 	var path := "res://tools/route_gen/strokes/editor_stroke.json"
 	var f := FileAccess.open(path, FileAccess.WRITE)
-	f.store_string(JSON.stringify({"name": "EditorStroke", "points": stroke}, "  "))
+	var mines: Array = []
+	for c in fixed_mines:
+		mines.append([c.x, c.y])
+	f.store_string(JSON.stringify({"name": "EditorStroke", "points": stroke,
+			"fixed_mines": mines}, "  "))
 	f.close()
-	_status("已保存 %s\n%s" % [path, _gap_warning()])
+	_status("已保存 %s\n笔画 %d 点 · 手放雷 %d 颗\n%s" % [path, stroke.size(),
+			fixed_mines.size(), _gap_warning()])
 
 
 func _run_generate() -> void:
@@ -163,6 +196,12 @@ func _draw() -> void:
 	for p in stroke:
 		draw_circle(Vector2(p.x * CELL + CELL / 2.0, p.y * CELL + CELL / 2.0), 4.0,
 				Color(1.0, 0.5, 0.1))
+	# 手放雷（深红实心方块，区别于答案层雷的红）
+	for c in fixed_mines:
+		draw_rect(Rect2(c.x * CELL + 5, c.y * CELL + 5, CELL - 10, CELL - 10),
+				Color(0.55, 0.05, 0.05, 0.9))
+		draw_rect(Rect2(c.x * CELL + 5, c.y * CELL + 5, CELL - 10, CELL - 10),
+				Color(1.0, 0.3, 0.3), false, 1.5)
 	# 状态文字
 	draw_string(ThemeDB.fallback_font, Vector2(W * CELL + 16, H * CELL - 6),
 			status, HORIZONTAL_ALIGNMENT_LEFT, 250, 12, Color(1, 1, 1))
