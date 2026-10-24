@@ -1,5 +1,7 @@
 使用以下指令运行godot项目，让用户来游玩，你去检测后端产生的bug。
-"/e/其他/chorme_download/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe" --path "E:\godot\扫雷"
+（2026-10-24 更新：原路径 /e/其他/chorme_download/... 在本机不存在；E:\godot\扫雷 是旧副本。本仓库用下面命令）
+"E:\chormeddownload7\Godot_v4.6.1\Godot_v4.6.1-stable_win64_console.exe" --path "F:\godot_game\扫雷_增量\saolei"
+（备选 exe：E:\godot\Godot_v4.6.1-stable_win64_console.exe）
 （新增图片素材后，先跑一次 `--headless --import` 再启动，否则 load() 找不到纹理）
 
 git提交的时候，不要添加Co-Authored-By相关的内容
@@ -19,3 +21,15 @@ git提交的时候，不要添加Co-Authored-By相关的内容
 - 测量算法不要预设结构（如"网格必须等距"），预设会把异常平均化掩盖；用独立峰检测 + 用户标注锚点交叉验证
 - TextureRect 使用 AtlasTexture 时必须显式设置 expand_mode=1（默认 EXPAND_KEEP_SIZE 会把控件撑到纹理尺寸并向右下溢出）
 - 详细复盘：docs/active/美术生产/调试复盘-贴图溢出与视觉模型陷阱.md
+
+## 3D 资产比例约定（2026-09-30 试玩版 v2 首版演示图校准，后续新角色必须遵守）
+
+- 棋盘格距 1.1 / 格面 ~1.0 不变；角色类占格宽 **50-60%**、顶部略高出未开格（读作"棋盘上的棋子"而非立着的大玩偶）
+- 已定基准（缩放烘进网格）：四机器人+保安 **×0.7**、史莱姆 **×0.7**、蝙蝠 **×0.75**、裂缝巢 **×0.85**；格件/基地/障碍覆盖/盘外装饰不动
+- 新角色资产先按此比例建模再导出； Blender 脚本与重建命令见 docs/active/美术生产/3d风格探索/试玩版v2-3D资产结论.md
+
+## 会话入口（2026-10-24）
+
+- 新会话找「当前状态 / 有啥需要用户做的」→ 看根目录 **todo.md 顶部「当前位置（2026-10-24 复核）」**，用户待办按优先级列在那里
+- 玩法设计任务（新机制/新关卡）先读 docs/active/玩法设计/玩法解构方法论-v1.md（最高准则，见 claude.md 同款条款）
+- 跑测试脚本隔离存档：命令前加 `APPDATA=<沙盒目录>`（Godot 4.6.1 的 use_custom_user_dir 实测无效，2026-10-23 教训，详见 docs/active/玩法设计/第二章-激光矿场/钻石效果系统-实现与验收-2026-10-23.md 晚间章节）
