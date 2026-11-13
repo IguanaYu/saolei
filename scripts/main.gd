@@ -194,10 +194,11 @@ func _ready() -> void:
 		_on_splash_finished()
 	# 暂停
 	hud.pause_requested.connect(_toggle_pause)
+	# 齿轮只呼出暂停菜单，设置从菜单里进（2026-11-13 用户反馈：原"菜单+设置叠开"
+	# 设置页直接盖住菜单，观感=直达设置，少了一级入口）
 	hud.settings_requested.connect(func():
 		if _in_game():
-			_open_pause()
-			settings_panel.open())
+			_open_pause())
 	pause_panel.resume_requested.connect(_resume)
 	pause_panel.rules_requested.connect(func(): rules_panel.open())
 	pause_panel.settings_requested.connect(func(): settings_panel.open())
